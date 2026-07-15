@@ -1,0 +1,82 @@
+const CACHE_NAME = 'sean-learning-adventure-v5';
+const APP_SHELL = [
+  '/',
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/icons/icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    fetch('/index.html', { cache: 'no-cache' })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Unable to cache app shell: ${response.status}`);
+        }
+
+        const html = await response.clone().text();
+        const buildAssets = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+          .map((match) => match[1])
+          .filter((path) => path?.startsWith('/assets/'));
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put('/index.html', response);
+        await cache.addAll([...APP_SHELL, ...buildAssets]);
+        await self.skipWaiting();
+      }),
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone));
+          return response;
+        })
+        .catch(() => caches.match('/index.html')),
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request, { ignoreVary: true }).then((cached) => {
+      if (cached) {
+        return cached;
+      }
+
+      return fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => Response.error());
+    }),
+  );
+});

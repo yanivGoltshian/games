@@ -1,0 +1,95 @@
+/*
+ * Design tokens for the illustrated playroom system.
+ * Keep this file the single source of truth for color, spacing, radius, type,
+ * motion, and shadow primitives.
+ */
+:root {
+  color-scheme: light;
+
+  /* Color: warm, restrained, activity-identity driven. Never color-only meaning. */
+  --color-canvas: oklch(97% 0.012 215);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-soft: oklch(98% 0.008 215 / 0.82);
+  --color-ink: oklch(29% 0.045 255);
+  --color-ink-muted: oklch(47% 0.04 250);
+  --color-coral: oklch(70% 0.15 32);
+  --color-coral-strong: oklch(60% 0.16 28);
+  --color-coral-soft: oklch(93% 0.05 32);
+  --color-ocean: oklch(68% 0.13 225);
+  --color-ocean-strong: oklch(56% 0.12 226);
+  --color-ocean-soft: oklch(93% 0.04 225);
+  --color-leaf: oklch(72% 0.13 145);
+  --color-leaf-strong: oklch(58% 0.13 148);
+  --color-leaf-soft: oklch(93% 0.05 145);
+  --color-honey: oklch(82% 0.14 82);
+  --color-honey-strong: oklch(68% 0.15 70);
+  --color-honey-soft: oklch(95% 0.05 82);
+  --color-plum: oklch(66% 0.12 320);
+  --color-plum-strong: oklch(54% 0.13 318);
+  --color-plum-soft: oklch(94% 0.04 320);
+  --color-focus-ring: oklch(52% 0.14 226);
+  --color-focus-separator: oklch(100% 0 0);
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Radii */
+  --radius-sm: 14px;
+  --radius-md: 22px;
+  --radius-lg: 32px;
+  --radius-xl: 44px;
+  --radius-pill: 999px;
+
+  /* Type scale (native system stack, illustration-first) */
+  --font-family: -apple-system, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  --font-size-caption: clamp(0.9rem, 1.6vw, 1.05rem);
+  --font-size-body: clamp(1rem, 1.9vw, 1.2rem);
+  --font-size-label: clamp(1.15rem, 2.6vw, 1.55rem);
+  --font-size-title: clamp(1.6rem, 4vw, 2.6rem);
+  --font-size-display: clamp(2.1rem, 6vw, 3.4rem);
+  --font-weight-label: 800;
+  --font-weight-body: 500;
+
+  /* Motion */
+  --motion-fast: 160ms;
+  --motion-medium: 220ms;
+  --motion-slow: 240ms;
+  --motion-ease: cubic-bezier(0.32, 0.72, 0.34, 1);
+  --motion-success-duration: 1.6s;
+  --motion-wiggle-duration: 520ms;
+
+  /* Shadows */
+  --shadow-soft: 0 18px 40px oklch(45% 0.05 40 / 0.14);
+  --shadow-lift: 0 26px 60px oklch(45% 0.06 40 / 0.2);
+  --shadow-inset-ring: inset 0 0 0 2px oklch(100% 0 0 / 0.5);
+
+  /* Hit targets */
+  --hit-target-min: 64px;
+  --hit-target-portal: min(78vw, 560px);
+}
+
+/* Reduced motion: caregiver setting OR OS preference collapses travel/shake/confetti motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 1ms;
+    --motion-medium: 1ms;
+    --motion-slow: 1ms;
+    --motion-success-duration: 1.4s;
+    --motion-wiggle-duration: 1ms;
+  }
+}
+
+body[data-reduced-motion='true'] {
+  --motion-fast: 1ms;
+  --motion-medium: 1ms;
+  --motion-slow: 1ms;
+  --motion-success-duration: 1.4s;
+  --motion-wiggle-duration: 1ms;
+}

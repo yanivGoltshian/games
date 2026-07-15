@@ -1,0 +1,153 @@
+import { createInitialProgress, createInitialSettings, STORAGE_SCHEMA_VERSION } from './progression';
+import type { AppProgress, ConceptStat, DomainProgress, ToddlerSettings } from './types';
+import { DOMAIN_KEYS } from './types';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function asNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function clampLevel(value: unknown): DomainProgress['level'] {
+  if (value === 2 || value === 3) {
+    return value;
+  }
+  return 1;
+}
+
+function sanitizeConceptStat(value: unknown): ConceptStat {
+  const fallback: ConceptStat = {
+    attempts: 0,
+    successes: 0,
+    streak: 0,
+    mastery: 0,
+  };
+
+  if (!isRecord(value)) {
+    return fallback;
+  }
+
+  const attempts = Math.max(0, Math.round(asNumber(value.attempts, 0)));
+  const successes = Math.max(0, Math.min(attempts, Math.round(asNumber(value.successes, 0))));
+  const streak = Math.max(0, Math.round(asNumber(value.streak, 0)));
+  const mastery = Math.min(1, Math.max(0, asNumber(value.mastery, successes === 0 ? 0 : successes / Math.max(1, attempts))));
+
+  return { attempts, successes, streak, mastery };
+}
+
+function sanitizeSettings(input: unknown, prefersReducedMotion: boolean): ToddlerSettings {
+  const defaults = createInitialSettings(prefersReducedMotion);
+  if (!isRecord(input)) {
+    return defaults;
+  }
+
+  const languageMode = input.languageMode === 'en' || input.languageMode === 'bilingual' ? input.languageMode : 'he';
+  const englishVoiceLocale = input.englishVoiceLocale === 'en-GB' ? 'en-GB' : 'en-US';
+  const soundLevel = Math.min(1, Math.max(0, asNumber(input.soundLevel, defaults.soundLevel)));
+  const reducedMotion = typeof input.reducedMotion === 'boolean' ? input.reducedMotion : defaults.reducedMotion;
+  const quietMode = typeof input.quietMode === 'boolean' ? input.quietMode : defaults.quietMode;
+
+  return {
+    languageMode,
+    englishVoiceLocale,
+    soundLevel,
+    reducedMotion,
+    quietMode,
+  };
+}
+
+function sanitizeDomain(value: unknown, fallback: DomainProgress): DomainProgress {
+  if (!isRecord(value)) {
+    return fallback;
+  }
+
+  const conceptsSource = isRecord(value.concepts) ? value.concepts : {};
+  const concepts = Object.fromEntries(
+    Object.entries(conceptsSource).map(([conceptId, stat]) => [conceptId, sanitizeConceptStat(stat)]),
+  );
+  const attempts = Math.max(0, Math.round(asNumber(value.attempts, fallback.attempts)));
+  const successes = Math.max(0, Math.min(attempts, Math.round(asNumber(value.successes, fallback.successes))));
+
+  return {
+    attempts,
+    successes,
+    streak: Math.max(0, Math.round(asNumber(value.streak, fallback.streak))),
+    level: clampLevel(value.level),
+    mastery: Math.min(1, Math.max(0, asNumber(value.mastery, fallback.mastery))),
+    stars: Math.max(0, Math.round(asNumber(value.stars, fallback.stars))),
+    lastPracticedAt: Math.max(0, Math.round(asNumber(value.lastPracticedAt, fallback.lastPracticedAt))),
+    concepts,
+  };
+}
+
+function readLegacySettings(raw: Record<string, unknown>, prefersReducedMotion: boolean): ToddlerSettings {
+  const preferences = isRecord(raw.preferences) ? raw.preferences : {};
+  return sanitizeSettings(
+    {
+      languageMode: preferences.language ?? preferences.languageMode,
+      englishVoiceLocale: preferences.englishVoice ?? preferences.englishVoiceLocale,
+      soundLevel: preferences.sound ?? preferences.soundLevel,
+      reducedMotion: preferences.motionReduced ?? preferences.reducedMotion,
+      quietMode: preferences.quiet ?? preferences.quietMode,
+    },
+    prefersReducedMotion,
+  );
+}
+
+function sanitizeDomains(source: unknown, template: AppProgress['domains']): AppProgress['domains'] {
+  const output = { ...template };
+  if (!isRecord(source)) {
+    return output;
+  }
+
+  for (const domain of DOMAIN_KEYS) {
+    output[domain] = sanitizeDomain(source[domain], template[domain]);
+  }
+
+  return output;
+}
+
+export function migrateStoredProgress(
+  raw: unknown,
+  options: { prefersReducedMotion?: boolean; now?: number } = {},
+): AppProgress {
+  const prefersReducedMotion = options.prefersReducedMotion ?? false;
+  const now = options.now ?? Date.now();
+  const base = createInitialProgress(prefersReducedMotion, now);
+
+  if (!isRecord(raw)) {
+    return base;
+  }
+
+  if (raw.version === STORAGE_SCHEMA_VERSION) {
+    const settings = sanitizeSettings(raw.settings, prefersReducedMotion);
+    const domains = sanitizeDomains(raw.domains, base.domains);
+    const totalStars = asNumber(raw.totalStars, Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0));
+
+    return {
+      version: STORAGE_SCHEMA_VERSION,
+      updatedAt: Math.max(0, Math.round(asNumber(raw.updatedAt, now))),
+      totalStars: Math.max(0, Math.round(totalStars)),
+      settings,
+      domains,
+    };
+  }
+
+  const settings = readLegacySettings(raw, prefersReducedMotion);
+  const legacyDomainSource = raw.domains ?? raw.stats;
+  const domains = sanitizeDomains(legacyDomainSource, base.domains);
+
+  return {
+    version: STORAGE_SCHEMA_VERSION,
+    updatedAt: now,
+    totalStars: Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0),
+    settings,
+    domains,
+  };
+}
+
+export function serializeProgress(progress: AppProgress): string {
+  return JSON.stringify(progress);
+}
