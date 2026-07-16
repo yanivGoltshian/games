@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { collectRecordedSpeechCatalog } from '../src/content/recordedSpeechCatalog';
+import type { RecordedSpeechCatalogEntry } from '../src/content/recordedSpeechCatalog';
 import type { SpeechLocale } from '../src/domain/types';
 
 const SAMPLE_RATE = 24_000;
@@ -50,7 +51,7 @@ function manifestKey(locale: SpeechLocale, text: string): string {
 
 function generateLocale(
   locale: SpeechLocale,
-  texts: readonly string[],
+  entries: readonly RecordedSpeechCatalogEntry[],
   manifest: RecordedSpeechManifest,
 ): void {
   const tempDirectory = mkdtempSync(join(tmpdir(), `sean-speech-${locale}-`));
@@ -68,11 +69,15 @@ function generateLocale(
   let offset = 0;
   const concatPaths: string[] = [];
   const voice = voices[locale];
-  texts.forEach((text, index) => {
+  entries.forEach((entry, index) => {
+    // Synthesize from the pointed pronunciation when present so `say` vowelizes
+    // Hebrew correctly, but key the manifest by the unpointed source text so the
+    // runtime lookup (which uses unpointed text) still resolves.
+    const spokenText = entry.spokenText ?? entry.text;
     const prefix = String(index).padStart(3, '0');
     const aiffPath = join(tempDirectory, `${prefix}.aiff`);
     const wavPath = join(tempDirectory, `${prefix}.wav`);
-    run('say', ['-v', voice.name, '-r', String(voice.rate), '-o', aiffPath, text]);
+    run('say', ['-v', voice.name, '-r', String(voice.rate), '-o', aiffPath, spokenText]);
     run('ffmpeg', [
       '-loglevel', 'error',
       '-y',
@@ -84,7 +89,7 @@ function generateLocale(
     ]);
 
     const duration = durationOf(wavPath);
-    manifest.entries[manifestKey(locale, text)] = {
+    manifest.entries[manifestKey(locale, entry.text)] = {
       src: `/speech/${locale}.mp3`,
       offset: Number(offset.toFixed(6)),
       duration: Number(duration.toFixed(6)),
@@ -119,9 +124,9 @@ const manifest: RecordedSpeechManifest = { version: 1, entries: {} };
 
 mkdirSync(outputDirectory, { recursive: true });
 for (const locale of Object.keys(voices) as SpeechLocale[]) {
-  const texts = (grouped[locale] ?? []).map((entry) => entry.text);
-  console.log(`Generating ${texts.length} ${locale} clips with ${voices[locale].name}`);
-  generateLocale(locale, texts, manifest);
+  const localeEntries = grouped[locale] ?? [];
+  console.log(`Generating ${localeEntries.length} ${locale} clips with ${voices[locale].name}`);
+  generateLocale(locale, localeEntries, manifest);
 }
 writeFileSync(
   join(outputDirectory, 'manifest.json'),

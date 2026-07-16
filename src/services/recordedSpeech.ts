@@ -31,15 +31,17 @@ export interface RecordedSpeechBackend {
   cancel: () => void;
 }
 
-export interface StandaloneSpeechEnvironment {
+export interface RecordedSpeechEnvironment {
   userAgent: string;
   platform: string;
   maxTouchPoints: number;
+  // Standalone signals are retained for diagnostics only; the recorded
+  // speech fallback no longer depends on them (see shouldUseRecordedSpeech).
   navigatorStandalone?: boolean;
-  displayModeStandalone: boolean;
+  displayModeStandalone?: boolean;
 }
 
-function currentEnvironment(): StandaloneSpeechEnvironment | null {
+function currentEnvironment(): RecordedSpeechEnvironment | null {
   if (typeof navigator === 'undefined' || typeof window === 'undefined') {
     return null;
   }
@@ -55,6 +57,13 @@ function currentEnvironment(): StandaloneSpeechEnvironment | null {
   };
 }
 
+/**
+ * Apple mobile WebKit (iPad, iPhone, iPod, and iPadOS reporting as MacIntel
+ * with touch) lacks reliable Web Speech for offline/localised playback, so we
+ * always route it through the recorded speech sprites. This applies in every
+ * context — installed standalone, Safari, and Chrome (also WebKit on iOS) —
+ * not just standalone. Android and desktop keep using Web Speech.
+ */
 export function shouldUseRecordedSpeech(
   environment = currentEnvironment(),
 ): boolean {
@@ -64,9 +73,7 @@ export function shouldUseRecordedSpeech(
   const isAppleMobile =
     /iPad|iPhone|iPod/i.test(environment.userAgent) ||
     (environment.platform === 'MacIntel' && environment.maxTouchPoints > 1);
-  const isStandalone =
-    environment.navigatorStandalone === true || environment.displayModeStandalone;
-  return isAppleMobile && isStandalone;
+  return isAppleMobile;
 }
 
 function manifestKey(locale: SpeechLocale, text: string): string {

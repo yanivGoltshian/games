@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   RecordedSpeechPlayer,
   shouldUseRecordedSpeech,
-  type StandaloneSpeechEnvironment,
+  type RecordedSpeechEnvironment,
 } from './recordedSpeech';
 
-const iPadEnvironment: StandaloneSpeechEnvironment = {
-  userAgent: 'Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X)',
+const installedIPadEnvironment: RecordedSpeechEnvironment = {
+  userAgent: 'Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   platform: 'iPad',
   maxTouchPoints: 5,
   navigatorStandalone: true,
@@ -47,23 +47,62 @@ const flush = async () => {
 };
 
 describe('recorded iPad speech', () => {
-  it('requires both an Apple touch device and standalone display mode', () => {
-    expect(shouldUseRecordedSpeech(iPadEnvironment)).toBe(true);
+  it('routes every Apple mobile context through recorded speech, not just standalone', () => {
+    // iPad Safari, a normal browser tab (not installed / not standalone).
     expect(shouldUseRecordedSpeech({
-      ...iPadEnvironment,
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+      userAgent: 'Mozilla/5.0 (iPad; CPU OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.7 Mobile/15E148 Safari/604.1',
+      platform: 'iPad',
+      maxTouchPoints: 5,
+      navigatorStandalone: false,
+      displayModeStandalone: false,
+    })).toBe(true);
+
+    // iPad Chrome (CriOS) tab — also WebKit under the hood.
+    expect(shouldUseRecordedSpeech({
+      userAgent: 'Mozilla/5.0 (iPad; CPU OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0 Mobile/15E148 Safari/604.1',
+      platform: 'iPad',
+      maxTouchPoints: 5,
+      navigatorStandalone: false,
+      displayModeStandalone: false,
+    })).toBe(true);
+
+    // Installed iPad PWA (standalone).
+    expect(shouldUseRecordedSpeech(installedIPadEnvironment)).toBe(true);
+
+    // iPadOS 13+ desktop-class Safari reporting as MacIntel with touch.
+    expect(shouldUseRecordedSpeech({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.7 Safari/605.1.15',
       platform: 'MacIntel',
       maxTouchPoints: 5,
+      navigatorStandalone: false,
+      displayModeStandalone: false,
     })).toBe(true);
+
+    // iPhone browser tab.
     expect(shouldUseRecordedSpeech({
-      ...iPadEnvironment,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.7 Mobile/15E148 Safari/604.1',
+      platform: 'iPhone',
+      maxTouchPoints: 5,
+      navigatorStandalone: false,
+      displayModeStandalone: false,
+    })).toBe(true);
+
+    // Android stays on Web Speech.
+    expect(shouldUseRecordedSpeech({
+      userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36',
+      platform: 'Linux armv8l',
+      maxTouchPoints: 5,
       navigatorStandalone: false,
       displayModeStandalone: false,
     })).toBe(false);
+
+    // Touchless desktop Mac stays on Web Speech.
     expect(shouldUseRecordedSpeech({
-      ...iPadEnvironment,
-      userAgent: 'Mozilla/5.0 (Linux; Android 15)',
-      platform: 'Linux armv8l',
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.7 Safari/605.1.15',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+      navigatorStandalone: false,
+      displayModeStandalone: false,
     })).toBe(false);
   });
 

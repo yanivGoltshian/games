@@ -14,696 +14,696 @@
     "he-IL\u0000איזה כיף, שון עולה שלב!": {
       "src": "/speech/he-IL.mp3",
       "offset": 1.15925,
-      "duration": 1.90425
+      "duration": 1.915833
     },
     "he-IL\u0000איפה אוטו?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 3.1835,
+      "offset": 3.195083,
       "duration": 0.708417
     },
     "he-IL\u0000איפה בננה?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 4.011917,
-      "duration": 0.789667
+      "offset": 4.0235,
+      "duration": 0.754833
     },
     "he-IL\u0000איפה חתול?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 4.921584,
-      "duration": 0.801292
+      "offset": 4.898333,
+      "duration": 0.708417
     },
     "he-IL\u0000איפה כדור?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 5.842876,
+      "offset": 5.72675,
       "duration": 0.882542
     },
     "he-IL\u0000איפה כלב?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 6.845418,
+      "offset": 6.729292,
       "duration": 0.766458
     },
     "he-IL\u0000איפה נעל?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 7.731876,
+      "offset": 7.61575,
       "duration": 0.74325
     },
     "he-IL\u0000איפה תפוח?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 8.595126,
+      "offset": 8.479,
       "duration": 0.987042
     },
     "he-IL\u0000ארבע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 9.702168,
+      "offset": 9.586042,
       "duration": 0.395125
     },
     "he-IL\u0000ארבע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 10.217293,
-      "duration": 0.98725
+      "offset": 10.101167,
+      "duration": 0.952417
     },
     "he-IL\u0000ארבעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 11.324543,
+      "offset": 11.173584,
       "duration": 1.045875
     },
     "he-IL\u0000ארבעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 12.490418,
+      "offset": 12.339459,
       "duration": 1.127125
     },
     "he-IL\u0000בוא נחפש איפה הזוג מתחבא.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 13.737543,
+      "offset": 13.586584,
       "duration": 1.959708
     },
     "he-IL\u0000בוא נמיין לפי צבע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 15.817251,
-      "duration": 1.33275
+      "offset": 15.666292,
+      "duration": 1.356
     },
     "he-IL\u0000בוא נמיין לפי צורה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 17.270001,
-      "duration": 1.309542
+      "offset": 17.142292,
+      "duration": 1.379208
     },
     "he-IL\u0000בוא נספור יחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 18.699543,
-      "duration": 1.2515
+      "offset": 18.6415,
+      "duration": 1.205042
     },
     "he-IL\u0000ביחד ובנחת, נמשיך לחפש.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 20.071043,
-      "duration": 2.59175
+      "offset": 19.966542,
+      "duration": 2.615
     },
     "he-IL\u0000בננה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 22.782793,
-      "duration": 0.513542
+      "offset": 22.701542,
+      "duration": 0.467083
     },
     "he-IL\u0000בננה אחת": {
       "src": "/speech/he-IL.mp3",
-      "offset": 23.416335,
-      "duration": 0.919875
+      "offset": 23.288625,
+      "duration": 0.9315
     },
     "he-IL\u0000החתיכה מתאימה למקום המואר. נסה שם.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 24.45621,
-      "duration": 3.188
+      "offset": 24.340125,
+      "duration": 3.176375
     },
     "he-IL\u0000הצבע הוא אדום. שמים בסל האדום.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 27.76421,
-      "duration": 2.6075
+      "offset": 27.6365,
+      "duration": 2.572667
     },
     "he-IL\u0000הצבע הוא ירוק. שמים בסל הירוק.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 30.49171,
-      "duration": 2.8165
+      "offset": 30.329167,
+      "duration": 2.781667
     },
     "he-IL\u0000הצבע הוא כחול. שמים בסל הכחול.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 33.42821,
-      "duration": 2.851333
+      "offset": 33.230834,
+      "duration": 2.8165
     },
     "he-IL\u0000הצבע הוא צהוב. שמים בסל הצהוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 36.399543,
-      "duration": 2.804875
+      "offset": 36.167334,
+      "duration": 2.770042
     },
     "he-IL\u0000הצורה היא כוכב. שמים בסל עם כוכב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 39.324418,
-      "duration": 3.048667
+      "offset": 39.057376,
+      "duration": 3.025458
     },
     "he-IL\u0000הצורה היא משולש. שמים בסל עם משולש.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 42.493085,
-      "duration": 3.2925
+      "offset": 42.202834,
+      "duration": 3.280875
     },
     "he-IL\u0000הצורה היא עיגול. שמים בסל עם עיגול.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 45.905585,
-      "duration": 2.677167
+      "offset": 45.603709,
+      "duration": 2.653958
     },
     "he-IL\u0000הצורה היא ריבוע. שמים בסל עם ריבוע.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 48.702752,
-      "duration": 2.828083
+      "offset": 48.377667,
+      "duration": 2.8165
     },
     "he-IL\u0000הצלחת!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 51.650835,
-      "duration": 0.796333
+      "offset": 51.314167,
+      "duration": 0.74325
     },
     "he-IL\u0000חמישה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 52.567168,
+      "offset": 52.177417,
       "duration": 1.109375
     },
     "he-IL\u0000חמישה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 53.796543,
+      "offset": 53.406792,
       "duration": 1.190625
     },
     "he-IL\u0000חמש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 55.107168,
+      "offset": 54.717417,
       "duration": 0.622542
     },
     "he-IL\u0000חמש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 55.84971,
-      "duration": 1.086958
+      "offset": 55.459959,
+      "duration": 1.052125
     },
     "he-IL\u0000חתול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 57.056668,
-      "duration": 0.541292
+      "offset": 56.632084,
+      "duration": 0.44225
     },
     "he-IL\u0000יופי שהמשכת לחפש. ננסה עוד זוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 57.71796,
-      "duration": 3.101208
+      "offset": 57.194334,
+      "duration": 3.089583
     },
     "he-IL\u0000יופי שניסית, חמודי. נסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 60.939168,
-      "duration": 2.78775
+      "offset": 60.403917,
+      "duration": 2.799333
     },
     "he-IL\u0000יופי!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 63.846918,
-      "duration": 0.4425
+      "offset": 63.32325,
+      "duration": 0.40775
     },
     "he-IL\u0000יש כאן ארבע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 64.409418,
-      "duration": 1.429375
+      "offset": 63.851,
+      "duration": 1.382917
     },
     "he-IL\u0000יש כאן ארבעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 65.958793,
+      "offset": 65.353917,
       "duration": 1.475792
     },
     "he-IL\u0000יש כאן ארבעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 67.554585,
+      "offset": 66.949709,
       "duration": 1.557083
     },
     "he-IL\u0000יש כאן בננה אחת.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 69.231668,
-      "duration": 1.371333
+      "offset": 68.626792,
+      "duration": 1.394542
     },
     "he-IL\u0000יש כאן חמישה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 70.723001,
+      "offset": 70.141334,
       "duration": 1.6035
     },
     "he-IL\u0000יש כאן חמישה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 72.446501,
+      "offset": 71.864834,
       "duration": 1.673167
     },
     "he-IL\u0000יש כאן חמש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 74.239668,
-      "duration": 1.568667
+      "offset": 73.658001,
+      "duration": 1.533833
     },
     "he-IL\u0000יש כאן כדור אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 75.928335,
+      "offset": 75.311834,
       "duration": 1.371333
     },
     "he-IL\u0000יש כאן עשר בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 77.419668,
-      "duration": 1.499042
+      "offset": 76.803167,
+      "duration": 1.464208
     },
     "he-IL\u0000יש כאן עשרה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 79.03871,
+      "offset": 78.387375,
       "duration": 1.475792
     },
     "he-IL\u0000יש כאן עשרה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 80.634502,
+      "offset": 79.983167,
       "duration": 1.557083
     },
     "he-IL\u0000יש כאן שבע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 82.311585,
-      "duration": 1.452583
+      "offset": 81.66025,
+      "duration": 1.41775
     },
     "he-IL\u0000יש כאן שבעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 83.884168,
+      "offset": 83.198,
       "duration": 1.638333
     },
     "he-IL\u0000יש כאן שבעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 85.642501,
+      "offset": 84.956333,
       "duration": 1.568667
     },
     "he-IL\u0000יש כאן שישה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 87.331168,
-      "duration": 1.499042
+      "offset": 86.645,
+      "duration": 1.591917
     },
     "he-IL\u0000יש כאן שישה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 88.95021,
+      "offset": 88.356917,
       "duration": 1.580292
     },
     "he-IL\u0000יש כאן שלוש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 90.650502,
-      "duration": 1.545458
+      "offset": 90.057209,
+      "duration": 1.499042
     },
     "he-IL\u0000יש כאן שלושה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 92.31596,
+      "offset": 91.676251,
       "duration": 1.52225
     },
     "he-IL\u0000יש כאן שלושה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 93.95821,
+      "offset": 93.318501,
       "duration": 1.6035
     },
     "he-IL\u0000יש כאן שמונה בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 95.68171,
-      "duration": 1.533833
+      "offset": 95.042001,
+      "duration": 1.487417
     },
     "he-IL\u0000יש כאן שמונה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 97.335543,
+      "offset": 96.649418,
       "duration": 1.487417
     },
     "he-IL\u0000יש כאן שמונה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 98.94296,
+      "offset": 98.256835,
       "duration": 1.568667
     },
     "he-IL\u0000יש כאן שני כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 100.631627,
+      "offset": 99.945502,
       "duration": 1.371333
     },
     "he-IL\u0000יש כאן שני תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 102.12296,
+      "offset": 101.436835,
       "duration": 1.452583
     },
     "he-IL\u0000יש כאן שש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 103.695543,
-      "duration": 1.394542
+      "offset": 103.009418,
+      "duration": 1.359708
     },
     "he-IL\u0000יש כאן שתי בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 105.210085,
-      "duration": 1.440958
+      "offset": 104.489126,
+      "duration": 1.394542
     },
     "he-IL\u0000יש כאן תפוח אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 106.771043,
+      "offset": 106.003668,
       "duration": 1.464208
     },
     "he-IL\u0000יש כאן תשע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 108.355251,
-      "duration": 1.510625
+      "offset": 107.587876,
+      "duration": 1.464208
     },
     "he-IL\u0000יש כאן תשעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 109.985876,
+      "offset": 109.172084,
       "duration": 1.510625
     },
     "he-IL\u0000יש כאן תשעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 111.616501,
+      "offset": 110.802709,
       "duration": 1.580292
     },
     "he-IL\u0000כדור": {
       "src": "/speech/he-IL.mp3",
-      "offset": 113.316793,
+      "offset": 112.503001,
       "duration": 0.45825
     },
     "he-IL\u0000כדור אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 113.895043,
+      "offset": 113.081251,
       "duration": 0.853
     },
     "he-IL\u0000כוכב ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 114.868043,
+      "offset": 114.054251,
       "duration": 0.924167
     },
     "he-IL\u0000כוכב כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 115.91221,
+      "offset": 115.098418,
       "duration": 0.947375
     },
     "he-IL\u0000כוכב צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 116.979585,
+      "offset": 116.165793,
       "duration": 0.924167
     },
     "he-IL\u0000כל הכבוד, שון!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 118.023752,
+      "offset": 117.20996,
       "duration": 1.423375
     },
     "he-IL\u0000כלב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 119.567127,
+      "offset": 118.753335,
       "duration": 0.433708
     },
     "he-IL\u0000כמה בננות יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 120.120835,
-      "duration": 1.386
+      "offset": 119.307043,
+      "duration": 1.375458
     },
     "he-IL\u0000כמה כדורים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 121.626835,
-      "duration": 1.339583
+      "offset": 120.802501,
+      "duration": 1.479917
     },
     "he-IL\u0000כמה תפוחים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 123.086418,
-      "duration": 1.409208
+      "offset": 122.402418,
+      "duration": 1.4335
     },
     "he-IL\u0000כמעט, שון. נסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 124.615626,
+      "offset": 123.955918,
       "duration": 2.175458
     },
     "he-IL\u0000כמעט. נסה מקום אחר.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 126.911084,
+      "offset": 126.251376,
       "duration": 1.954833
     },
     "he-IL\u0000משולש אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 128.985917,
+      "offset": 128.326209,
       "duration": 0.975125
     },
     "he-IL\u0000משולש ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 130.081042,
+      "offset": 129.421334,
       "duration": 1.091208
     },
     "he-IL\u0000משולש צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 131.29225,
+      "offset": 130.632542,
       "duration": 1.056375
     },
     "he-IL\u0000נחפש יחד את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 132.468625,
-      "duration": 1.57575
+      "offset": 131.808917,
+      "duration": 1.657042
     },
     "he-IL\u0000ניסיון יפה, שון! בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 134.164375,
-      "duration": 2.874625
+      "offset": 133.585959,
+      "duration": 2.88625
     },
     "he-IL\u0000נמשיך לחפש את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 137.159,
-      "duration": 1.657375
+      "offset": 136.592209,
+      "duration": 1.738667
     },
     "he-IL\u0000נסה שוב, חמודי. אני איתך.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 138.936375,
-      "duration": 2.53975
+      "offset": 138.450876,
+      "duration": 2.412042
     },
     "he-IL\u0000נעזור לאוטו לחזור להיות שלם": {
       "src": "/speech/he-IL.mp3",
-      "offset": 141.596125,
-      "duration": 2.121792
+      "offset": 140.982918,
+      "duration": 2.110167
     },
     "he-IL\u0000נעזור לחתול לחזור להיות שלם": {
       "src": "/speech/he-IL.mp3",
-      "offset": 143.837917,
-      "duration": 2.133417
+      "offset": 143.213085,
+      "duration": 2.214667
     },
     "he-IL\u0000נעזור לכלב לחזור להיות שלם": {
       "src": "/speech/he-IL.mp3",
-      "offset": 146.091334,
-      "duration": 2.237875
+      "offset": 145.547752,
+      "duration": 2.2495
     },
     "he-IL\u0000נעזור לתפוח לחזור להיות שלם": {
       "src": "/speech/he-IL.mp3",
-      "offset": 148.449209,
-      "duration": 2.2495
+      "offset": 147.917252,
+      "duration": 2.377208
     },
     "he-IL\u0000נעל": {
       "src": "/speech/he-IL.mp3",
-      "offset": 150.818709,
+      "offset": 150.41446,
       "duration": 0.461375
     },
     "he-IL\u0000עיגול אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 151.400084,
+      "offset": 150.995835,
       "duration": 0.709792
     },
     "he-IL\u0000עיגול ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 152.229876,
+      "offset": 151.825627,
       "duration": 0.8375
     },
     "he-IL\u0000עיגול כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 153.187376,
+      "offset": 152.783127,
       "duration": 0.872292
     },
     "he-IL\u0000עשר": {
       "src": "/speech/he-IL.mp3",
-      "offset": 154.179668,
+      "offset": 153.775419,
       "duration": 0.558792
     },
     "he-IL\u0000עשר בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 154.85846,
-      "duration": 1.058042
+      "offset": 154.454211,
+      "duration": 1.011583
     },
     "he-IL\u0000עשרה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 156.036502,
+      "offset": 155.585794,
       "duration": 1.033958
     },
     "he-IL\u0000עשרה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 157.19046,
+      "offset": 156.739752,
       "duration": 1.115208
     },
     "he-IL\u0000פותחים שני קלפים ומחפשים זוג": {
       "src": "/speech/he-IL.mp3",
-      "offset": 158.425668,
-      "duration": 2.316792
+      "offset": 157.97496,
+      "duration": 2.235542
     },
     "he-IL\u0000ריבוע אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 160.86246,
+      "offset": 160.330502,
       "duration": 0.836208
     },
     "he-IL\u0000ריבוע כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 161.818668,
+      "offset": 161.28671,
       "duration": 0.975542
     },
     "he-IL\u0000ריבוע צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 162.91421,
+      "offset": 162.382252,
       "duration": 0.952292
     },
     "he-IL\u0000שבע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 163.986502,
+      "offset": 163.454544,
       "duration": 0.453167
     },
     "he-IL\u0000שבע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 164.559669,
-      "duration": 1.027125
+      "offset": 164.027711,
+      "duration": 0.980708
     },
     "he-IL\u0000שבעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 165.706794,
+      "offset": 165.128419,
       "duration": 1.166458
     },
     "he-IL\u0000שבעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 166.993252,
+      "offset": 166.414877,
       "duration": 1.108417
     },
     "he-IL\u0000שון עושה את זה שוב ושוב, יופי של התמדה!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 168.221669,
-      "duration": 2.93075
+      "offset": 167.643294,
+      "duration": 3.023667
     },
     "he-IL\u0000שון, אהבתי שניסית. בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 171.272419,
-      "duration": 3.158375
+      "offset": 170.786961,
+      "duration": 3.088708
     },
     "he-IL\u0000שון, אתה אלוף בלחפש. נמשיך יחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 174.550794,
-      "duration": 3.367375
+      "offset": 173.995669,
+      "duration": 3.344167
     },
     "he-IL\u0000שון, אתה אלוף בלנסות. בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 178.038169,
+      "offset": 177.459836,
       "duration": 3.286083
     },
     "he-IL\u0000שון, אתה אלוף בלנסות. ניקח רגע וננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 181.444252,
-      "duration": 3.959458
+      "offset": 180.865919,
+      "duration": 3.93625
     },
     "he-IL\u0000שון, אתה אלוף בלנסות. ננסה שוב ביחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 185.52371,
+      "offset": 184.922169,
       "duration": 3.56475
     },
     "he-IL\u0000שון, אתה יכול. עוד ניסיון קטן.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 189.20846,
+      "offset": 188.606919,
       "duration": 3.019083
     },
     "he-IL\u0000שון, בוא נמשיך לחפש את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 192.347543,
-      "duration": 2.485
+      "offset": 191.746002,
+      "duration": 2.554667
     },
     "he-IL\u0000שון, ביחד ובנחת, בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 194.952543,
-      "duration": 3.0655
+      "offset": 194.420669,
+      "duration": 3.088708
     },
     "he-IL\u0000שון, יופי שניסית, חמודי. עוד ניסיון קטן.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 198.138043,
-      "duration": 4.005917
+      "offset": 197.629377,
+      "duration": 4.017542
     },
     "he-IL\u0000שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 202.26396,
+      "offset": 201.766919,
       "duration": 3.808542
     },
     "he-IL\u0000שישה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 206.192502,
-      "duration": 1.03875
+      "offset": 205.695461,
+      "duration": 1.131625
     },
     "he-IL\u0000שישה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 207.351252,
+      "offset": 206.947086,
       "duration": 1.108417
     },
     "he-IL\u0000שלוש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 208.579669,
+      "offset": 208.175503,
       "duration": 0.628875
     },
     "he-IL\u0000שלוש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 209.328544,
-      "duration": 1.085208
+      "offset": 208.924378,
+      "duration": 1.050375
     },
     "he-IL\u0000שלושה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 210.533752,
+      "offset": 210.094753,
       "duration": 1.073167
     },
     "he-IL\u0000שלושה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 211.726919,
+      "offset": 211.28792,
       "duration": 1.154458
     },
     "he-IL\u0000שמונה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 213.001377,
+      "offset": 212.562378,
       "duration": 0.469875
     },
     "he-IL\u0000שמונה בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 213.591252,
-      "duration": 1.085208
+      "offset": 213.152253,
+      "duration": 1.03875
     },
     "he-IL\u0000שמונה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 214.79646,
+      "offset": 214.311003,
       "duration": 1.050375
     },
     "he-IL\u0000שמונה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 215.966835,
+      "offset": 215.481378,
       "duration": 1.12
     },
     "he-IL\u0000שני כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 217.206835,
+      "offset": 216.721378,
       "duration": 0.945875
     },
     "he-IL\u0000שני תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 218.27271,
+      "offset": 217.787253,
       "duration": 1.015542
     },
     "he-IL\u0000שש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 219.408252,
+      "offset": 218.922795,
       "duration": 0.522917
     },
     "he-IL\u0000שש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 220.051169,
-      "duration": 0.9575
+      "offset": 219.565712,
+      "duration": 0.922667
     },
     "he-IL\u0000שתי בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 221.128669,
-      "duration": 1.015542
+      "offset": 220.608379,
+      "duration": 0.980708
     },
     "he-IL\u0000שתיים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 222.264211,
+      "offset": 221.709087,
       "duration": 0.638917
     },
     "he-IL\u0000תפוח": {
       "src": "/speech/he-IL.mp3",
-      "offset": 223.023128,
-      "duration": 0.679042
+      "offset": 222.468004,
+      "duration": 0.655792
     },
     "he-IL\u0000תפוח אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 223.82217,
-      "duration": 1.027333
+      "offset": 223.243796,
+      "duration": 0.969292
     },
     "he-IL\u0000תשע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 224.969503,
+      "offset": 224.333088,
       "duration": 0.467583
     },
     "he-IL\u0000תשע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 225.557086,
-      "duration": 0.968417
+      "offset": 224.920671,
+      "duration": 0.933583
     },
     "he-IL\u0000תשעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 226.645503,
+      "offset": 225.974254,
       "duration": 0.992583
     },
     "he-IL\u0000תשעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 227.758086,
+      "offset": 227.086837,
       "duration": 1.073833
     },
     "en-US\u0000Almost, Sean! Try again.": {

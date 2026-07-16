@@ -28,17 +28,32 @@ import {
   SORTING_COLOR_LABELS,
   SORTING_SHAPE_LABELS,
 } from '../domain/rounds';
+import { getHebrewPronunciation } from './hebrewPronunciation';
 import type { SpeechLocale } from '../domain/types';
 
 export interface RecordedSpeechCatalogEntry {
   locale: SpeechLocale;
+  /**
+   * Unpointed source text. This is the runtime lookup key and the manifest key,
+   * and it is also the on-screen visual text. It must never contain niqqud.
+   */
   text: string;
+  /**
+   * Pointed pronunciation used only when synthesizing the recorded clip (macOS
+   * `say`). Present for Hebrew entries so vowelization is unambiguous. Stripping
+   * its niqqud yields `text` exactly. Absent for locales that need no pointing.
+   */
+  spokenText?: string;
 }
 
 export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   const entries = new Map<string, RecordedSpeechCatalogEntry>();
   const add = (locale: SpeechLocale, text: string): void => {
-    entries.set(`${locale}\u0000${text}`, { locale, text });
+    const entry: RecordedSpeechCatalogEntry = { locale, text };
+    if (locale === 'he-IL') {
+      entry.spokenText = getHebrewPronunciation(text);
+    }
+    entries.set(`${locale}\u0000${text}`, entry);
   };
   const addPair = (he: string, en: string): void => {
     add('he-IL', he);
