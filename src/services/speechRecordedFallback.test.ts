@@ -11,6 +11,7 @@ class FakeRecordedSpeech implements RecordedSpeechBackend {
   unlockCount = 0;
   cancelCount = 0;
   overlapCount = 0;
+  failNextPlay = false;
   private finishCurrent: (() => void) | null = null;
 
   isEnabled = () => true;
@@ -20,6 +21,10 @@ class FakeRecordedSpeech implements RecordedSpeechBackend {
   };
 
   play = (options: RecordedSpeechPlayOptions) => {
+    if (this.failNextPlay) {
+      this.failNextPlay = false;
+      return Promise.reject(new Error('Recorded speech failed.'));
+    }
     if (this.finishCurrent) {
       this.overlapCount += 1;
     }
@@ -115,6 +120,45 @@ describe('SpeechService recorded fallback', () => {
     backend.complete();
     await expect(done).resolves.toMatchObject({ status: 'completed' });
     expect(backend.cancelCount).toBe(0);
+  });
+
+  it('keeps bilingual locale changes serialized through the recorded queue', async () => {
+    service.unlock(createInitialSettings());
+    await flush();
+    const done = service.speakSegments(
+      [
+        { text: 'אוטו', locale: 'he-IL', pauseAfterMs: 100 },
+        { text: 'car', locale: 'en-US' },
+      ],
+      createInitialSettings(),
+    );
+    await flush();
+
+    expect(backend.played.map(({ locale, text }) => `${locale}:${text}`)).toEqual([
+      'he-IL:אוטו',
+    ]);
+    backend.complete();
+    await vi.advanceTimersByTimeAsync(100);
+    await flush();
+    expect(backend.played.map(({ locale, text }) => `${locale}:${text}`)).toEqual([
+      'he-IL:אוטו',
+      'en-US:car',
+    ]);
+
+    backend.complete();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('surfaces recorded playback failures through the existing error result', async () => {
+    service.unlock(createInitialSettings());
+    await flush();
+    backend.failNextPlay = true;
+
+    await expect(service.speakSegments(
+      [{ text: 'car', locale: 'en-US' }],
+      createInitialSettings(),
+    )).resolves.toMatchObject({ status: 'error' });
+    expect(backend.played).toHaveLength(0);
   });
 
   it('lets an active retry word finish before coalescing the newer retry', async () => {

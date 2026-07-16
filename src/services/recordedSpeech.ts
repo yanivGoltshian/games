@@ -82,7 +82,8 @@ function manifestKey(locale: SpeechLocale, text: string): string {
 
 export class RecordedSpeechPlayer implements RecordedSpeechBackend {
   private manifestPromise: Promise<RecordedSpeechManifest> | null = null;
-  private readonly bufferPromises = new Map<string, Promise<AudioBuffer>>();
+  private bufferCache: { src: string; buffer: AudioBuffer } | null = null;
+  private pendingBuffer: { src: string; promise: Promise<AudioBuffer> } | null = null;
   private activePlayback: RecordedPlayback | null = null;
   private cancellationGeneration = 0;
 
@@ -99,9 +100,6 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
 
   async unlock(): Promise<void> {
     await this.unlockContext();
-    const manifest = await this.loadManifest();
-    const sources = new Set(Object.values(manifest.entries).map((entry) => entry.src));
-    await Promise.all([...sources].map((src) => this.loadBuffer(src)));
   }
 
   async play(options: RecordedSpeechPlayOptions): Promise<void> {
@@ -183,10 +181,23 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
   }
 
   private loadBuffer(src: string): Promise<AudioBuffer> {
-    const existing = this.bufferPromises.get(src);
-    if (existing) {
-      return existing;
+    if (this.bufferCache?.src === src) {
+      return Promise.resolve(this.bufferCache.buffer);
     }
+    if (this.pendingBuffer?.src === src) {
+      return this.pendingBuffer.promise;
+    }
+    if (this.pendingBuffer) {
+      const previous = this.pendingBuffer.promise;
+      return previous.then(
+        () => this.loadBuffer(src),
+        () => this.loadBuffer(src),
+      );
+    }
+
+    // Keep at most one decoded locale. The previous buffer becomes collectible
+    // before another locale is fetched and decoded.
+    this.bufferCache = null;
     const pending = this.fetcher(src, { cache: 'force-cache' })
       .then((response) => {
         if (!response.ok) {
@@ -201,11 +212,20 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
         }
         return context.decodeAudioData(encoded);
       })
+      .then((buffer) => {
+        if (this.pendingBuffer?.promise === pending) {
+          this.bufferCache = { src, buffer };
+          this.pendingBuffer = null;
+        }
+        return buffer;
+      })
       .catch((error: unknown) => {
-        this.bufferPromises.delete(src);
+        if (this.pendingBuffer?.promise === pending) {
+          this.pendingBuffer = null;
+        }
         throw error;
       });
-    this.bufferPromises.set(src, pending);
+    this.pendingBuffer = { src, promise: pending };
     return pending;
   }
 }
