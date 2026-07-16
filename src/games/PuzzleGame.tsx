@@ -23,7 +23,6 @@ export function PuzzleGame({
   speechStatus,
   onBack,
   onCompleteRound,
-  onProgressionChoice,
 }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -174,7 +173,6 @@ export function PuzzleGame({
             settings={settings}
             scope={SPEECH_SCOPE}
             onDismiss={() => setCelebration(null)}
-            onProgressionChoice={onProgressionChoice}
             startNextRound={startNextRound}
           />
         ) : undefined

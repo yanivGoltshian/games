@@ -1,4 +1,4 @@
-export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory'] as const;
+export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs'] as const;
 
 export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';
@@ -167,4 +167,13 @@ export interface MemoryRound {
   cards: MemoryCard[];
   promptHe: string;
   promptEn: string;
+}
+
+export interface NumberPairsRound {
+  selectedValues: number[];
+  topRow: number[];
+  bottomRow: number[];
+  promptHe: string;
+  promptEn: string;
+  signature: string;
 }

@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   RETRY_EN_MEMORY_REPEATED,
   RETRY_EN_MEMORY_STANDARD,
+  RETRY_EN_NUMBER_PAIRS_REPEATED,
+  RETRY_EN_NUMBER_PAIRS_STANDARD,
   RETRY_EN_REPEATED,
   RETRY_EN_STANDARD,
   RETRY_HE_MEMORY_REPEATED,
   RETRY_HE_MEMORY_STANDARD,
+  RETRY_HE_NUMBER_PAIRS_REPEATED,
+  RETRY_HE_NUMBER_PAIRS_STANDARD,
   RETRY_HE_REPEATED,
   RETRY_HE_STANDARD,
   getRetryBank,
@@ -82,6 +86,18 @@ describe('retry content banks', () => {
     expect(getRetryBank('en', 'generic', 'repeated-effort')).toBe(RETRY_EN_REPEATED);
     expect(getRetryBank('he', 'memory-search', 'repeated-effort')).toBe(RETRY_HE_MEMORY_REPEATED);
     expect(getRetryBank('en', 'memory-search', 'standard')).toBe(RETRY_EN_MEMORY_STANDARD);
+    expect(getRetryBank('he', 'number-pairs', 'standard')).toBe(RETRY_HE_NUMBER_PAIRS_STANDARD);
+    expect(getRetryBank('en', 'number-pairs', 'repeated-effort')).toBe(RETRY_EN_NUMBER_PAIRS_REPEATED);
+  });
+
+  it('keeps number-pairs correction warm, concise, and locale complete', () => {
+    expect(RETRY_HE_NUMBER_PAIRS_STANDARD.map((line) => line.text)).toEqual([
+      'נעשה שוב.',
+      'כמעט. נמצא את הזוג.',
+    ]);
+    expect(RETRY_EN_NUMBER_PAIRS_STANDARD).toHaveLength(RETRY_HE_NUMBER_PAIRS_STANDARD.length);
+    expect(RETRY_HE_NUMBER_PAIRS_REPEATED).toHaveLength(2);
+    expect(RETRY_EN_NUMBER_PAIRS_REPEATED).toHaveLength(RETRY_HE_NUMBER_PAIRS_REPEATED.length);
   });
 
   it('uses Sean frequently while keeping routine encouragement concise', () => {

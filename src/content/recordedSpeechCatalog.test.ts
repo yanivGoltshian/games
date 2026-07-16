@@ -35,7 +35,7 @@ describe('recorded speech asset coverage', () => {
   it('pre-caches the manifest and all three sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
-    expect(serviceWorker).toContain("sean-learning-adventure-v15");
+    expect(serviceWorker).toContain("sean-learning-adventure-v16");
     expect(serviceWorker).toContain("'/speech/manifest.json'");
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");
@@ -47,23 +47,43 @@ describe('recorded speech pronunciation layer', () => {
   const catalog = collectRecordedSpeechCatalog();
   const byLocale = (locale: string) => catalog.filter((entry) => entry.locale === locale);
 
-  it('keeps a stable count of 143 unique phrases per locale', () => {
+  it('keeps a stable count of 154 unique phrases per locale', () => {
     for (const locale of ['he-IL', 'en-US', 'en-GB']) {
       const entries = byLocale(locale);
-      expect(entries).toHaveLength(143);
+      expect(entries).toHaveLength(154);
       const keys = entries.map((entry) => entry.text);
-      expect(new Set(keys).size).toBe(143);
+      expect(new Set(keys).size).toBe(154);
     }
   });
 
   it('gives every Hebrew entry a pointed spokenText that strips back to the source', () => {
     const hebrew = byLocale('he-IL');
-    expect(hebrew).toHaveLength(143);
+    expect(hebrew).toHaveLength(154);
     for (const entry of hebrew) {
       expect(entry.spokenText, `missing spokenText for ${entry.text}`).toBeTruthy();
       const spoken = entry.spokenText as string;
       expect(hasNiqqud(spoken), `no niqqud in "${entry.text}"`).toBe(true);
       expect(nfc(stripNiqqud(spoken)), `strip mismatch for "${entry.text}"`).toBe(nfc(entry.text));
+    }
+  });
+
+  it('covers every new number-pairs and automatic-progression phrase in all locales', () => {
+    const requiredPairs = [
+      ['זוגות מספרים', 'Number pairs'],
+      ['מתאימים מספרים זהים בשתי שורות', 'Match identical numbers in two rows'],
+      ['לחץ על הזוגות', 'Press the pairs'],
+      ['עברת שלב!', 'You moved up a level!'],
+      ['עכשיו יותר מספרים', 'Now more numbers'],
+      ['זכית בגביע!', 'You won a trophy!'],
+      ['מעולה!', 'Excellent!'],
+      ['נעשה שוב.', "Let's do it again."],
+    ] as const;
+    const catalogKeys = new Set(catalog.map((entry) => `${entry.locale}\u0000${entry.text}`));
+
+    for (const [he, en] of requiredPairs) {
+      expect(catalogKeys).toContain(`he-IL\u0000${he}`);
+      expect(catalogKeys).toContain(`en-US\u0000${en}`);
+      expect(catalogKeys).toContain(`en-GB\u0000${en}`);
     }
   });
 

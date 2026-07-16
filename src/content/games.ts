@@ -39,4 +39,10 @@ export const gameMeta: Record<DomainKey, GameMeta> = {
     accentClass: 'accent-memory',
     colorToken: 'leaf',
   },
+  numberPairs: {
+    title: 'זוגות מספרים',
+    subtitle: 'מתאימים מספרים זהים בשתי שורות',
+    accentClass: 'accent-number-pairs',
+    colorToken: 'aqua',
+  },
 };

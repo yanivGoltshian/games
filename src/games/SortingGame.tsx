@@ -24,7 +24,6 @@ export function SortingGame({
   speechStatus,
   onBack,
   onCompleteRound,
-  onProgressionChoice,
 }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -224,7 +223,6 @@ export function SortingGame({
             settings={settings}
             scope={SPEECH_SCOPE}
             onDismiss={() => setCelebration(null)}
-            onProgressionChoice={onProgressionChoice}
             startNextRound={startNextRound}
           />
         ) : undefined

@@ -16,15 +16,16 @@ export interface SuccessOverlayProps {
   targetSegments: SpeechSegment[];
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;
+  celebrationVariant?: CelebrationVariant;
+  followUpSegments?: SpeechSegment[];
   onAdvance: () => void;
-  onNextLevel: () => void;
-  onReplayLevel: () => void;
 }
 
 const STANDARD_MINIMUM_MS = 1400;
 const MILESTONE_MINIMUM_MS = 1800;
 const LIVENESS_GUARD_MS = 15_000;
 let previousCelebrationVariant: CelebrationVariant | null = null;
+const EMPTY_FOLLOW_UP_SEGMENTS: SpeechSegment[] = [];
 
 /**
  * Inline, non-blocking success moment: puppy mascot, tasteful confetti,
@@ -39,14 +40,17 @@ export function SuccessOverlay({
   targetSegments,
   tier,
   recommendation,
+  celebrationVariant: celebrationVariantOverride,
+  followUpSegments,
   onAdvance,
-  onNextLevel,
-  onReplayLevel,
 }: SuccessOverlayProps) {
   const advanceRef = useRef(onAdvance);
   const advancedRef = useRef(false);
   const finishTimerRef = useRef<number | null>(null);
   const [celebrationVariant] = useState(() => {
+    if (celebrationVariantOverride) {
+      return celebrationVariantOverride;
+    }
     const nextVariant = selectCelebrationVariant(seed, previousCelebrationVariant);
     previousCelebrationVariant = nextVariant;
     return nextVariant;
@@ -59,14 +63,15 @@ export function SuccessOverlay({
   const recommendationSegments = useMemo(
     () => recommendation
       ? buildPhraseSegments(
-        'איזה יופי! אפשר לנסות את השלב הבא.',
-        'Great job! Ready for the next level?',
+        'עברת שלב!',
+        'You moved up a level!',
         settings.languageMode,
         settings.englishVoiceLocale,
       )
       : [],
     [recommendation, settings.englishVoiceLocale, settings.languageMode],
   );
+  const extraSegments = followUpSegments ?? EMPTY_FOLLOW_UP_SEGMENTS;
   const advanceOnce = useCallback((interruptSpeech = false) => {
     if (advancedRef.current) {
       return;
@@ -79,6 +84,7 @@ export function SuccessOverlay({
   }, [scope]);
 
   useEffect(() => {
+    let active = true;
     const startedAt = window.performance.now();
     const minimumDuration = tier === 'milestone' ? MILESTONE_MINIMUM_MS : STANDARD_MINIMUM_MS;
     if (tier === 'milestone') {
@@ -90,12 +96,16 @@ export function SuccessOverlay({
     }
 
     void speechService
-      .speakSuccessSequence(targetSegments, [...praise.segments, ...recommendationSegments], settings, {
+      .speakSuccessSequence(targetSegments, [
+        ...praise.segments,
+        ...recommendationSegments,
+        ...extraSegments,
+      ], settings, {
         scope,
         key: `success:${seed}`,
       })
       .then(() => {
-        if (recommendation) {
+        if (!active) {
           return;
         }
         const remaining = Math.max(0, minimumDuration - (window.performance.now() - startedAt));
@@ -104,21 +114,18 @@ export function SuccessOverlay({
 
     // This guard never cancels speech. It only keeps a broken platform voice
     // from trapping the child on the celebration screen indefinitely.
-    const livenessGuard = recommendation
-      ? null
-      : window.setTimeout(() => advanceOnce(), LIVENESS_GUARD_MS);
+    const livenessGuard = window.setTimeout(() => advanceOnce(), LIVENESS_GUARD_MS);
     return () => {
-      if (livenessGuard !== null) {
-        window.clearTimeout(livenessGuard);
-      }
+      active = false;
+      window.clearTimeout(livenessGuard);
       if (finishTimerRef.current !== null) {
         window.clearTimeout(finishTimerRef.current);
       }
     };
   }, [
     advanceOnce,
+    extraSegments,
     praise.segments,
-    recommendation,
     recommendationSegments,
     scope,
     seed,
@@ -127,20 +134,12 @@ export function SuccessOverlay({
     tier,
   ]);
 
-  const recommendationText = settings.languageMode === 'en'
-    ? 'You are ready for the next level!'
-    : 'מוכנים לשלב הבא!';
-  const nextLabel = settings.languageMode === 'en' ? 'Next level' : 'לשלב הבא';
-  const replayLabel = settings.languageMode === 'en' ? 'Play again' : 'עוד פעם';
-
   return (
     <div
       className="success-overlay"
-      role={recommendation ? 'dialog' : 'status'}
+      role="status"
       aria-live="polite"
-      aria-modal={recommendation ? true : undefined}
-      aria-label={recommendation ? recommendationText : undefined}
-      onPointerDown={recommendation ? undefined : () => advanceOnce(true)}
+      onPointerDown={() => advanceOnce(true)}
     >
       <div
         className={`success-card success-card--${celebrationVariant} ${tier === 'milestone' ? 'success-card--milestone' : ''}`}
@@ -150,33 +149,6 @@ export function SuccessOverlay({
         <p className="success-card__praise">{praise.displayText}</p>
         {tier === 'milestone' ? (
           <p className="success-card__pause">{settings.languageMode === 'en' ? REAL_WORLD_PAUSE_EN : REAL_WORLD_PAUSE_HE}</p>
-        ) : null}
-        {recommendation ? (
-          <>
-            <p className="success-card__recommendation">{recommendationText}</p>
-            <div className="success-card__choices" role="group" aria-label={recommendationText}>
-              <button
-                className="success-choice success-choice--next"
-                type="button"
-                onClick={() => {
-                  speechService.cancelScope(scope, 'navigation');
-                  onNextLevel();
-                }}
-              >
-                {nextLabel}
-              </button>
-              <button
-                className="success-choice success-choice--replay"
-                type="button"
-                onClick={() => {
-                  speechService.cancelScope(scope, 'navigation');
-                  onReplayLevel();
-                }}
-              >
-                {replayLabel}
-              </button>
-            </div>
-          </>
         ) : null}
       </div>
     </div>

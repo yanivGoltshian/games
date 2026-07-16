@@ -18,12 +18,14 @@ export const PRAISE_HE: PraiseLine[] = [
   { id: 'praise-he-01', text: 'כל הכבוד, שון!', tier: 'standard' },
   { id: 'praise-he-02', text: 'יופי!', tier: 'standard' },
   { id: 'praise-he-03', text: 'הצלחת!', tier: 'standard' },
+  { id: 'praise-he-04', text: 'מעולה!', tier: 'standard' },
 ];
 
 export const PRAISE_EN: PraiseLine[] = [
   { id: 'praise-en-01', text: 'Great job, Sean!', tier: 'standard' },
   { id: 'praise-en-02', text: 'Great!', tier: 'standard' },
   { id: 'praise-en-03', text: 'You did it!', tier: 'standard' },
+  { id: 'praise-en-04', text: 'Excellent!', tier: 'standard' },
 ];
 
 /** Slightly richer wording after a small streak or level-up. Still no pressure, no scoreboard language. */

@@ -166,554 +166,609 @@
       "offset": 104.236709,
       "duration": 2.294542
     },
-    "he-IL\u0000חמישה כדורים": {
+    "he-IL\u0000זוגות מספרים": {
       "src": "/speech/he-IL.mp3",
       "offset": 106.651251,
+      "duration": 1.659833
+    },
+    "he-IL\u0000זכית בגביע!": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 108.431084,
+      "duration": 2.709917
+    },
+    "he-IL\u0000חמישה כדורים": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 111.261001,
       "duration": 1.791792
     },
     "he-IL\u0000חמישה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 108.563043,
+      "offset": 113.172793,
       "duration": 1.763292
     },
     "he-IL\u0000חמש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 110.446335,
+      "offset": 115.056085,
       "duration": 1.274167
     },
     "he-IL\u0000חמש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 111.840502,
+      "offset": 116.450252,
       "duration": 1.630125
     },
     "he-IL\u0000חתול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 113.590627,
+      "offset": 118.200377,
       "duration": 1.169417
     },
     "he-IL\u0000יופי שהמשכת לחפש. ננסה עוד זוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 114.880044,
+      "offset": 119.489794,
       "duration": 5.735375
     },
     "he-IL\u0000יופי שניסית, חמודי. נסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 120.735419,
+      "offset": 125.345169,
       "duration": 5.883917
     },
     "he-IL\u0000יופי!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 126.739336,
+      "offset": 131.349086,
       "duration": 2.0985
     },
     "he-IL\u0000יש כאן ארבע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 128.957836,
+      "offset": 133.567586,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן ארבעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 132.181753,
+      "offset": 136.791503,
       "duration": 3.253417
     },
     "he-IL\u0000יש כאן ארבעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 135.55517,
+      "offset": 140.16492,
       "duration": 3.185458
     },
     "he-IL\u0000יש כאן בננה אחת.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 138.860628,
+      "offset": 143.470378,
       "duration": 2.995208
     },
     "he-IL\u0000יש כאן חמישה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 141.975836,
+      "offset": 146.585586,
       "duration": 3.226208
     },
     "he-IL\u0000יש כאן חמישה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 145.322044,
+      "offset": 149.931794,
       "duration": 3.171875
     },
     "he-IL\u0000יש כאן חמש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 148.613919,
+      "offset": 153.223669,
       "duration": 3.07675
     },
     "he-IL\u0000יש כאן כדור אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 151.810669,
+      "offset": 156.420419,
       "duration": 2.900125
     },
     "he-IL\u0000יש כאן עשר בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 154.830794,
+      "offset": 159.440544,
       "duration": 2.954458
     },
     "he-IL\u0000יש כאן עשרה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 157.905252,
+      "offset": 162.515002,
       "duration": 3.171833
     },
     "he-IL\u0000יש כאן עשרה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 161.197085,
+      "offset": 165.806835,
       "duration": 3.144708
     },
     "he-IL\u0000יש כאן שבע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 164.461793,
+      "offset": 169.071543,
       "duration": 2.940875
     },
     "he-IL\u0000יש כאן שבעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 167.522668,
+      "offset": 172.132418,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן שבעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 170.760168,
+      "offset": 175.369918,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן שישה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 173.970501,
+      "offset": 178.580251,
       "duration": 3.119625
     },
     "he-IL\u0000יש כאן שישה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 177.210126,
+      "offset": 181.819876,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן שלוש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 180.420459,
+      "offset": 185.030209,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן שלושה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 183.630792,
+      "offset": 188.240542,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן שלושה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 186.854709,
+      "offset": 191.464459,
       "duration": 3.117458
     },
     "he-IL\u0000יש כאן שמונה בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 190.092167,
+      "offset": 194.701917,
       "duration": 3.049542
     },
     "he-IL\u0000יש כאן שמונה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 193.261709,
+      "offset": 197.871459,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן שמונה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 196.485626,
+      "offset": 201.095376,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן שני כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 199.723126,
+      "offset": 204.332876,
       "duration": 3.049542
     },
     "he-IL\u0000יש כאן שני תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 202.892668,
+      "offset": 207.502418,
       "duration": 2.995208
     },
     "he-IL\u0000יש כאן שש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 206.007876,
+      "offset": 210.617626,
       "duration": 2.900083
     },
     "he-IL\u0000יש כאן שתי בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 209.027959,
+      "offset": 213.637709,
       "duration": 2.981667
     },
     "he-IL\u0000יש כאן תפוח אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 212.129626,
+      "offset": 216.739376,
       "duration": 2.913708
     },
     "he-IL\u0000יש כאן תשע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 215.163334,
+      "offset": 219.773084,
       "duration": 2.99525
     },
     "he-IL\u0000יש כאן תשעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 218.278584,
+      "offset": 222.888334,
       "duration": 3.173958
     },
     "he-IL\u0000יש כאן תשעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 221.572542,
+      "offset": 226.182292,
       "duration": 3.15825
     },
     "he-IL\u0000כדור": {
       "src": "/speech/he-IL.mp3",
-      "offset": 224.850792,
+      "offset": 229.460542,
       "duration": 1.09825
     },
     "he-IL\u0000כדור אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 226.069042,
+      "offset": 230.678792,
       "duration": 1.497042
     },
     "he-IL\u0000כוכב ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 227.686084,
+      "offset": 232.295834,
       "duration": 1.480083
     },
     "he-IL\u0000כוכב כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 229.286167,
+      "offset": 233.895917,
       "duration": 1.411417
     },
     "he-IL\u0000כוכב צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 230.817584,
+      "offset": 235.427334,
       "duration": 1.465833
     },
     "he-IL\u0000כל הכבוד, שון!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 232.403417,
+      "offset": 237.013167,
       "duration": 3.441333
     },
     "he-IL\u0000כלב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 235.96475,
+      "offset": 240.5745,
       "duration": 1.139333
     },
     "he-IL\u0000כמה בננות יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 237.224083,
+      "offset": 241.833833,
       "duration": 2.920125
     },
     "he-IL\u0000כמה כדורים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 240.264208,
+      "offset": 244.873958,
       "duration": 3.056
     },
     "he-IL\u0000כמה תפוחים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 243.440208,
+      "offset": 248.049958,
       "duration": 2.933708
     },
     "he-IL\u0000כמעט, שון. נסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 246.493916,
+      "offset": 251.103666,
       "duration": 5.371375
+    },
+    "he-IL\u0000כמעט. נמצא את הזוג.": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 256.595041,
+      "duration": 4.580375
     },
     "he-IL\u0000כמעט. נסה מקום אחר.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 251.985291,
+      "offset": 261.295416,
       "duration": 4.757083
+    },
+    "he-IL\u0000לחץ על הזוגות": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 266.172499,
+      "duration": 1.722542
     },
     "he-IL\u0000מסיבת היער הכחולה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 256.862374,
+      "offset": 268.015041,
       "duration": 1.941375
+    },
+    "he-IL\u0000מעולה!": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 270.076416,
+      "duration": 2.098458
     },
     "he-IL\u0000משולש אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 258.923749,
+      "offset": 272.294874,
       "duration": 1.455833
     },
     "he-IL\u0000משולש ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 260.499582,
+      "offset": 273.870707,
       "duration": 1.5745
     },
     "he-IL\u0000משולש צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 262.194082,
+      "offset": 275.565207,
       "duration": 1.602125
+    },
+    "he-IL\u0000מתאימים מספרים זהים בשתי שורות": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 277.287332,
+      "duration": 2.795917
     },
     "he-IL\u0000נחבר את גינת הגזר הענק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 263.916207,
+      "offset": 280.203249,
       "duration": 2.746583
     },
     "he-IL\u0000נחבר את הרפתקת מטוסי ההצלה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 266.78279,
+      "offset": 283.069832,
       "duration": 2.660042
     },
     "he-IL\u0000נחבר את מסיבת היער הכחולה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 269.562832,
+      "offset": 285.849874,
       "duration": 2.497
     },
     "he-IL\u0000נחפש יחד את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 272.179832,
+      "offset": 288.466874,
       "duration": 3.008792
     },
     "he-IL\u0000ניסיון יפה, שון! בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 275.308624,
+      "offset": 291.595666,
       "duration": 5.90975
     },
     "he-IL\u0000נמשיך לחפש את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 281.338374,
+      "offset": 297.625416,
       "duration": 2.981625
+    },
+    "he-IL\u0000ננסה שוב ביחד.": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 300.727041,
+      "duration": 3.036
     },
     "he-IL\u0000נסה שוב, חמודי. אני איתך.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 284.439999,
+      "offset": 303.883041,
       "duration": 5.733333
     },
     "he-IL\u0000נעל": {
       "src": "/speech/he-IL.mp3",
-      "offset": 290.293332,
+      "offset": 309.736374,
       "duration": 1.029583
+    },
+    "he-IL\u0000נעשה שוב.": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 310.885957,
+      "duration": 2.4925
+    },
+    "he-IL\u0000עברת שלב!": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 313.498457,
+      "duration": 2.669167
+    },
+    "he-IL\u0000עוד ניסיון קטן.": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 316.287624,
+      "duration": 2.834292
     },
     "he-IL\u0000עיגול אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 291.442915,
+      "offset": 319.241916,
       "duration": 1.494
     },
     "he-IL\u0000עיגול ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 293.056915,
+      "offset": 320.855916,
       "duration": 1.565625
     },
     "he-IL\u0000עיגול כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 294.74254,
+      "offset": 322.541541,
       "duration": 1.437458
+    },
+    "he-IL\u0000עכשיו יותר מספרים": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 324.098999,
+      "duration": 1.980708
     },
     "he-IL\u0000עשר": {
       "src": "/speech/he-IL.mp3",
-      "offset": 296.299998,
+      "offset": 326.199707,
       "duration": 1.101333
     },
     "he-IL\u0000עשר בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 297.521331,
+      "offset": 327.42104,
       "duration": 1.630542
     },
     "he-IL\u0000עשרה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 299.271873,
+      "offset": 329.171582,
       "duration": 1.708958
     },
     "he-IL\u0000עשרה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 301.100831,
+      "offset": 331.00054,
       "duration": 1.671792
     },
     "he-IL\u0000פותחים שני קלפים ומחפשים זוג": {
       "src": "/speech/he-IL.mp3",
-      "offset": 302.892623,
+      "offset": 332.792332,
       "duration": 2.77
     },
     "he-IL\u0000ריבוע אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 305.782623,
+      "offset": 335.682332,
       "duration": 1.509417
     },
     "he-IL\u0000ריבוע כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 307.41204,
+      "offset": 337.311749,
       "duration": 1.385
     },
     "he-IL\u0000ריבוע צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 308.91704,
+      "offset": 338.816749,
       "duration": 1.493708
     },
     "he-IL\u0000שבע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 310.530748,
+      "offset": 340.430457,
       "duration": 1.002792
     },
     "he-IL\u0000שבע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 311.65354,
+      "offset": 341.553249,
       "duration": 1.613833
     },
     "he-IL\u0000שבעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 313.387373,
+      "offset": 343.287082,
       "duration": 1.721083
     },
     "he-IL\u0000שבעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 315.228456,
+      "offset": 345.128165,
       "duration": 1.672125
     },
     "he-IL\u0000שון עושה את זה שוב ושוב, יופי של התמדה!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 317.020581,
+      "offset": 346.92029,
       "duration": 4.652958
     },
     "he-IL\u0000שון, אהבתי שניסית. בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 321.793539,
+      "offset": 351.693248,
       "duration": 6.390417
     },
     "he-IL\u0000שון, אתה אלוף בלחפש. נמשיך יחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 328.303956,
+      "offset": 358.203665,
       "duration": 6.580583
     },
     "he-IL\u0000שון, אתה אלוף בלנסות. בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 335.004539,
+      "offset": 364.904248,
       "duration": 6.702917
     },
     "he-IL\u0000שון, אתה אלוף בלנסות. ניקח רגע וננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 341.827456,
+      "offset": 371.727165,
       "duration": 7.282167
     },
     "he-IL\u0000שון, אתה אלוף בלנסות. ננסה שוב ביחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 349.229623,
+      "offset": 379.129332,
       "duration": 7.06975
     },
     "he-IL\u0000שון, אתה יכול. עוד ניסיון קטן.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 356.419373,
+      "offset": 386.319082,
       "duration": 6.045833
     },
     "he-IL\u0000שון, בוא נמשיך לחפש את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 362.585206,
+      "offset": 392.484915,
       "duration": 4.206125
     },
     "he-IL\u0000שון, ביחד ובנחת, בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 366.911331,
+      "offset": 396.81104,
       "duration": 5.417417
     },
     "he-IL\u0000שון, יופי שניסית, חמודי. עוד ניסיון קטן.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 372.448748,
+      "offset": 402.348457,
       "duration": 7.348125
     },
     "he-IL\u0000שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 379.916873,
+      "offset": 409.816582,
       "duration": 7.078208
     },
     "he-IL\u0000שישה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 387.115081,
+      "offset": 417.01479,
       "duration": 1.668167
     },
     "he-IL\u0000שישה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 388.903248,
+      "offset": 418.802957,
       "duration": 1.614375
     },
     "he-IL\u0000שלוש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 390.637623,
+      "offset": 420.537332,
       "duration": 1.289583
     },
     "he-IL\u0000שלוש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 392.047206,
+      "offset": 421.946915,
       "duration": 1.602917
     },
     "he-IL\u0000שלושה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 393.770123,
+      "offset": 423.669832,
       "duration": 1.698542
     },
     "he-IL\u0000שלושה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 395.588665,
+      "offset": 425.488374,
       "duration": 1.668167
     },
     "he-IL\u0000שמונה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 397.376832,
+      "offset": 427.276541,
       "duration": 1.151917
     },
     "he-IL\u0000שמונה בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 398.648749,
+      "offset": 428.548458,
       "duration": 1.676292
     },
     "he-IL\u0000שמונה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 400.445041,
+      "offset": 430.34475,
       "duration": 1.781458
     },
     "he-IL\u0000שמונה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 402.346499,
+      "offset": 432.246208,
       "duration": 1.708917
     },
     "he-IL\u0000שני כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 404.175416,
+      "offset": 434.075125,
       "duration": 1.59525
     },
     "he-IL\u0000שני תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 405.890666,
+      "offset": 435.790375,
       "duration": 1.568458
     },
     "he-IL\u0000שש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 407.579124,
+      "offset": 437.478833,
       "duration": 1.179042
     },
     "he-IL\u0000שש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 408.878166,
+      "offset": 438.777875,
       "duration": 1.500208
     },
     "he-IL\u0000שתי בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 410.498374,
+      "offset": 440.398083,
       "duration": 1.654583
     },
     "he-IL\u0000שתיים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 412.272957,
+      "offset": 442.172666,
       "duration": 1.267375
     },
     "he-IL\u0000תפוח": {
       "src": "/speech/he-IL.mp3",
-      "offset": 413.660332,
+      "offset": 443.560041,
       "duration": 1.266375
     },
     "he-IL\u0000תפוח אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 415.046707,
+      "offset": 444.946416,
       "duration": 1.481583
     },
     "he-IL\u0000תשע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 416.64829,
+      "offset": 446.547999,
       "duration": 1.026917
     },
     "he-IL\u0000תשע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 417.795207,
+      "offset": 447.694916,
       "duration": 1.608375
     },
     "he-IL\u0000תשעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 419.523582,
+      "offset": 449.423291,
       "duration": 1.76725
     },
     "he-IL\u0000תשעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 421.410832,
+      "offset": 451.310541,
       "duration": 1.736833
     },
     "en-US\u0000Almost, Sean! Try again.": {
@@ -721,714 +776,769 @@
       "offset": 0,
       "duration": 4.848833
     },
-    "en-US\u0000Almost. Try another spot.": {
+    "en-US\u0000Almost. Let's find the pair.": {
       "src": "/speech/en-US.mp3",
       "offset": 4.968833,
+      "duration": 4.732083
+    },
+    "en-US\u0000Almost. Try another spot.": {
+      "src": "/speech/en-US.mp3",
+      "offset": 9.820916,
       "duration": 4.675542
     },
     "en-US\u0000apple": {
       "src": "/speech/en-US.mp3",
-      "offset": 9.764375,
+      "offset": 14.616458,
       "duration": 0.744583
     },
     "en-US\u0000ball": {
       "src": "/speech/en-US.mp3",
-      "offset": 10.628958,
+      "offset": 15.481041,
       "duration": 0.700792
     },
     "en-US\u0000banana": {
       "src": "/speech/en-US.mp3",
-      "offset": 11.44975,
+      "offset": 16.301833,
       "duration": 0.961958
     },
     "en-US\u0000blue circle": {
       "src": "/speech/en-US.mp3",
-      "offset": 12.531708,
+      "offset": 17.383791,
       "duration": 1.205375
     },
     "en-US\u0000blue forest party": {
       "src": "/speech/en-US.mp3",
-      "offset": 13.857083,
+      "offset": 18.709166,
       "duration": 1.708958
     },
     "en-US\u0000blue square": {
       "src": "/speech/en-US.mp3",
-      "offset": 15.686041,
+      "offset": 20.538124,
       "duration": 1.188625
     },
     "en-US\u0000blue star": {
       "src": "/speech/en-US.mp3",
-      "offset": 16.994666,
+      "offset": 21.846749,
       "duration": 1.151958
     },
     "en-US\u0000car": {
       "src": "/speech/en-US.mp3",
-      "offset": 18.266624,
+      "offset": 23.118707,
       "duration": 0.717417
     },
     "en-US\u0000cat": {
       "src": "/speech/en-US.mp3",
-      "offset": 19.104041,
+      "offset": 23.956124,
       "duration": 0.66875
     },
     "en-US\u0000dog": {
       "src": "/speech/en-US.mp3",
-      "offset": 19.892791,
+      "offset": 24.744874,
       "duration": 0.720958
     },
     "en-US\u0000eight": {
       "src": "/speech/en-US.mp3",
-      "offset": 20.733749,
+      "offset": 25.585832,
       "duration": 0.635542
     },
     "en-US\u0000eight apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 21.489291,
+      "offset": 26.341374,
       "duration": 1.2155
     },
     "en-US\u0000eight balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 22.824791,
+      "offset": 27.676874,
       "duration": 1.151833
     },
     "en-US\u0000eight bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 24.096624,
+      "offset": 28.948707,
       "duration": 1.35525
+    },
+    "en-US\u0000Excellent!": {
+      "src": "/speech/en-US.mp3",
+      "offset": 30.423957,
+      "duration": 2.247917
     },
     "en-US\u0000five": {
       "src": "/speech/en-US.mp3",
-      "offset": 25.571874,
+      "offset": 32.791874,
       "duration": 0.809292
     },
     "en-US\u0000five apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 26.501166,
+      "offset": 33.721166,
       "duration": 1.387958
     },
     "en-US\u0000five balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 28.009124,
+      "offset": 35.229124,
       "duration": 1.338083
     },
     "en-US\u0000five bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 29.467207,
+      "offset": 36.687207,
       "duration": 1.540917
     },
     "en-US\u0000four": {
       "src": "/speech/en-US.mp3",
-      "offset": 31.128124,
+      "offset": 38.348124,
       "duration": 0.717083
     },
     "en-US\u0000four apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 31.965207,
+      "offset": 39.185207,
       "duration": 1.32325
     },
     "en-US\u0000four balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 33.408457,
+      "offset": 40.628457,
       "duration": 1.256417
     },
     "en-US\u0000four bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 34.784874,
+      "offset": 42.004874,
       "duration": 1.43625
     },
     "en-US\u0000giant carrot garden": {
       "src": "/speech/en-US.mp3",
-      "offset": 36.341124,
+      "offset": 43.561124,
       "duration": 1.817833
     },
     "en-US\u0000Good thinking, Sean. Let's try again.": {
       "src": "/speech/en-US.mp3",
-      "offset": 38.278957,
+      "offset": 45.498957,
       "duration": 5.4145
     },
     "en-US\u0000Great job keeping on looking. Let's try another pair.": {
       "src": "/speech/en-US.mp3",
-      "offset": 43.813457,
+      "offset": 51.033457,
       "duration": 6.360458
     },
     "en-US\u0000Great job, Sean!": {
       "src": "/speech/en-US.mp3",
-      "offset": 50.293915,
+      "offset": 57.513915,
       "duration": 2.952208
     },
     "en-US\u0000Great trying, Sean. Let's try again.": {
       "src": "/speech/en-US.mp3",
-      "offset": 53.366123,
+      "offset": 60.586123,
       "duration": 5.542875
     },
     "en-US\u0000Great!": {
       "src": "/speech/en-US.mp3",
-      "offset": 59.028998,
+      "offset": 66.248998,
       "duration": 1.910417
     },
     "en-US\u0000green circle": {
       "src": "/speech/en-US.mp3",
-      "offset": 61.059415,
+      "offset": 68.279415,
       "duration": 1.328042
     },
     "en-US\u0000green star": {
       "src": "/speech/en-US.mp3",
-      "offset": 62.507457,
+      "offset": 69.727457,
       "duration": 1.318792
     },
     "en-US\u0000green triangle": {
       "src": "/speech/en-US.mp3",
-      "offset": 63.946249,
+      "offset": 71.166249,
       "duration": 1.505125
     },
     "en-US\u0000How many apples are here?": {
       "src": "/speech/en-US.mp3",
-      "offset": 65.571374,
+      "offset": 72.791374,
       "duration": 3.08325
     },
     "en-US\u0000How many balls are here?": {
       "src": "/speech/en-US.mp3",
-      "offset": 68.774624,
+      "offset": 75.994624,
       "duration": 2.935917
     },
     "en-US\u0000How many bananas are here?": {
       "src": "/speech/en-US.mp3",
-      "offset": 71.830541,
+      "offset": 79.050541,
       "duration": 3.191875
     },
     "en-US\u0000Let's count together.": {
       "src": "/speech/en-US.mp3",
-      "offset": 75.142416,
+      "offset": 82.362416,
       "duration": 2.777833
+    },
+    "en-US\u0000Let's do it again.": {
+      "src": "/speech/en-US.mp3",
+      "offset": 85.260249,
+      "duration": 2.655542
     },
     "en-US\u0000Let's find where the pair is hiding.": {
       "src": "/speech/en-US.mp3",
-      "offset": 78.040249,
+      "offset": 88.035791,
       "duration": 3.824083
     },
     "en-US\u0000Let's keep looking for the pair.": {
       "src": "/speech/en-US.mp3",
-      "offset": 81.984332,
+      "offset": 91.979874,
       "duration": 3.334917
     },
     "en-US\u0000Let's look for the pair together.": {
       "src": "/speech/en-US.mp3",
-      "offset": 85.439249,
+      "offset": 95.434791,
       "duration": 3.389292
     },
     "en-US\u0000Let’s rebuild the blue forest party": {
       "src": "/speech/en-US.mp3",
-      "offset": 88.948541,
+      "offset": 98.944083,
       "duration": 2.764
     },
     "en-US\u0000Let’s rebuild the giant carrot garden": {
       "src": "/speech/en-US.mp3",
-      "offset": 91.832541,
+      "offset": 101.828083,
       "duration": 2.973292
     },
     "en-US\u0000Let’s rebuild the rescue planes adventure": {
       "src": "/speech/en-US.mp3",
-      "offset": 94.925833,
+      "offset": 104.921375,
       "duration": 3.135542
     },
     "en-US\u0000Let’s sort by color": {
       "src": "/speech/en-US.mp3",
-      "offset": 98.181375,
+      "offset": 108.176917,
       "duration": 1.763292
     },
     "en-US\u0000Let’s sort by shape": {
       "src": "/speech/en-US.mp3",
-      "offset": 100.064667,
+      "offset": 110.060209,
       "duration": 1.734667
+    },
+    "en-US\u0000Let's try again together.": {
+      "src": "/speech/en-US.mp3",
+      "offset": 111.914876,
+      "duration": 3.239833
+    },
+    "en-US\u0000Match identical numbers in two rows": {
+      "src": "/speech/en-US.mp3",
+      "offset": 115.274709,
+      "duration": 3.029792
     },
     "en-US\u0000Nice try, Sean. Try again.": {
       "src": "/speech/en-US.mp3",
-      "offset": 101.919334,
+      "offset": 118.424501,
       "duration": 5.012958
     },
     "en-US\u0000nine": {
       "src": "/speech/en-US.mp3",
-      "offset": 107.052292,
+      "offset": 123.557459,
       "duration": 0.703625
     },
     "en-US\u0000nine apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 107.875917,
+      "offset": 124.381084,
       "duration": 1.369542
     },
     "en-US\u0000nine balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 109.365459,
+      "offset": 125.870626,
       "duration": 1.310833
     },
     "en-US\u0000nine bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 110.796292,
+      "offset": 127.301459,
       "duration": 1.464667
+    },
+    "en-US\u0000Now more numbers": {
+      "src": "/speech/en-US.mp3",
+      "offset": 128.886126,
+      "duration": 1.58875
+    },
+    "en-US\u0000Number pairs": {
+      "src": "/speech/en-US.mp3",
+      "offset": 130.594876,
+      "duration": 1.344208
     },
     "en-US\u0000one": {
       "src": "/speech/en-US.mp3",
-      "offset": 112.380959,
+      "offset": 132.059084,
       "duration": 0.680167
     },
     "en-US\u0000one apple": {
       "src": "/speech/en-US.mp3",
-      "offset": 113.181126,
+      "offset": 132.859251,
       "duration": 1.135333
     },
     "en-US\u0000one ball": {
       "src": "/speech/en-US.mp3",
-      "offset": 114.436459,
+      "offset": 134.114584,
       "duration": 1.056333
     },
     "en-US\u0000one banana": {
       "src": "/speech/en-US.mp3",
-      "offset": 115.612792,
+      "offset": 135.290917,
       "duration": 1.260792
+    },
+    "en-US\u0000One more little try.": {
+      "src": "/speech/en-US.mp3",
+      "offset": 136.671709,
+      "duration": 2.940917
     },
     "en-US\u0000Open two cards and find a pair": {
       "src": "/speech/en-US.mp3",
-      "offset": 116.993584,
+      "offset": 139.732626,
       "duration": 2.648
+    },
+    "en-US\u0000Press the pairs": {
+      "src": "/speech/en-US.mp3",
+      "offset": 142.500626,
+      "duration": 1.384333
     },
     "en-US\u0000red circle": {
       "src": "/speech/en-US.mp3",
-      "offset": 119.761584,
+      "offset": 144.004959,
       "duration": 1.192208
     },
     "en-US\u0000red square": {
       "src": "/speech/en-US.mp3",
-      "offset": 121.073792,
+      "offset": 145.317167,
       "duration": 1.175
     },
     "en-US\u0000red triangle": {
       "src": "/speech/en-US.mp3",
-      "offset": 122.368792,
+      "offset": 146.612167,
       "duration": 1.382417
     },
     "en-US\u0000rescue planes adventure": {
       "src": "/speech/en-US.mp3",
-      "offset": 123.871209,
+      "offset": 148.114584,
       "duration": 2.099
     },
     "en-US\u0000Sean, every try helps us learn. Let's try again.": {
       "src": "/speech/en-US.mp3",
-      "offset": 126.090209,
+      "offset": 150.333584,
       "duration": 6.439667
     },
     "en-US\u0000Sean, great trying. One more small try.": {
       "src": "/speech/en-US.mp3",
-      "offset": 132.649876,
+      "offset": 156.893251,
       "duration": 5.925458
     },
     "en-US\u0000Sean, I love how you tried. Let's try again.": {
       "src": "/speech/en-US.mp3",
-      "offset": 138.695334,
+      "offset": 162.938709,
       "duration": 6.113542
     },
     "en-US\u0000Sean, let's keep looking for the pair.": {
       "src": "/speech/en-US.mp3",
-      "offset": 144.928876,
+      "offset": 169.172251,
       "duration": 3.957625
     },
     "en-US\u0000Sean, together and gently, let's try again.": {
       "src": "/speech/en-US.mp3",
-      "offset": 149.006501,
+      "offset": 173.249876,
       "duration": 4.884375
     },
     "en-US\u0000Sean, you're a champion at trying. Let's try together.": {
       "src": "/speech/en-US.mp3",
-      "offset": 154.010876,
+      "offset": 178.254251,
       "duration": 6.575458
     },
     "en-US\u0000Sean, you're great at searching. Let's keep looking together.": {
       "src": "/speech/en-US.mp3",
-      "offset": 160.706334,
+      "offset": 184.949709,
       "duration": 6.69775
     },
     "en-US\u0000Sean, you're great at trying. Let's pause and try again.": {
       "src": "/speech/en-US.mp3",
-      "offset": 167.524084,
+      "offset": 191.767459,
       "duration": 6.727083
     },
     "en-US\u0000seven": {
       "src": "/speech/en-US.mp3",
-      "offset": 174.371167,
+      "offset": 198.614542,
       "duration": 0.853167
     },
     "en-US\u0000seven apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 175.344334,
+      "offset": 199.587709,
       "duration": 1.505125
     },
     "en-US\u0000seven balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 176.969459,
+      "offset": 201.212834,
       "duration": 1.419292
     },
     "en-US\u0000seven bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 178.508751,
+      "offset": 202.752126,
       "duration": 1.626958
     },
     "en-US\u0000shoe": {
       "src": "/speech/en-US.mp3",
-      "offset": 180.255709,
+      "offset": 204.499084,
       "duration": 0.689917
     },
     "en-US\u0000six": {
       "src": "/speech/en-US.mp3",
-      "offset": 181.065626,
+      "offset": 205.309001,
       "duration": 0.903042
     },
     "en-US\u0000six apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 182.088668,
+      "offset": 206.332043,
       "duration": 1.432167
     },
     "en-US\u0000six balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 183.640835,
+      "offset": 207.88421,
       "duration": 1.330042
     },
     "en-US\u0000six bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 185.090877,
+      "offset": 209.334252,
       "duration": 1.541625
     },
     "en-US\u0000ten": {
       "src": "/speech/en-US.mp3",
-      "offset": 186.752502,
+      "offset": 210.995877,
       "duration": 0.67675
     },
     "en-US\u0000ten apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 187.549252,
+      "offset": 211.792627,
       "duration": 1.30675
     },
     "en-US\u0000ten balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 188.976002,
+      "offset": 213.219377,
       "duration": 1.225292
     },
     "en-US\u0000ten bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 190.321294,
+      "offset": 214.564669,
       "duration": 1.411833
     },
     "en-US\u0000The color is blue. Put it in the blue basket.": {
       "src": "/speech/en-US.mp3",
-      "offset": 191.853127,
+      "offset": 216.096502,
       "duration": 5.628875
     },
     "en-US\u0000The color is green. Put it in the green basket.": {
       "src": "/speech/en-US.mp3",
-      "offset": 197.602002,
+      "offset": 221.845377,
       "duration": 5.816875
     },
     "en-US\u0000The color is red. Put it in the red basket.": {
       "src": "/speech/en-US.mp3",
-      "offset": 203.538877,
+      "offset": 227.782252,
       "duration": 5.626667
     },
     "en-US\u0000The color is yellow. Put it in the yellow basket.": {
       "src": "/speech/en-US.mp3",
-      "offset": 209.285544,
+      "offset": 233.528919,
       "duration": 5.912
     },
     "en-US\u0000The piece fits in the glowing spot. Try there.": {
       "src": "/speech/en-US.mp3",
-      "offset": 215.317544,
+      "offset": 239.560919,
       "duration": 5.694625
     },
     "en-US\u0000The shape is a circle. Put it in the basket with the circle.": {
       "src": "/speech/en-US.mp3",
-      "offset": 221.132169,
+      "offset": 245.375544,
       "duration": 6.405375
     },
     "en-US\u0000The shape is a square. Put it in the basket with the square.": {
       "src": "/speech/en-US.mp3",
-      "offset": 227.657544,
+      "offset": 251.900919,
       "duration": 6.210917
     },
     "en-US\u0000The shape is a star. Put it in the basket with the star.": {
       "src": "/speech/en-US.mp3",
-      "offset": 233.988461,
+      "offset": 258.231836,
       "duration": 6.308167
     },
     "en-US\u0000The shape is a triangle. Put it in the basket with the triangle.": {
       "src": "/speech/en-US.mp3",
-      "offset": 240.416628,
+      "offset": 264.660003,
       "duration": 6.740833
     },
     "en-US\u0000There are eight apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 247.277461,
+      "offset": 271.520836,
       "duration": 2.954458
     },
     "en-US\u0000There are eight balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 250.351919,
+      "offset": 274.595294,
       "duration": 2.845792
     },
     "en-US\u0000There are eight bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 253.317711,
+      "offset": 277.561086,
       "duration": 3.036042
     },
     "en-US\u0000There are five apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 256.473753,
+      "offset": 280.717128,
       "duration": 3.049625
     },
     "en-US\u0000There are five balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 259.643378,
+      "offset": 283.886753,
       "duration": 2.981667
     },
     "en-US\u0000There are five bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 262.745045,
+      "offset": 286.98842,
       "duration": 3.171875
     },
     "en-US\u0000There are four apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 266.03692,
+      "offset": 290.280295,
       "duration": 3.008875
     },
     "en-US\u0000There are four balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 269.165795,
+      "offset": 293.40917,
       "duration": 2.91375
     },
     "en-US\u0000There are four bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 272.199545,
+      "offset": 296.44292,
       "duration": 3.117542
     },
     "en-US\u0000There are nine apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 275.437087,
+      "offset": 299.680462,
       "duration": 3.036042
     },
     "en-US\u0000There are nine balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 278.593129,
+      "offset": 302.836504,
       "duration": 2.968125
     },
     "en-US\u0000There are nine bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 281.681254,
+      "offset": 305.924629,
       "duration": 3.131125
     },
     "en-US\u0000There are seven apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 284.932379,
+      "offset": 309.175754,
       "duration": 3.07675
     },
     "en-US\u0000There are seven balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 288.129129,
+      "offset": 312.372504,
       "duration": 2.995292
     },
     "en-US\u0000There are seven bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 291.244421,
+      "offset": 315.487796,
       "duration": 3.185458
     },
     "en-US\u0000There are six apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 294.549879,
+      "offset": 318.793254,
       "duration": 3.036042
     },
     "en-US\u0000There are six balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 297.705921,
+      "offset": 321.949296,
       "duration": 2.968042
     },
     "en-US\u0000There are six bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 300.793963,
+      "offset": 325.037338,
       "duration": 3.144708
     },
     "en-US\u0000There are ten apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 304.058671,
+      "offset": 328.302046,
       "duration": 2.983792
     },
     "en-US\u0000There are ten balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 307.162463,
+      "offset": 331.405838,
       "duration": 2.927292
     },
     "en-US\u0000There are ten bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 310.209755,
+      "offset": 334.45313,
       "duration": 3.117542
     },
     "en-US\u0000There are three apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 313.447297,
+      "offset": 337.690672,
       "duration": 3.063167
     },
     "en-US\u0000There are three balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 316.630464,
+      "offset": 340.873839,
       "duration": 2.99525
     },
     "en-US\u0000There are three bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 319.745714,
+      "offset": 343.989089,
       "duration": 3.199042
     },
     "en-US\u0000There are two apples.": {
       "src": "/speech/en-US.mp3",
-      "offset": 323.064756,
+      "offset": 347.308131,
       "duration": 2.900167
     },
     "en-US\u0000There are two balls.": {
       "src": "/speech/en-US.mp3",
-      "offset": 326.084923,
+      "offset": 350.328298,
       "duration": 2.805042
     },
     "en-US\u0000There are two bananas.": {
       "src": "/speech/en-US.mp3",
-      "offset": 329.009965,
+      "offset": 353.25334,
       "duration": 2.99525
     },
     "en-US\u0000There is one apple.": {
       "src": "/speech/en-US.mp3",
-      "offset": 332.125215,
+      "offset": 356.36859,
       "duration": 2.818625
     },
     "en-US\u0000There is one ball.": {
       "src": "/speech/en-US.mp3",
-      "offset": 335.06384,
+      "offset": 359.307215,
       "duration": 2.712042
     },
     "en-US\u0000There is one banana.": {
       "src": "/speech/en-US.mp3",
-      "offset": 337.895882,
+      "offset": 362.139257,
       "duration": 2.886542
     },
     "en-US\u0000three": {
       "src": "/speech/en-US.mp3",
-      "offset": 340.902424,
+      "offset": 365.145799,
       "duration": 0.6765
     },
     "en-US\u0000three apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 341.698924,
+      "offset": 365.942299,
       "duration": 1.382417
     },
     "en-US\u0000three balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 343.201341,
+      "offset": 367.444716,
       "duration": 1.297333
     },
     "en-US\u0000three bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 344.618674,
+      "offset": 368.862049,
       "duration": 1.47825
     },
     "en-US\u0000Together and gently, let's keep looking.": {
       "src": "/speech/en-US.mp3",
-      "offset": 346.216924,
+      "offset": 370.460299,
       "duration": 4.232625
     },
     "en-US\u0000Try again, sweetie. I'm with you.": {
       "src": "/speech/en-US.mp3",
-      "offset": 350.569549,
+      "offset": 374.812924,
       "duration": 5.012958
     },
     "en-US\u0000two": {
       "src": "/speech/en-US.mp3",
-      "offset": 355.702507,
+      "offset": 379.945882,
       "duration": 0.581208
     },
     "en-US\u0000two apples": {
       "src": "/speech/en-US.mp3",
-      "offset": 356.403715,
+      "offset": 380.64709,
       "duration": 1.246458
     },
     "en-US\u0000two balls": {
       "src": "/speech/en-US.mp3",
-      "offset": 357.770173,
+      "offset": 382.013548,
       "duration": 1.174917
     },
     "en-US\u0000two bananas": {
       "src": "/speech/en-US.mp3",
-      "offset": 359.06509,
+      "offset": 383.308465,
       "duration": 1.361208
     },
     "en-US\u0000Where is the apple?": {
       "src": "/speech/en-US.mp3",
-      "offset": 360.546298,
+      "offset": 384.789673,
       "duration": 2.594042
     },
     "en-US\u0000Where is the ball?": {
       "src": "/speech/en-US.mp3",
-      "offset": 363.26034,
+      "offset": 387.503715,
       "duration": 2.458167
     },
     "en-US\u0000Where is the banana?": {
       "src": "/speech/en-US.mp3",
-      "offset": 365.838507,
+      "offset": 390.081882,
       "duration": 2.675542
     },
     "en-US\u0000Where is the car?": {
       "src": "/speech/en-US.mp3",
-      "offset": 368.634049,
+      "offset": 392.877424,
       "duration": 2.5125
     },
     "en-US\u0000Where is the cat?": {
       "src": "/speech/en-US.mp3",
-      "offset": 371.266549,
+      "offset": 395.509924,
       "duration": 2.501083
     },
     "en-US\u0000Where is the dog?": {
       "src": "/speech/en-US.mp3",
-      "offset": 373.887632,
+      "offset": 398.131007,
       "duration": 2.526125
     },
     "en-US\u0000Where is the shoe?": {
       "src": "/speech/en-US.mp3",
-      "offset": 376.533757,
+      "offset": 400.777132,
       "duration": 2.471792
     },
     "en-US\u0000Wow, Sean leveled up!": {
       "src": "/speech/en-US.mp3",
-      "offset": 379.125549,
+      "offset": 403.368924,
       "duration": 3.237542
     },
     "en-US\u0000yellow square": {
       "src": "/speech/en-US.mp3",
-      "offset": 382.483091,
+      "offset": 406.726466,
       "duration": 1.318667
     },
     "en-US\u0000yellow star": {
       "src": "/speech/en-US.mp3",
-      "offset": 383.921758,
+      "offset": 408.165133,
       "duration": 1.273167
     },
     "en-US\u0000yellow triangle": {
       "src": "/speech/en-US.mp3",
-      "offset": 385.314925,
+      "offset": 409.5583,
       "duration": 1.545333
     },
     "en-US\u0000You can do it, Sean. One more try.": {
       "src": "/speech/en-US.mp3",
-      "offset": 386.980258,
+      "offset": 411.223633,
       "duration": 5.314625
     },
     "en-US\u0000You did it!": {
       "src": "/speech/en-US.mp3",
-      "offset": 392.414883,
+      "offset": 416.658258,
       "duration": 2.247917
+    },
+    "en-US\u0000You moved up a level!": {
+      "src": "/speech/en-US.mp3",
+      "offset": 419.026175,
+      "duration": 2.940917
+    },
+    "en-US\u0000You won a trophy!": {
+      "src": "/speech/en-US.mp3",
+      "offset": 422.087092,
+      "duration": 2.682708
     },
     "en-US\u0000You're doing great again and again!": {
       "src": "/speech/en-US.mp3",
-      "offset": 394.7828,
+      "offset": 424.8898,
       "duration": 3.62025
     },
     "en-GB\u0000Almost, Sean! Try again.": {
@@ -1436,714 +1546,769 @@
       "offset": 0,
       "duration": 4.757208
     },
-    "en-GB\u0000Almost. Try another spot.": {
+    "en-GB\u0000Almost. Let's find the pair.": {
       "src": "/speech/en-GB.mp3",
       "offset": 4.877208,
+      "duration": 4.528292
+    },
+    "en-GB\u0000Almost. Try another spot.": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 9.5255,
       "duration": 4.487542
     },
     "en-GB\u0000apple": {
       "src": "/speech/en-GB.mp3",
-      "offset": 9.48475,
+      "offset": 14.133042,
       "duration": 0.717083
     },
     "en-GB\u0000ball": {
       "src": "/speech/en-GB.mp3",
-      "offset": 10.321833,
+      "offset": 14.970125,
       "duration": 0.675667
     },
     "en-GB\u0000banana": {
       "src": "/speech/en-GB.mp3",
-      "offset": 11.1175,
+      "offset": 15.765792,
       "duration": 0.939167
     },
     "en-GB\u0000blue circle": {
       "src": "/speech/en-GB.mp3",
-      "offset": 12.176667,
+      "offset": 16.824959,
       "duration": 1.172917
     },
     "en-GB\u0000blue forest party": {
       "src": "/speech/en-GB.mp3",
-      "offset": 13.469584,
+      "offset": 18.117876,
       "duration": 1.654625
     },
     "en-GB\u0000blue square": {
       "src": "/speech/en-GB.mp3",
-      "offset": 15.244209,
+      "offset": 19.892501,
       "duration": 1.084792
     },
     "en-GB\u0000blue star": {
       "src": "/speech/en-GB.mp3",
-      "offset": 16.449001,
+      "offset": 21.097293,
       "duration": 1.016042
     },
     "en-GB\u0000car": {
       "src": "/speech/en-GB.mp3",
-      "offset": 17.585043,
+      "offset": 22.233335,
       "duration": 0.689917
     },
     "en-GB\u0000cat": {
       "src": "/speech/en-GB.mp3",
-      "offset": 18.39496,
+      "offset": 23.043252,
       "duration": 0.7095
     },
     "en-GB\u0000dog": {
       "src": "/speech/en-GB.mp3",
-      "offset": 19.22446,
+      "offset": 23.872752,
       "duration": 0.644875
     },
     "en-GB\u0000eight": {
       "src": "/speech/en-GB.mp3",
-      "offset": 19.989335,
+      "offset": 24.637627,
       "duration": 0.64
     },
     "en-GB\u0000eight apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 20.749335,
+      "offset": 25.397627,
       "duration": 1.065917
     },
     "en-GB\u0000eight balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 21.935252,
+      "offset": 26.583544,
       "duration": 1.011542
     },
     "en-GB\u0000eight bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 23.066794,
+      "offset": 27.715086,
       "duration": 1.269833
+    },
+    "en-GB\u0000Excellent!": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 29.104919,
+      "duration": 2.220792
     },
     "en-GB\u0000five": {
       "src": "/speech/en-GB.mp3",
-      "offset": 24.456627,
+      "offset": 31.445711,
       "duration": 0.78525
     },
     "en-GB\u0000five apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 25.361877,
+      "offset": 32.350961,
       "duration": 1.257667
     },
     "en-GB\u0000five balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 26.739544,
+      "offset": 33.728628,
       "duration": 1.201625
     },
     "en-GB\u0000five bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 28.061169,
+      "offset": 35.050253,
       "duration": 1.459
     },
     "en-GB\u0000four": {
       "src": "/speech/en-GB.mp3",
-      "offset": 29.640169,
+      "offset": 36.629253,
       "duration": 0.686917
     },
     "en-GB\u0000four apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 30.447086,
+      "offset": 37.43617,
       "duration": 1.105667
     },
     "en-GB\u0000four balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 31.672753,
+      "offset": 38.661837,
       "duration": 1.048625
     },
     "en-GB\u0000four bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 32.841378,
+      "offset": 39.830462,
       "duration": 1.287792
     },
     "en-GB\u0000giant carrot garden": {
       "src": "/speech/en-GB.mp3",
-      "offset": 34.24917,
+      "offset": 41.238254,
       "duration": 1.722625
     },
     "en-GB\u0000Good thinking, Sean. Let's try again.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 36.091795,
+      "offset": 43.080879,
       "duration": 5.300542
     },
     "en-GB\u0000Great job keeping on looking. Let's try another pair.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 41.512337,
+      "offset": 48.501421,
       "duration": 5.966417
     },
     "en-GB\u0000Great job, Sean!": {
       "src": "/speech/en-GB.mp3",
-      "offset": 47.598754,
+      "offset": 54.587838,
       "duration": 2.8485
     },
     "en-GB\u0000Great trying, Sean. Let's try again.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 50.567254,
+      "offset": 57.556338,
       "duration": 5.368333
     },
     "en-GB\u0000Great!": {
       "src": "/speech/en-GB.mp3",
-      "offset": 56.055587,
+      "offset": 63.044671,
       "duration": 1.97625
     },
     "en-GB\u0000green circle": {
       "src": "/speech/en-GB.mp3",
-      "offset": 58.151837,
+      "offset": 65.140921,
       "duration": 1.22
     },
     "en-GB\u0000green star": {
       "src": "/speech/en-GB.mp3",
-      "offset": 59.491837,
+      "offset": 66.480921,
       "duration": 1.079333
     },
     "en-GB\u0000green triangle": {
       "src": "/speech/en-GB.mp3",
-      "offset": 60.69117,
+      "offset": 67.680254,
       "duration": 1.301458
     },
     "en-GB\u0000How many apples are here?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 62.112628,
+      "offset": 69.101712,
       "duration": 3.055958
     },
     "en-GB\u0000How many balls are here?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 65.288586,
+      "offset": 72.27767,
       "duration": 2.988083
     },
     "en-GB\u0000How many bananas are here?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 68.396669,
+      "offset": 75.385753,
       "duration": 3.259833
     },
     "en-GB\u0000Let's count together.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 71.776502,
+      "offset": 78.765586,
       "duration": 2.793542
+    },
+    "en-GB\u0000Let's do it again.": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 81.679128,
+      "duration": 2.669125
     },
     "en-GB\u0000Let's find where the pair is hiding.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 74.690044,
+      "offset": 84.468253,
       "duration": 3.674625
     },
     "en-GB\u0000Let's keep looking for the pair.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 78.484669,
+      "offset": 88.262878,
       "duration": 3.131083
     },
     "en-GB\u0000Let's look for the pair together.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 81.735752,
+      "offset": 91.513961,
       "duration": 3.212625
     },
     "en-GB\u0000Let’s rebuild the blue forest party": {
       "src": "/speech/en-GB.mp3",
-      "offset": 85.068377,
+      "offset": 94.846586,
       "duration": 2.687208
     },
     "en-GB\u0000Let’s rebuild the giant carrot garden": {
       "src": "/speech/en-GB.mp3",
-      "offset": 87.875585,
+      "offset": 97.653794,
       "duration": 2.701
     },
     "en-GB\u0000Let’s rebuild the rescue planes adventure": {
       "src": "/speech/en-GB.mp3",
-      "offset": 90.696585,
+      "offset": 100.474794,
       "duration": 2.924208
     },
     "en-GB\u0000Let’s sort by color": {
       "src": "/speech/en-GB.mp3",
-      "offset": 93.740793,
+      "offset": 103.519002,
       "duration": 1.621
     },
     "en-GB\u0000Let’s sort by shape": {
       "src": "/speech/en-GB.mp3",
-      "offset": 95.481793,
+      "offset": 105.260002,
       "duration": 1.540458
+    },
+    "en-GB\u0000Let's try again together.": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 106.92046,
+      "duration": 2.99525
+    },
+    "en-GB\u0000Match identical numbers in two rows": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 110.03571,
+      "duration": 2.750667
     },
     "en-GB\u0000Nice try, Sean. Try again.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 97.142251,
+      "offset": 112.906377,
       "duration": 4.852083
     },
     "en-GB\u0000nine": {
       "src": "/speech/en-GB.mp3",
-      "offset": 102.114334,
+      "offset": 117.87846,
       "duration": 0.731208
     },
     "en-GB\u0000nine apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 102.965542,
+      "offset": 118.729668,
       "duration": 1.229208
     },
     "en-GB\u0000nine balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 104.31475,
+      "offset": 120.078876,
       "duration": 1.180167
     },
     "en-GB\u0000nine bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 105.614917,
+      "offset": 121.379043,
       "duration": 1.418917
+    },
+    "en-GB\u0000Now more numbers": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 122.91796,
+      "duration": 1.455375
+    },
+    "en-GB\u0000Number pairs": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 124.493335,
+      "duration": 1.24625
     },
     "en-GB\u0000one": {
       "src": "/speech/en-GB.mp3",
-      "offset": 107.153834,
+      "offset": 125.859585,
       "duration": 0.66275
     },
     "en-GB\u0000one apple": {
       "src": "/speech/en-GB.mp3",
-      "offset": 107.936584,
+      "offset": 126.642335,
       "duration": 1.029583
     },
     "en-GB\u0000one ball": {
       "src": "/speech/en-GB.mp3",
-      "offset": 109.086167,
+      "offset": 127.791918,
       "duration": 1.033458
     },
     "en-GB\u0000one banana": {
       "src": "/speech/en-GB.mp3",
-      "offset": 110.239625,
+      "offset": 128.945376,
       "duration": 1.242958
+    },
+    "en-GB\u0000One more little try.": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 130.308334,
+      "duration": 2.807167
     },
     "en-GB\u0000Open two cards and find a pair": {
       "src": "/speech/en-GB.mp3",
-      "offset": 111.602583,
+      "offset": 133.235501,
       "duration": 2.429125
+    },
+    "en-GB\u0000Press the pairs": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 135.784626,
+      "duration": 1.224417
     },
     "en-GB\u0000red circle": {
       "src": "/speech/en-GB.mp3",
-      "offset": 114.151708,
-      "duration": 1.78
+      "offset": 137.129043,
+      "duration": 1.152917
     },
     "en-GB\u0000red square": {
       "src": "/speech/en-GB.mp3",
-      "offset": 116.051708,
+      "offset": 138.40196,
       "duration": 1.079667
     },
     "en-GB\u0000red triangle": {
       "src": "/speech/en-GB.mp3",
-      "offset": 117.251375,
+      "offset": 139.601627,
       "duration": 1.247333
     },
     "en-GB\u0000rescue planes adventure": {
       "src": "/speech/en-GB.mp3",
-      "offset": 118.618708,
+      "offset": 140.96896,
       "duration": 1.948208
     },
     "en-GB\u0000Sean, every try helps us learn. Let's try again.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 120.686916,
+      "offset": 143.037168,
       "duration": 6.140667
     },
     "en-GB\u0000Sean, great trying. One more small try.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 126.947583,
+      "offset": 149.297835,
       "duration": 5.626542
     },
     "en-GB\u0000Sean, I love how you tried. Let's try again.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 132.694125,
+      "offset": 155.044377,
       "duration": 5.828208
     },
     "en-GB\u0000Sean, let's keep looking for the pair.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 138.642333,
+      "offset": 160.992585,
       "duration": 3.767458
     },
     "en-GB\u0000Sean, together and gently, let's try again.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 142.529791,
+      "offset": 164.880043,
       "duration": 4.729958
     },
     "en-GB\u0000Sean, you're a champion at trying. Let's try together.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 147.379749,
+      "offset": 169.730001,
       "duration": 6.167833
     },
     "en-GB\u0000Sean, you're great at searching. Let's keep looking together.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 153.667582,
+      "offset": 176.017834,
       "duration": 6.344542
     },
     "en-GB\u0000Sean, you're great at trying. Let's pause and try again.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 160.132124,
+      "offset": 182.482376,
       "duration": 6.333042
     },
     "en-GB\u0000seven": {
       "src": "/speech/en-GB.mp3",
-      "offset": 166.585166,
-      "duration": 1.78
+      "offset": 188.935418,
+      "duration": 0.785042
     },
     "en-GB\u0000seven apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 168.485166,
-      "duration": 1.78
+      "offset": 189.84046,
+      "duration": 1.293167
     },
     "en-GB\u0000seven balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 170.385166,
+      "offset": 191.253627,
       "duration": 1.254125
     },
     "en-GB\u0000seven bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 171.759291,
+      "offset": 192.627752,
       "duration": 1.50975
     },
     "en-GB\u0000shoe": {
       "src": "/speech/en-GB.mp3",
-      "offset": 173.389041,
+      "offset": 194.257502,
       "duration": 0.721417
     },
     "en-GB\u0000six": {
       "src": "/speech/en-GB.mp3",
-      "offset": 174.230458,
+      "offset": 195.098919,
       "duration": 0.827375
     },
     "en-GB\u0000six apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 175.177833,
+      "offset": 196.046294,
       "duration": 1.245917
     },
     "en-GB\u0000six balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 176.54375,
+      "offset": 197.412211,
       "duration": 1.174625
     },
     "en-GB\u0000six bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 177.838375,
+      "offset": 198.706836,
       "duration": 1.410042
     },
     "en-GB\u0000ten": {
       "src": "/speech/en-GB.mp3",
-      "offset": 179.368417,
+      "offset": 200.236878,
       "duration": 0.693042
     },
     "en-GB\u0000ten apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 180.181459,
+      "offset": 201.04992,
       "duration": 1.142917
     },
     "en-GB\u0000ten balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 181.444376,
+      "offset": 202.312837,
       "duration": 1.15525
     },
     "en-GB\u0000ten bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 182.719626,
+      "offset": 203.588087,
       "duration": 1.37525
     },
     "en-GB\u0000The color is blue. Put it in the blue basket.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 184.214876,
+      "offset": 205.083337,
       "duration": 5.47725
     },
     "en-GB\u0000The color is green. Put it in the green basket.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 189.812126,
+      "offset": 210.680587,
       "duration": 5.572333
     },
     "en-GB\u0000The color is red. Put it in the red basket.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 195.504459,
+      "offset": 216.37292,
       "duration": 5.397792
     },
     "en-GB\u0000The color is yellow. Put it in the yellow basket.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 201.022251,
+      "offset": 221.890712,
       "duration": 5.572333
     },
     "en-GB\u0000The piece fits in the glowing spot. Try there.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 206.714584,
+      "offset": 227.583045,
       "duration": 5.4385
     },
     "en-GB\u0000The shape is a circle. Put it in the basket with the circle.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 212.273084,
+      "offset": 233.141545,
       "duration": 6.158708
     },
     "en-GB\u0000The shape is a square. Put it in the basket with the square.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 218.551792,
+      "offset": 239.420253,
       "duration": 6.088667
     },
     "en-GB\u0000The shape is a star. Put it in the basket with the star.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 224.760459,
+      "offset": 245.62892,
       "duration": 5.884792
     },
     "en-GB\u0000The shape is a triangle. Put it in the basket with the triangle.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 230.765251,
+      "offset": 251.633712,
       "duration": 6.360417
     },
     "en-GB\u0000There are eight apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 237.245668,
+      "offset": 258.114129,
       "duration": 2.614833
     },
     "en-GB\u0000There are eight balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 239.980501,
+      "offset": 260.848962,
       "duration": 2.560458
     },
     "en-GB\u0000There are eight bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 242.660959,
+      "offset": 263.52942,
       "duration": 2.886583
     },
     "en-GB\u0000There are five apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 245.667542,
+      "offset": 266.536003,
       "duration": 2.764292
     },
     "en-GB\u0000There are five balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 248.551834,
+      "offset": 269.420295,
       "duration": 2.7235
     },
     "en-GB\u0000There are five bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 251.395334,
+      "offset": 272.263795,
       "duration": 2.981625
     },
     "en-GB\u0000There are four apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 254.496959,
+      "offset": 275.36542,
       "duration": 2.7235
     },
     "en-GB\u0000There are four balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 257.340459,
+      "offset": 278.20892,
       "duration": 2.642
     },
     "en-GB\u0000There are four bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 260.102459,
+      "offset": 280.97092,
       "duration": 2.927292
     },
     "en-GB\u0000There are nine apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 263.149751,
+      "offset": 284.018212,
       "duration": 2.68275
     },
     "en-GB\u0000There are nine balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 265.952501,
+      "offset": 286.820962,
       "duration": 2.669167
     },
     "en-GB\u0000There are nine bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 268.741668,
+      "offset": 289.610129,
       "duration": 2.927333
     },
     "en-GB\u0000There are seven apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 271.789001,
+      "offset": 292.657462,
       "duration": 2.805
     },
     "en-GB\u0000There are seven balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 274.714001,
+      "offset": 295.582462,
       "duration": 2.76425
     },
     "en-GB\u0000There are seven bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 277.598251,
+      "offset": 298.466712,
       "duration": 3.049583
     },
     "en-GB\u0000There are six apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 280.767834,
+      "offset": 301.636295,
       "duration": 2.750667
     },
     "en-GB\u0000There are six balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 283.638501,
+      "offset": 304.506962,
       "duration": 2.655583
     },
     "en-GB\u0000There are six bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 286.414084,
+      "offset": 307.282545,
       "duration": 2.940875
     },
     "en-GB\u0000There are ten apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 289.474959,
+      "offset": 310.34342,
       "duration": 2.68275
     },
     "en-GB\u0000There are ten balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 292.277709,
+      "offset": 313.14617,
       "duration": 2.657708
     },
     "en-GB\u0000There are ten bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 295.055417,
+      "offset": 315.923878,
       "duration": 2.91375
     },
     "en-GB\u0000There are three apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 298.089167,
+      "offset": 318.957628,
       "duration": 2.7235
     },
     "en-GB\u0000There are three balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 300.932667,
+      "offset": 321.801128,
       "duration": 2.696333
     },
     "en-GB\u0000There are three bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 303.749,
+      "offset": 324.617461,
       "duration": 2.99525
     },
     "en-GB\u0000There are two apples.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 306.86425,
+      "offset": 327.732711,
       "duration": 2.68275
     },
     "en-GB\u0000There are two balls.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 309.667,
+      "offset": 330.535461,
       "duration": 2.628417
     },
     "en-GB\u0000There are two bananas.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 312.415417,
+      "offset": 333.283878,
       "duration": 2.91375
     },
     "en-GB\u0000There is one apple.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 315.449167,
+      "offset": 336.317628,
       "duration": 2.642
     },
     "en-GB\u0000There is one ball.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 318.211167,
+      "offset": 339.079628,
       "duration": 2.628417
     },
     "en-GB\u0000There is one banana.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 320.959584,
+      "offset": 341.828045,
       "duration": 2.872958
     },
     "en-GB\u0000three": {
       "src": "/speech/en-GB.mp3",
-      "offset": 323.952542,
+      "offset": 344.821003,
       "duration": 0.741542
     },
     "en-GB\u0000three apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 324.814084,
+      "offset": 345.682545,
       "duration": 1.213333
     },
     "en-GB\u0000three balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 326.147417,
+      "offset": 347.015878,
       "duration": 1.225375
     },
     "en-GB\u0000three bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 327.492792,
+      "offset": 348.361253,
       "duration": 1.424083
     },
     "en-GB\u0000Together and gently, let's keep looking.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 329.036875,
+      "offset": 349.905336,
       "duration": 4.014333
     },
     "en-GB\u0000Try again, sweetie. I'm with you.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 333.171208,
+      "offset": 354.039669,
       "duration": 5.019417
     },
     "en-GB\u0000two": {
       "src": "/speech/en-GB.mp3",
-      "offset": 338.310625,
+      "offset": 359.179086,
       "duration": 0.649167
     },
     "en-GB\u0000two apples": {
       "src": "/speech/en-GB.mp3",
-      "offset": 339.079792,
+      "offset": 359.948253,
       "duration": 1.132792
     },
     "en-GB\u0000two balls": {
       "src": "/speech/en-GB.mp3",
-      "offset": 340.332584,
+      "offset": 361.201045,
       "duration": 1.083292
     },
     "en-GB\u0000two bananas": {
       "src": "/speech/en-GB.mp3",
-      "offset": 341.535876,
+      "offset": 362.404337,
       "duration": 1.303667
     },
     "en-GB\u0000Where is the apple?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 342.959543,
+      "offset": 363.828004,
       "duration": 2.485333
     },
     "en-GB\u0000Where is the ball?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 345.564876,
+      "offset": 366.433337,
       "duration": 2.39025
     },
     "en-GB\u0000Where is the banana?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 348.075126,
+      "offset": 368.943587,
       "duration": 2.677708
     },
     "en-GB\u0000Where is the car?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 350.872834,
+      "offset": 371.741295,
       "duration": 2.417417
     },
     "en-GB\u0000Where is the cat?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 353.410251,
+      "offset": 374.278712,
       "duration": 2.471792
     },
     "en-GB\u0000Where is the dog?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 356.002043,
+      "offset": 376.870504,
       "duration": 2.403833
     },
     "en-GB\u0000Where is the shoe?": {
       "src": "/speech/en-GB.mp3",
-      "offset": 358.525876,
+      "offset": 379.394337,
       "duration": 2.417417
     },
     "en-GB\u0000Wow, Sean leveled up!": {
       "src": "/speech/en-GB.mp3",
-      "offset": 361.063293,
+      "offset": 381.931754,
       "duration": 3.226125
     },
     "en-GB\u0000yellow square": {
       "src": "/speech/en-GB.mp3",
-      "offset": 364.409418,
+      "offset": 385.277879,
       "duration": 1.209333
     },
     "en-GB\u0000yellow star": {
       "src": "/speech/en-GB.mp3",
-      "offset": 365.738751,
+      "offset": 386.607212,
       "duration": 1.175042
     },
     "en-GB\u0000yellow triangle": {
       "src": "/speech/en-GB.mp3",
-      "offset": 367.033793,
+      "offset": 387.902254,
       "duration": 1.315042
     },
     "en-GB\u0000You can do it, Sean. One more try.": {
       "src": "/speech/en-GB.mp3",
-      "offset": 368.468835,
+      "offset": 389.337296,
       "duration": 5.132958
     },
     "en-GB\u0000You did it!": {
       "src": "/speech/en-GB.mp3",
-      "offset": 373.721793,
+      "offset": 394.590254,
       "duration": 2.18
+    },
+    "en-GB\u0000You moved up a level!": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 396.890254,
+      "duration": 2.84575
+    },
+    "en-GB\u0000You won a trophy!": {
+      "src": "/speech/en-GB.mp3",
+      "offset": 399.856004,
+      "duration": 2.601208
     },
     "en-GB\u0000You're doing great again and again!": {
       "src": "/speech/en-GB.mp3",
-      "offset": 376.021793,
+      "offset": 402.577212,
       "duration": 3.416458
     }
   }

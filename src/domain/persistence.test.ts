@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { applyProgressionChoice, applyRoundResult, createInitialProgress, RECENT_RESULT_LIMIT } from './progression';
+import { applyRoundResult, createInitialProgress, RECENT_RESULT_LIMIT } from './progression';
 import { migrateStoredProgress, serializeProgress } from './persistence';
 
 describe('persistence migration', () => {
   it('returns defaults for invalid data', () => {
     const progress = migrateStoredProgress('nope', { prefersReducedMotion: true, now: 55 });
 
-    expect(progress.version).toBe(3);
+    expect(progress.version).toBe(4);
     expect(progress.settings.reducedMotion).toBe(true);
     expect(progress.totalStars).toBe(0);
   });
@@ -15,6 +15,7 @@ describe('persistence migration', () => {
     const progress = migrateStoredProgress(
       {
         schemaVersion: 1,
+        totalStars: 10,
         preferences: {
           language: 'bilingual',
           englishVoice: 'en-GB',
@@ -39,14 +40,14 @@ describe('persistence migration', () => {
     expect(progress.settings.englishVoiceLocale).toBe('en-GB');
     expect(progress.settings.quietMode).toBe(true);
     expect(progress.domains.listening.level).toBe(2);
-    expect(progress.totalStars).toBe(3);
+    expect(progress.totalStars).toBe(10);
   });
 
   it('serializes stable JSON for storage', () => {
     const progress = migrateStoredProgress(null, { now: 88 });
     const raw = serializeProgress(progress);
 
-    expect(JSON.parse(raw).version).toBe(3);
+    expect(JSON.parse(raw).version).toBe(4);
     expect(JSON.parse(raw).updatedAt).toBe(88);
   });
 
@@ -117,7 +118,7 @@ describe('persistence migration', () => {
       },
     }, { now: 99 });
 
-    expect(progress.version).toBe(3);
+    expect(progress.version).toBe(4);
     expect(progress.totalStars).toBe(7);
     expect(progress.settings.quietMode).toBe(true);
     expect(progress.domains.puzzle).toMatchObject({
@@ -153,6 +154,83 @@ describe('persistence migration', () => {
     expect(progress.domains.listening.recentResults.at(-1)?.completedAt).toBe(8);
   });
 
+  it('migrates version three with all existing domains intact and initializes number pairs', () => {
+    const existingDomains = Object.fromEntries(
+      ['listening', 'counting', 'sorting', 'puzzle', 'memory'].map((domain, index) => [domain, {
+        attempts: index + 2,
+        successes: index + 1,
+        streak: index,
+        level: index % 2 === 0 ? 1 : 2,
+        highestLevel: index % 2 === 0 ? 1 : 2,
+        completedRounds: index + 1,
+        firstAttemptSuccesses: index,
+        totalAttempts: index + 3,
+        mastery: 0.5 + index * 0.05,
+        stars: index + 1,
+        lastPracticedAt: 200 + index,
+        lastProgressionChoice: index % 2 === 0 ? null : 'next',
+        recentResults: [{
+          completedAt: 100 + index,
+          level: 1,
+          success: true,
+          firstAttempt: true,
+          attempts: 1,
+        }],
+        concepts: {
+          [`concept-${index}`]: {
+            attempts: 2,
+            successes: 1,
+            streak: 1,
+            mastery: 0.6,
+          },
+        },
+      }]),
+    );
+    const progress = migrateStoredProgress({
+      version: 3,
+      updatedAt: 250,
+      totalStars: 99,
+      settings: {
+        languageMode: 'bilingual',
+        englishVoiceLocale: 'en-GB',
+        soundLevel: 0.4,
+        reducedMotion: true,
+        quietMode: true,
+      },
+      domains: existingDomains,
+    }, { now: 999 });
+
+    expect(progress.version).toBe(4);
+    expect(progress.updatedAt).toBe(250);
+    expect(progress.totalStars).toBe(99);
+    expect(progress.settings).toEqual({
+      languageMode: 'bilingual',
+      englishVoiceLocale: 'en-GB',
+      soundLevel: 0.4,
+      reducedMotion: true,
+      quietMode: true,
+    });
+    for (const [domain, stored] of Object.entries(existingDomains)) {
+      expect(progress.domains[domain as keyof typeof progress.domains]).toEqual(stored);
+    }
+    expect(progress.domains.numberPairs).toEqual({
+      attempts: 0,
+      successes: 0,
+      streak: 0,
+      level: 1,
+      highestLevel: 1,
+      completedRounds: 0,
+      firstAttemptSuccesses: 0,
+      totalAttempts: 0,
+      mastery: 0,
+      stars: 0,
+      lastPracticedAt: 0,
+      lastProgressionChoice: null,
+      recentResults: [],
+      concepts: {},
+    });
+  });
+
   it('continues from the chosen level after serialization and reload', () => {
     let progress = createInitialProgress(false, 1000);
     for (let index = 0; index < 3; index += 1) {
@@ -163,13 +241,39 @@ describe('persistence migration', () => {
         1001 + index,
       ).progress;
     }
-    progress = applyProgressionChoice(progress, 'sorting', 'next', 1010).progress;
-
     const reloaded = migrateStoredProgress(JSON.parse(serializeProgress(progress)), { now: 1020 });
 
     expect(reloaded.domains.sorting.level).toBe(2);
     expect(reloaded.domains.sorting.highestLevel).toBe(2);
     expect(reloaded.domains.sorting.lastProgressionChoice).toBe('next');
     expect(reloaded.domains.sorting.recentResults).toHaveLength(3);
+  });
+
+  it('round-trips number-pairs progress', () => {
+    let progress = createInitialProgress(false, 1000);
+    for (let index = 0; index < 3; index += 1) {
+      progress = applyRoundResult(
+        progress,
+        'numberPairs',
+        { attempts: 1, concepts: [`number-${index + 1}`] },
+        1001 + index,
+      ).progress;
+    }
+
+    const reloaded = migrateStoredProgress(JSON.parse(serializeProgress(progress)), { now: 2000 });
+
+    expect(reloaded.version).toBe(4);
+    expect(reloaded.totalStars).toBe(3);
+    expect(reloaded.domains.numberPairs).toEqual(progress.domains.numberPairs);
+    expect(reloaded.domains.numberPairs).toMatchObject({
+      attempts: 3,
+      successes: 3,
+      completedRounds: 3,
+      level: 2,
+      highestLevel: 2,
+      stars: 3,
+      lastProgressionChoice: 'next',
+    });
+    expect(reloaded.domains.numberPairs.recentResults).toHaveLength(3);
   });
 });

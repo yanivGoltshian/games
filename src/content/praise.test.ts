@@ -30,12 +30,12 @@ describe('praise selector', () => {
 
   it('includes the required stable Hebrew phrases', () => {
     const texts = PRAISE_HE.map((entry) => entry.text);
-    expect(texts).toEqual(['כל הכבוד, שון!', 'יופי!', 'הצלחת!']);
+    expect(texts).toEqual(['כל הכבוד, שון!', 'יופי!', 'הצלחת!', 'מעולה!']);
   });
 
   it('includes the required stable English phrases', () => {
     const texts = PRAISE_EN.map((entry) => entry.text);
-    expect(texts).toEqual(['Great job, Sean!', 'Great!', 'You did it!']);
+    expect(texts).toEqual(['Great job, Sean!', 'Great!', 'You did it!', 'Excellent!']);
   });
 
   it('selects from the richer milestone tier when requested', () => {
@@ -51,7 +51,7 @@ describe('praise selector', () => {
   });
 
   it('keeps stable ids across calls so future audio assets can key off them', () => {
-    expect(PRAISE_HE.map((entry) => entry.id)).toEqual(['praise-he-01', 'praise-he-02', 'praise-he-03']);
-    expect(PRAISE_EN.map((entry) => entry.id)).toEqual(['praise-en-01', 'praise-en-02', 'praise-en-03']);
+    expect(PRAISE_HE.map((entry) => entry.id)).toEqual(['praise-he-01', 'praise-he-02', 'praise-he-03', 'praise-he-04']);
+    expect(PRAISE_EN.map((entry) => entry.id)).toEqual(['praise-en-01', 'praise-en-02', 'praise-en-03', 'praise-en-04']);
   });
 });

@@ -16,10 +16,14 @@ import {
 import {
   RETRY_EN_MEMORY_REPEATED,
   RETRY_EN_MEMORY_STANDARD,
+  RETRY_EN_NUMBER_PAIRS_REPEATED,
+  RETRY_EN_NUMBER_PAIRS_STANDARD,
   RETRY_EN_REPEATED,
   RETRY_EN_STANDARD,
   RETRY_HE_MEMORY_REPEATED,
   RETRY_HE_MEMORY_STANDARD,
+  RETRY_HE_NUMBER_PAIRS_REPEATED,
+  RETRY_HE_NUMBER_PAIRS_STANDARD,
   RETRY_HE_REPEATED,
   RETRY_HE_STANDARD,
 } from './retry';
@@ -110,6 +114,12 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   addPair(firstPuzzleMiss.he, firstPuzzleMiss.en);
   addPair(repeatedPuzzleMiss.he, repeatedPuzzleMiss.en);
   addPair('פותחים שני קלפים ומחפשים זוג', 'Open two cards and find a pair');
+  addPair('זוגות מספרים', 'Number pairs');
+  addPair('מתאימים מספרים זהים בשתי שורות', 'Match identical numbers in two rows');
+  addPair('לחץ על הזוגות', 'Press the pairs');
+  addPair('עברת שלב!', 'You moved up a level!');
+  addPair('עכשיו יותר מספרים', 'Now more numbers');
+  addPair('זכית בגביע!', 'You won a trophy!');
 
   [
     ...PRAISE_HE,
@@ -118,6 +128,8 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
     ...RETRY_HE_REPEATED,
     ...RETRY_HE_MEMORY_STANDARD,
     ...RETRY_HE_MEMORY_REPEATED,
+    ...RETRY_HE_NUMBER_PAIRS_STANDARD,
+    ...RETRY_HE_NUMBER_PAIRS_REPEATED,
   ].forEach((line) => add('he-IL', line.text));
   [
     ...PRAISE_EN,
@@ -126,6 +138,8 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
     ...RETRY_EN_REPEATED,
     ...RETRY_EN_MEMORY_STANDARD,
     ...RETRY_EN_MEMORY_REPEATED,
+    ...RETRY_EN_NUMBER_PAIRS_STANDARD,
+    ...RETRY_EN_NUMBER_PAIRS_REPEATED,
   ].forEach((line) => {
     add('en-US', line.text);
     add('en-GB', line.text);

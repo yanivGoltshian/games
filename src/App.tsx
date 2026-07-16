@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { CaregiverGate } from './components/CaregiverGate';
 import { CaregiverPanel } from './components/CaregiverPanel';
 import { HomeScreen } from './components/HomeScreen';
-import { applyProgressionChoice, applyRoundResult, createInitialProgress } from './domain/progression';
-import type { DomainKey, ProgressionChoice, RecordedRound, ToddlerSettings } from './domain/types';
+import { applyRoundResult, createInitialProgress } from './domain/progression';
+import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
 import { speechService } from './services/speech';
@@ -11,6 +11,7 @@ import { parseHash, type Route } from './routes';
 import { CountingGame } from './games/CountingGame';
 import { ListeningGame } from './games/ListeningGame';
 import { MemoryGame } from './games/MemoryGame';
+import { NumberPairsGame } from './games/NumberPairsGame';
 import { PuzzleGame } from './games/PuzzleGame';
 import { SortingGame } from './games/SortingGame';
 
@@ -72,12 +73,6 @@ export default function App() {
     return result.summary;
   };
 
-  const chooseProgression = (domain: DomainKey) => (choice: ProgressionChoice) => {
-    const result = applyProgressionChoice(progress, domain, choice, Date.now());
-    setProgress(result.progress);
-    return result.domain;
-  };
-
   const resetAll = () => {
     const next = createInitialProgress(prefersReducedMotion, Date.now());
     clearProgress();
@@ -113,7 +108,6 @@ export default function App() {
       domainProgress,
       onBack: () => navigate('/'),
       onCompleteRound: completeRound(route.domain),
-      onProgressionChoice: chooseProgression(route.domain),
     };
 
     content = {
@@ -122,6 +116,7 @@ export default function App() {
       sorting: <SortingGame {...gameProps} />,
       puzzle: <PuzzleGame {...gameProps} />,
       memory: <MemoryGame {...gameProps} />,
+      numberPairs: <NumberPairsGame {...gameProps} />,
     }[route.domain];
   } else {
     content = <HomeScreen onOpenGame={(domain) => navigate(`/games/${domain}`)} />;

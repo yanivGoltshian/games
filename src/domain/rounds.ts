@@ -8,6 +8,7 @@ import type {
   DomainProgress,
   ListeningRound,
   MemoryRound,
+  NumberPairsRound,
   PuzzleRound,
   ShapeId,
   SortingRound,
@@ -16,6 +17,7 @@ import type {
 
 export const NUMBER_WORDS_HE = ['אפס', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר'];
 export const NUMBER_WORDS_EN = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+export const NUMBER_PAIRS_GENERATION_ATTEMPTS = 32;
 
 const listeningStages: string[][] = [
   ['ball', 'car', 'banana', 'dog', 'cat', 'apple'],
@@ -189,6 +191,62 @@ export function generateMemoryRound(domain: DomainProgress, seed: string | numbe
     promptHe: 'פותחים שני קלפים ומחפשים זוג',
     promptEn: 'Open two cards and find a pair',
   };
+}
+
+export function getNumberPairsRoundSignature(
+  round: Pick<NumberPairsRound, 'selectedValues' | 'topRow' | 'bottomRow'>,
+): string {
+  const selectedValues = [...round.selectedValues].sort((left, right) => left - right);
+  return `${selectedValues.join(',')}|${round.topRow.join(',')}|${round.bottomRow.join(',')}`;
+}
+
+function createNumberPairsCandidate(domain: DomainProgress, seed: string): NumberPairsRound {
+  const random = createSeededRandom(seed);
+  const rangeMax = domain.level === 1 ? 3 : domain.level === 2 ? 6 : 10;
+  const valueCount = domain.level === 1 ? 3 : domain.level === 2 ? 4 : 5;
+  const availableValues = Array.from({ length: rangeMax }, (_, index) => index + 1);
+  const selectedValues = domain.level === 1
+    ? availableValues
+    : random.shuffle(availableValues).slice(0, valueCount).sort((left, right) => left - right);
+  const topRow = random.shuffle(selectedValues);
+  let bottomRow = random.shuffle(selectedValues);
+
+  if (bottomRow.every((value, index) => value === topRow[index])) {
+    const offset = random.int(1, bottomRow.length - 1);
+    bottomRow = [...bottomRow.slice(offset), ...bottomRow.slice(0, offset)];
+  }
+
+  const candidate = {
+    selectedValues,
+    topRow,
+    bottomRow,
+    promptHe: 'לחץ על הזוגות',
+    promptEn: 'Press the pairs',
+  };
+
+  return {
+    ...candidate,
+    signature: getNumberPairsRoundSignature(candidate),
+  };
+}
+
+export function generateNumberPairsRound(
+  domain: DomainProgress,
+  seed: string | number,
+  recentSignatures: readonly string[] = [],
+): NumberPairsRound {
+  const history = new Set(recentSignatures);
+  let fallback: NumberPairsRound | null = null;
+
+  for (let attempt = 0; attempt < NUMBER_PAIRS_GENERATION_ATTEMPTS; attempt += 1) {
+    const candidate = createNumberPairsCandidate(domain, `${String(seed)}:number-pairs:${attempt}`);
+    fallback ??= candidate;
+    if (!history.has(candidate.signature)) {
+      return candidate;
+    }
+  }
+
+  return fallback!;
 }
 
 export function conceptMasteryFor(domain: DomainProgress, conceptId: string): number {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { RETRY_EN_MEMORY_REPEATED, RETRY_EN_STANDARD, RETRY_HE_REPEATED } from '../content/retry';
+import {
+  RETRY_EN_MEMORY_REPEATED,
+  RETRY_EN_NUMBER_PAIRS_REPEATED,
+  RETRY_EN_NUMBER_PAIRS_STANDARD,
+  RETRY_EN_STANDARD,
+  RETRY_HE_REPEATED,
+} from '../content/retry';
 import { SessionRetryHistory, classifyRetryAttempt, selectDeterministicLine, selectRetryLine } from './retry';
 
 describe('retry selection', () => {
@@ -72,5 +78,23 @@ describe('retry selection', () => {
 
     expect(RETRY_EN_MEMORY_REPEATED.map((line) => line.id)).toContain(memoryRepeated.id);
     expect(memoryRepeated.text.toLowerCase()).toMatch(/find|look/);
+  });
+
+  it('selects number-pairs correction from the matching effort tier', () => {
+    const firstMiss = selectRetryLine({
+      locale: 'en',
+      scope: 'number-pairs',
+      missCount: 1,
+      seed: 'pairs',
+    });
+    const repeatedMiss = selectRetryLine({
+      locale: 'en',
+      scope: 'number-pairs',
+      missCount: 4,
+      seed: 'pairs',
+    });
+
+    expect(RETRY_EN_NUMBER_PAIRS_STANDARD.map((line) => line.id)).toContain(firstMiss.id);
+    expect(RETRY_EN_NUMBER_PAIRS_REPEATED.map((line) => line.id)).toContain(repeatedMiss.id);
   });
 });

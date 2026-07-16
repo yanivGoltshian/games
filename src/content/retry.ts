@@ -1,5 +1,5 @@
 export type RetryLocale = 'he' | 'en';
-export type RetryScope = 'generic' | 'memory-search';
+export type RetryScope = 'generic' | 'memory-search' | 'number-pairs';
 export type RetryTier = 'standard' | 'repeated-effort';
 
 export interface RetryLine {
@@ -88,6 +88,26 @@ export const RETRY_EN_MEMORY_REPEATED: RetryLine[] = [
   },
 ];
 
+export const RETRY_HE_NUMBER_PAIRS_STANDARD: RetryLine[] = [
+  { id: 'retry-he-number-pairs-standard-01', text: 'נעשה שוב.', scope: 'number-pairs', tier: 'standard' },
+  { id: 'retry-he-number-pairs-standard-02', text: 'כמעט. נמצא את הזוג.', scope: 'number-pairs', tier: 'standard' },
+];
+
+export const RETRY_EN_NUMBER_PAIRS_STANDARD: RetryLine[] = [
+  { id: 'retry-en-number-pairs-standard-01', text: "Let's do it again.", scope: 'number-pairs', tier: 'standard' },
+  { id: 'retry-en-number-pairs-standard-02', text: "Almost. Let's find the pair.", scope: 'number-pairs', tier: 'standard' },
+];
+
+export const RETRY_HE_NUMBER_PAIRS_REPEATED: RetryLine[] = [
+  { id: 'retry-he-number-pairs-repeated-01', text: 'ננסה שוב ביחד.', scope: 'number-pairs', tier: 'repeated-effort' },
+  { id: 'retry-he-number-pairs-repeated-02', text: 'עוד ניסיון קטן.', scope: 'number-pairs', tier: 'repeated-effort' },
+];
+
+export const RETRY_EN_NUMBER_PAIRS_REPEATED: RetryLine[] = [
+  { id: 'retry-en-number-pairs-repeated-01', text: "Let's try again together.", scope: 'number-pairs', tier: 'repeated-effort' },
+  { id: 'retry-en-number-pairs-repeated-02', text: 'One more little try.', scope: 'number-pairs', tier: 'repeated-effort' },
+];
+
 const RETRY_BANKS: Record<RetryLocale, Record<RetryScope, Record<RetryTier, RetryLine[]>>> = {
   he: {
     generic: {
@@ -98,6 +118,10 @@ const RETRY_BANKS: Record<RetryLocale, Record<RetryScope, Record<RetryTier, Retr
       standard: RETRY_HE_MEMORY_STANDARD,
       'repeated-effort': RETRY_HE_MEMORY_REPEATED,
     },
+    'number-pairs': {
+      standard: RETRY_HE_NUMBER_PAIRS_STANDARD,
+      'repeated-effort': RETRY_HE_NUMBER_PAIRS_REPEATED,
+    },
   },
   en: {
     generic: {
@@ -107,6 +131,10 @@ const RETRY_BANKS: Record<RetryLocale, Record<RetryScope, Record<RetryTier, Retr
     'memory-search': {
       standard: RETRY_EN_MEMORY_STANDARD,
       'repeated-effort': RETRY_EN_MEMORY_REPEATED,
+    },
+    'number-pairs': {
+      standard: RETRY_EN_NUMBER_PAIRS_STANDARD,
+      'repeated-effort': RETRY_EN_NUMBER_PAIRS_REPEATED,
     },
   },
 };

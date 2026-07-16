@@ -11,7 +11,7 @@ import type {
 } from './types';
 import { DOMAIN_KEYS } from './types';
 
-export const STORAGE_SCHEMA_VERSION = 3;
+export const STORAGE_SCHEMA_VERSION = 4;
 export const RECENT_RESULT_LIMIT = 5;
 const LEVEL_THRESHOLDS = [0, 0.42, 0.62, 1] as const;
 
@@ -106,7 +106,10 @@ function updateConceptStat(previous: ConceptStat, success: boolean, practiceAtte
   return next;
 }
 
-export function recommendLevelAdvance(domain: DomainProgress): LevelRecommendation | null {
+export function recommendLevelAdvance(
+  domain: DomainProgress,
+  domainKey?: DomainKey,
+): LevelRecommendation | null {
   if (domain.level >= 3 || domain.mastery < LEVEL_THRESHOLDS[domain.level]) {
     return null;
   }
@@ -114,6 +117,21 @@ export function recommendLevelAdvance(domain: DomainProgress): LevelRecommendati
   const recentAtCurrentLevel = domain.recentResults
     .filter((result) => result.level === domain.level)
     .slice(-RECENT_RESULT_LIMIT);
+
+  if (domainKey === 'puzzle' && domain.level === 1) {
+    const lastTwoResults = recentAtCurrentLevel.slice(-2);
+    if (
+      lastTwoResults.length === 2
+      && lastTwoResults.every((result) => result.success && result.firstAttempt)
+    ) {
+      return {
+        currentLevel: domain.level,
+        nextLevel: 2,
+      };
+    }
+    return null;
+  }
+
   if (recentAtCurrentLevel.length < 3) {
     return null;
   }
@@ -192,7 +210,16 @@ export function applyRoundResult(
     stars: domain.stars + (success ? 1 : 0),
     lastPracticedAt: now,
   };
-  const recommendation = success ? recommendLevelAdvance(nextDomain) : null;
+  const recommendation = success ? recommendLevelAdvance(nextDomain, domainKey) : null;
+  const leveledUp = recommendation !== null;
+  const updatedDomain: DomainProgress = leveledUp
+    ? {
+        ...nextDomain,
+        level: recommendation.nextLevel,
+        highestLevel: Math.max(nextDomain.highestLevel, recommendation.nextLevel) as DomainProgress['highestLevel'],
+        lastProgressionChoice: 'next',
+      }
+    : nextDomain;
   const starsEarned = success ? 1 : 0;
   const milestone = success && (recommendation !== null || streak % 4 === 0);
 
@@ -202,7 +229,7 @@ export function applyRoundResult(
     totalStars: progress.totalStars + starsEarned,
     domains: {
       ...progress.domains,
-      [domainKey]: nextDomain,
+      [domainKey]: updatedDomain,
     },
   };
 
@@ -210,9 +237,9 @@ export function applyRoundResult(
     progress: nextProgress,
     summary: {
       starsEarned,
-      leveledUp: false,
+      leveledUp,
       milestone,
-      level: nextDomain.level,
+      level: updatedDomain.level,
       mastery,
       firstAttempt,
       recommendation,
@@ -227,7 +254,7 @@ export function applyProgressionChoice(
   now = Date.now(),
 ): { progress: AppProgress; domain: DomainProgress; accepted: boolean } {
   const domain = progress.domains[domainKey];
-  const recommendation = recommendLevelAdvance(domain);
+  const recommendation = recommendLevelAdvance(domain, domainKey);
   if (choice === 'next' && recommendation === null) {
     return { progress, domain, accepted: false };
   }

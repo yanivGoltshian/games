@@ -1,4 +1,5 @@
 import type { DomainKey } from './domain/types';
+import { DOMAIN_KEYS } from './domain/types';
 
 export type Route =
   | { kind: 'home' }
@@ -12,7 +13,7 @@ export function parseHash(hash: string): Route {
   }
   if (cleaned.startsWith('/games/')) {
     const domain = cleaned.replace('/games/', '') as DomainKey;
-    if (['listening', 'counting', 'sorting', 'puzzle', 'memory'].includes(domain)) {
+    if (DOMAIN_KEYS.includes(domain)) {
       return { kind: 'game', domain };
     }
   }

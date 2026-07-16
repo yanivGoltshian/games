@@ -21,6 +21,10 @@ function asNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
+function sanitizeTotalStars(value: unknown, domainStars: number): number {
+  return Math.max(domainStars, 0, Math.ceil(asNumber(value, domainStars)));
+}
+
 function clampLevel(value: unknown): DomainProgress['level'] {
   if (value === 2 || value === 3) {
     return value;
@@ -169,15 +173,15 @@ export function migrateStoredProgress(
     return base;
   }
 
-  if (raw.version === STORAGE_SCHEMA_VERSION || raw.version === 2) {
+  if (raw.version === STORAGE_SCHEMA_VERSION || raw.version === 3 || raw.version === 2) {
     const settings = sanitizeSettings(raw.settings, prefersReducedMotion);
     const domains = sanitizeDomains(raw.domains, base.domains);
-    const totalStars = asNumber(raw.totalStars, Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0));
+    const domainStars = Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0);
 
     return {
       version: STORAGE_SCHEMA_VERSION,
       updatedAt: Math.max(0, Math.round(asNumber(raw.updatedAt, now))),
-      totalStars: Math.max(0, Math.round(totalStars)),
+      totalStars: sanitizeTotalStars(raw.totalStars, domainStars),
       settings,
       domains,
     };
@@ -186,11 +190,12 @@ export function migrateStoredProgress(
   const settings = readLegacySettings(raw, prefersReducedMotion);
   const legacyDomainSource = raw.domains ?? raw.stats;
   const domains = sanitizeDomains(legacyDomainSource, base.domains);
+  const domainStars = Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0);
 
   return {
     version: STORAGE_SCHEMA_VERSION,
-    updatedAt: now,
-    totalStars: Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0),
+    updatedAt: Math.max(0, Math.round(asNumber(raw.updatedAt, now))),
+    totalStars: sanitizeTotalStars(raw.totalStars, domainStars),
     settings,
     domains,
   };

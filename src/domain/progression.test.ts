@@ -4,12 +4,24 @@ import {
   applyRoundResult,
   buildPracticeWeights,
   createInitialProgress,
+  recommendLevelAdvance,
   RECENT_RESULT_LIMIT,
 } from './progression';
 import { DOMAIN_KEYS } from './types';
 
 describe('progression', () => {
-  it('recommends a next level only after three strong recent rounds', () => {
+  it('keeps number pairs as the sixth and final domain', () => {
+    expect(DOMAIN_KEYS).toEqual([
+      'listening',
+      'counting',
+      'sorting',
+      'puzzle',
+      'memory',
+      'numberPairs',
+    ]);
+  });
+
+  it('automatically applies a recommendation after three strong recent rounds', () => {
     let progress = createInitialProgress(false, 1000);
 
     for (let index = 0; index < 2; index += 1) {
@@ -32,12 +44,16 @@ describe('progression', () => {
       1003,
     );
 
-    expect(third.progress.domains.listening.level).toBe(1);
+    expect(third.progress.domains.listening.level).toBe(2);
+    expect(third.progress.domains.listening.highestLevel).toBe(2);
+    expect(third.progress.domains.listening.lastProgressionChoice).toBe('next');
     expect(third.summary.recommendation).toEqual({ currentLevel: 1, nextLevel: 2 });
+    expect(third.summary.leveledUp).toBe(true);
+    expect(third.summary.level).toBe(2);
     expect(third.summary.milestone).toBe(true);
   });
 
-  it('accepts or replays a recommendation without automatic difficulty changes', () => {
+  it('lets replay preserve an automatically accepted advancement', () => {
     let progress = createInitialProgress(false, 1000);
     for (let index = 0; index < 3; index += 1) {
       progress = applyRoundResult(
@@ -50,11 +66,35 @@ describe('progression', () => {
 
     const replay = applyProgressionChoice(progress, 'counting', 'replay', 1010);
     expect(replay.accepted).toBe(true);
-    expect(replay.domain.level).toBe(1);
-    expect(replay.domain.highestLevel).toBe(1);
+    expect(replay.domain.level).toBe(2);
+    expect(replay.domain.highestLevel).toBe(2);
     expect(replay.domain.lastProgressionChoice).toBe('replay');
 
-    const next = applyProgressionChoice(replay.progress, 'counting', 'next', 1020);
+    const sameLevelRound = applyRoundResult(
+      replay.progress,
+      'counting',
+      { attempts: 1, concepts: ['count-2'] },
+      1020,
+    );
+    expect(sameLevelRound.summary.recommendation).toBeNull();
+    expect(sameLevelRound.summary.leveledUp).toBe(false);
+    expect(sameLevelRound.progress.domains.counting.level).toBe(2);
+  });
+
+  it('retains explicit next-level choice compatibility for eligible stored progress', () => {
+    const progress = createInitialProgress(false, 1000);
+    const domain = progress.domains.memory;
+    domain.mastery = 0.9;
+    domain.recentResults = Array.from({ length: 3 }, (_, index) => ({
+      completedAt: 1001 + index,
+      level: 1 as const,
+      success: true,
+      firstAttempt: true,
+      attempts: 1,
+    }));
+
+    const next = applyProgressionChoice(progress, 'memory', 'next', 1010);
+
     expect(next.accepted).toBe(true);
     expect(next.domain.level).toBe(2);
     expect(next.domain.highestLevel).toBe(2);
@@ -107,11 +147,13 @@ describe('progression', () => {
     expect(history.at(-1)?.completedAt).toBe(1009);
   });
 
-  it('persists the same adaptive behavior for all five games', () => {
+  it('automatically applies adaptive behavior for all six domains', () => {
     for (const domain of DOMAIN_KEYS) {
       let progress = createInitialProgress(false, 1000);
-      for (let index = 0; index < 3; index += 1) {
-        progress = applyRoundResult(
+      const roundsToAdvance = domain === 'puzzle' ? 2 : 3;
+      let lastUpdate: ReturnType<typeof applyRoundResult> | undefined;
+      for (let index = 0; index < roundsToAdvance; index += 1) {
+        lastUpdate = applyRoundResult(
           progress,
           domain,
           {
@@ -120,15 +162,118 @@ describe('progression', () => {
             concepts: [`${domain}-concept`],
           },
           1001 + index,
-        ).progress;
+        );
+        progress = lastUpdate.progress;
       }
 
-      const next = applyProgressionChoice(progress, domain, 'next', 1010);
-      expect(next.accepted, domain).toBe(true);
-      expect(next.domain.level, domain).toBe(2);
-      expect(next.domain.completedRounds, domain).toBe(3);
-      expect(next.domain.firstAttemptSuccesses, domain).toBe(3);
+      expect(lastUpdate!.summary.leveledUp, domain).toBe(true);
+      expect(progress.domains[domain].level, domain).toBe(2);
+      expect(progress.domains[domain].highestLevel, domain).toBe(2);
+      expect(progress.domains[domain].completedRounds, domain).toBe(roundsToAdvance);
+      expect(progress.domains[domain].firstAttemptSuccesses, domain).toBe(roundsToAdvance);
+      expect(progress.domains[domain].lastProgressionChoice, domain).toBe('next');
     }
+  });
+
+  describe('puzzle level-one clean streak', () => {
+    it('advances on the second consecutive clean completion', () => {
+      let progress = createInitialProgress(false, 1000);
+      const first = applyRoundResult(
+        progress,
+        'puzzle',
+        { attempts: 2, requiredActions: 2, concepts: ['scene'] },
+        1001,
+      );
+      progress = first.progress;
+      const second = applyRoundResult(
+        progress,
+        'puzzle',
+        { attempts: 2, requiredActions: 2, concepts: ['scene'] },
+        1002,
+      );
+
+      expect(first.summary.recommendation).toBeNull();
+      expect(first.progress.domains.puzzle.level).toBe(1);
+      expect(second.summary.recommendation).toEqual({ currentLevel: 1, nextLevel: 2 });
+      expect(second.summary.leveledUp).toBe(true);
+      expect(second.progress.domains.puzzle.level).toBe(2);
+    });
+
+    it('requires two new clean completions after a retry breaks the streak', () => {
+      let progress = createInitialProgress(false, 1000);
+      progress = applyRoundResult(
+        progress,
+        'puzzle',
+        { attempts: 2, requiredActions: 2, concepts: ['scene'] },
+        1001,
+      ).progress;
+      const retry = applyRoundResult(
+        progress,
+        'puzzle',
+        { attempts: 3, requiredActions: 2, concepts: ['scene'] },
+        1002,
+      );
+      const firstNewClean = applyRoundResult(
+        retry.progress,
+        'puzzle',
+        { attempts: 2, requiredActions: 2, concepts: ['scene'] },
+        1003,
+      );
+      const secondNewClean = applyRoundResult(
+        firstNewClean.progress,
+        'puzzle',
+        { attempts: 2, requiredActions: 2, concepts: ['scene'] },
+        1004,
+      );
+
+      expect(retry.summary.leveledUp).toBe(false);
+      expect(firstNewClean.summary.leveledUp).toBe(false);
+      expect(firstNewClean.progress.domains.puzzle.level).toBe(1);
+      expect(secondNewClean.summary.leveledUp).toBe(true);
+      expect(secondNewClean.progress.domains.puzzle.level).toBe(2);
+    });
+
+    it('retains the mastery threshold and normal level-two rules', () => {
+      const lowMastery = createInitialProgress(false, 1000).domains.puzzle;
+      lowMastery.mastery = 0.41;
+      lowMastery.recentResults = [1001, 1002].map((completedAt) => ({
+        completedAt,
+        level: 1 as const,
+        success: true,
+        firstAttempt: true,
+        attempts: 1,
+      }));
+      expect(recommendLevelAdvance(lowMastery, 'puzzle')).toBeNull();
+
+      let progress = createInitialProgress(false, 1000);
+      for (let index = 0; index < 2; index += 1) {
+        progress = applyRoundResult(
+          progress,
+          'puzzle',
+          { attempts: 2, requiredActions: 2, concepts: ['scene'] },
+          1010 + index,
+        ).progress;
+      }
+      for (let index = 0; index < 2; index += 1) {
+        const update = applyRoundResult(
+          progress,
+          'puzzle',
+          { attempts: 4, requiredActions: 4, concepts: ['scene'] },
+          1020 + index,
+        );
+        expect(update.summary.leveledUp).toBe(false);
+        progress = update.progress;
+      }
+      const thirdAtLevelTwo = applyRoundResult(
+        progress,
+        'puzzle',
+        { attempts: 4, requiredActions: 4, concepts: ['scene'] },
+        1022,
+      );
+
+      expect(thirdAtLevelTwo.summary.leveledUp).toBe(true);
+      expect(thirdAtLevelTwo.progress.domains.puzzle.level).toBe(3);
+    });
   });
 
   it('prioritizes weaker concepts with heavier weights', () => {

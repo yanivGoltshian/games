@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { SuccessOverlay } from '../components/SuccessOverlay';
-import type { DomainProgress, ProgressionChoice, ToddlerSettings } from '../domain/types';
+import type { ToddlerSettings } from '../domain/types';
 import type { CelebrationInfo } from './types';
 
 interface RoundSuccessOverlayProps {
@@ -8,8 +8,7 @@ interface RoundSuccessOverlayProps {
   settings: ToddlerSettings;
   scope: string;
   onDismiss: () => void;
-  onProgressionChoice: (choice: ProgressionChoice) => DomainProgress;
-  startNextRound: (progressOverride?: DomainProgress) => void;
+  startNextRound: () => void;
 }
 
 export function RoundSuccessOverlay({
@@ -17,26 +16,16 @@ export function RoundSuccessOverlay({
   settings,
   scope,
   onDismiss,
-  onProgressionChoice,
   startNextRound,
 }: RoundSuccessOverlayProps) {
   const finishedRef = useRef(false);
-  const finish = (progressOverride?: DomainProgress) => {
+  const finish = () => {
     if (finishedRef.current) {
       return;
     }
     finishedRef.current = true;
     onDismiss();
-    startNextRound(progressOverride);
-  };
-  const choose = (choice: ProgressionChoice) => {
-    if (finishedRef.current) {
-      return;
-    }
-    finishedRef.current = true;
-    const progressOverride = onProgressionChoice(choice);
-    onDismiss();
-    startNextRound(progressOverride);
+    startNextRound();
   };
 
   return (
@@ -47,9 +36,13 @@ export function RoundSuccessOverlay({
       targetSegments={celebration.targetSegments}
       tier={celebration.tier}
       recommendation={celebration.recommendation}
+      {...(celebration.celebrationVariant
+        ? { celebrationVariant: celebration.celebrationVariant }
+        : {})}
+      {...(celebration.followUpSegments
+        ? { followUpSegments: celebration.followUpSegments }
+        : {})}
       onAdvance={() => finish()}
-      onNextLevel={() => choose('next')}
-      onReplayLevel={() => choose('replay')}
     />
   );
 }

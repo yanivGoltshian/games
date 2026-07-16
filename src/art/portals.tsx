@@ -167,3 +167,56 @@ export function MemoryPortalArt({ label, className }: ArtProps) {
     </svg>
   );
 }
+
+export function NumberPairsPortalArt({ label, className }: ArtProps) {
+  const ids = useArtIds('bg', 'tileTop', 'tileBottom');
+  const tiles = [
+    { x: 66, y: 82, value: 2, fill: `url(#${ids.tileTop})` },
+    { x: 170, y: 82, value: 5, fill: `url(#${ids.tileTop})` },
+    { x: 66, y: 182, value: 5, fill: `url(#${ids.tileBottom})` },
+    { x: 170, y: 182, value: 2, fill: `url(#${ids.tileBottom})` },
+  ];
+  return (
+    <svg viewBox="0 0 320 320" className={className} {...artA11yProps('portal-number-pairs', label)}>
+      <BackgroundBlob id={ids.bg} from="#d7fbf5" to="#63d8c7" />
+      <defs>
+        <linearGradient id={ids.tileTop} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#e5f8ff" />
+        </linearGradient>
+        <linearGradient id={ids.tileBottom} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fff9da" />
+          <stop offset="100%" stopColor="#ffe98b" />
+        </linearGradient>
+      </defs>
+      {tiles.map((tile) => (
+        <g key={`${tile.x}-${tile.y}`}>
+          <rect
+            x={tile.x}
+            y={tile.y}
+            width="84"
+            height="76"
+            rx="22"
+            fill={tile.fill}
+            stroke="#247d77"
+            strokeOpacity="0.28"
+            strokeWidth="3"
+          />
+          <text
+            x={tile.x + 42}
+            y={tile.y + 55}
+            textAnchor="middle"
+            fontSize="52"
+            fontWeight="900"
+            fontFamily="Arial Rounded MT Bold, Arial, sans-serif"
+            fill="#245f68"
+          >
+            {tile.value}
+          </text>
+        </g>
+      ))}
+      <path d="M108 162 C108 174 108 174 108 182" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" opacity="0.72" />
+      <path d="M212 162 C212 174 212 174 212 182" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" opacity="0.72" />
+    </svg>
+  );
+}

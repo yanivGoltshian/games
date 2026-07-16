@@ -28,7 +28,6 @@ export function MemoryGame({
   speechStatus,
   onBack,
   onCompleteRound,
-  onProgressionChoice,
 }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -239,7 +238,6 @@ export function MemoryGame({
             settings={settings}
             scope={SPEECH_SCOPE}
             onDismiss={() => dispatchCelebration({ type: 'dismiss' })}
-            onProgressionChoice={onProgressionChoice}
             startNextRound={startNextRound}
           />
         ) : undefined

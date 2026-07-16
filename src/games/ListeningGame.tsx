@@ -21,7 +21,6 @@ export function ListeningGame({
   speechStatus,
   onBack,
   onCompleteRound,
-  onProgressionChoice,
 }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
@@ -104,7 +103,6 @@ export function ListeningGame({
             settings={settings}
             scope={SPEECH_SCOPE}
             onDismiss={() => setCelebration(null)}
-            onProgressionChoice={onProgressionChoice}
             startNextRound={startNextRound}
           />
         ) : undefined

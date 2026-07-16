@@ -4,7 +4,26 @@ import { ORIGINAL_PUZZLE_SCENE_IDS } from '../art/puzzleScenes';
 import { learningConcepts } from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
 import { createInitialDomainProgress } from './progression';
-import { generateCountingRound, generateListeningRound, generateMemoryRound, generatePuzzleRound, generateSortingRound } from './rounds';
+import {
+  NUMBER_PAIRS_GENERATION_ATTEMPTS,
+  generateCountingRound,
+  generateListeningRound,
+  generateMemoryRound,
+  generateNumberPairsRound,
+  generatePuzzleRound,
+  generateSortingRound,
+  getNumberPairsRoundSignature,
+} from './rounds';
+
+function permutations(values: readonly number[]): number[][] {
+  if (values.length === 0) {
+    return [[]];
+  }
+  return values.flatMap((value, index) => permutations([
+    ...values.slice(0, index),
+    ...values.slice(index + 1),
+  ]).map((tail) => [value, ...tail]));
+}
 
 describe('round generation', () => {
   it('limits every generated vocabulary concept to a licensed realistic asset', () => {
@@ -149,6 +168,108 @@ describe('round generation', () => {
 
       expect(round.pairConceptIds).toHaveLength(2);
       expect(round.cards).toHaveLength(4);
+    });
+  });
+
+  describe('number pairs', () => {
+    it.each([
+      [3, 3, 1],
+      [4, 6, 2],
+      [5, 10, 3],
+    ] as const)('uses exactly %i values within 1..%i at level %i', (count, max, level) => {
+      const domain = createInitialDomainProgress();
+      domain.level = level;
+
+      for (let index = 0; index < 40; index += 1) {
+        const round = generateNumberPairsRound(domain, `number-pairs-${level}-${index}`);
+        const sortedSelection = [...round.selectedValues].sort((left, right) => left - right);
+
+        expect(round.selectedValues).toHaveLength(count);
+        expect(new Set(round.selectedValues).size).toBe(count);
+        expect(round.selectedValues.every((value) => value >= 1 && value <= max)).toBe(true);
+        expect([...round.topRow].sort((left, right) => left - right)).toEqual(sortedSelection);
+        expect([...round.bottomRow].sort((left, right) => left - right)).toEqual(sortedSelection);
+        expect(round.topRow).not.toEqual(round.bottomRow);
+        expect(round.signature).toBe(getNumberPairsRoundSignature(round));
+        expect(round.promptHe).not.toBe('');
+        expect(round.promptEn).not.toBe('');
+      }
+    });
+
+    it('always selects one, two, and three at level one', () => {
+      const domain = createInitialDomainProgress();
+
+      for (let index = 0; index < 20; index += 1) {
+        expect(generateNumberPairsRound(domain, index).selectedValues).toEqual([1, 2, 3]);
+      }
+    });
+
+    it('is deterministic for the same seed and signature history', () => {
+      const domain = createInitialDomainProgress();
+      domain.level = 3;
+      const history = ['unrelated-signature'];
+
+      expect(generateNumberPairsRound(domain, 'stable-board', history)).toEqual(
+        generateNumberPairsRound(domain, 'stable-board', history),
+      );
+    });
+
+    it('uses stable signatures that distinguish row arrangements', () => {
+      const first = getNumberPairsRoundSignature({
+        selectedValues: [3, 1, 2],
+        topRow: [1, 2, 3],
+        bottomRow: [2, 3, 1],
+      });
+      const sameBoard = getNumberPairsRoundSignature({
+        selectedValues: [1, 2, 3],
+        topRow: [1, 2, 3],
+        bottomRow: [2, 3, 1],
+      });
+      const differentBoard = getNumberPairsRoundSignature({
+        selectedValues: [1, 2, 3],
+        topRow: [3, 2, 1],
+        bottomRow: [2, 3, 1],
+      });
+
+      expect(first).toBe(sameBoard);
+      expect(first).not.toBe(differentBoard);
+    });
+
+    it('avoids immediate and local board repeats deterministically', () => {
+      const domain = createInitialDomainProgress();
+      domain.level = 2;
+      const signatures: string[] = [];
+
+      for (let index = 0; index < 20; index += 1) {
+        const round = generateNumberPairsRound(domain, 'repeat-safe-board', signatures);
+        expect(signatures).not.toContain(round.signature);
+        signatures.push(round.signature);
+      }
+
+      expect(new Set(signatures).size).toBe(signatures.length);
+      expect(generateNumberPairsRound(domain, 'repeat-safe-board', signatures)).toEqual(
+        generateNumberPairsRound(domain, 'repeat-safe-board', signatures),
+      );
+    });
+
+    it('terminates with a deterministic fallback when every level-one board is in history', () => {
+      const domain = createInitialDomainProgress();
+      const rows = permutations([1, 2, 3]);
+      const exhaustiveHistory = rows.flatMap((topRow) => rows
+        .filter((bottomRow) => bottomRow.some((value, index) => value !== topRow[index]))
+        .map((bottomRow) => getNumberPairsRoundSignature({
+          selectedValues: [1, 2, 3],
+          topRow,
+          bottomRow,
+        })));
+
+      expect(NUMBER_PAIRS_GENERATION_ATTEMPTS).toBeGreaterThan(0);
+      const first = generateNumberPairsRound(domain, 'bounded-fallback', exhaustiveHistory);
+      const second = generateNumberPairsRound(domain, 'bounded-fallback', exhaustiveHistory);
+
+      expect(first).toEqual(second);
+      expect(exhaustiveHistory).toContain(first.signature);
+      expect(first.topRow).not.toEqual(first.bottomRow);
     });
   });
 });
