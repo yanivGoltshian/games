@@ -61,7 +61,7 @@ describe('SpeechService recorded fallback', () => {
       addEventListener: vi.fn(),
     });
     vi.stubGlobal('SpeechSynthesisUtterance', vi.fn(() => {
-      throw new Error('Web Speech must not run in installed iPad mode.');
+      throw new Error('Web Speech must not run in Apple mobile WebKit contexts.');
     }));
     backend = new FakeRecordedSpeech();
     service = new SpeechService(backend);

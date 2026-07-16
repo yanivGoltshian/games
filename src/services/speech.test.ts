@@ -222,7 +222,7 @@ describe('SpeechService', () => {
     vi.useRealTimers();
   });
 
-  it('holds queued speech until the first iPad touch unlocks the engine', async () => {
+  it('holds queued speech until an Apple mobile WebKit gesture unlocks the engine', async () => {
     synthesis.lockEngine();
     const lockedService = new SpeechService();
     const greetingCount = synthesis.unlockGreetingCount;
@@ -242,7 +242,7 @@ describe('SpeechService', () => {
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
-  it('speaks immediately when iPad voices are empty and voiceschanged never fires', async () => {
+  it('speaks immediately when Apple mobile WebKit voices are empty and voiceschanged never fires', async () => {
     synthesis.setVoices([]);
     synthesis.lockEngine();
     const lockedService = new SpeechService();
