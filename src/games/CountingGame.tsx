@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
-import { SuccessOverlay } from '../components/SuccessOverlay';
 import { getCountingQuantityPhrase, type CountingConceptId } from '../content/countingQuantity';
 import { gameMeta } from '../content/games';
 import { buildCountingMissModel, getCountingLayout } from '../domain/countingFeedback';
@@ -9,6 +8,7 @@ import { NUMBER_WORDS_EN, NUMBER_WORDS_HE, generateCountingRound } from '../doma
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
+import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
@@ -19,7 +19,15 @@ function numberWords(value: number): { he: string; en: string } {
   return { he: NUMBER_WORDS_HE[value] ?? String(value), en: NUMBER_WORDS_EN[value] ?? String(value) };
 }
 
-export function CountingGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
+export function CountingGame({
+  domainProgress,
+  settings,
+  mediaReady,
+  speechStatus,
+  onBack,
+  onCompleteRound,
+  onProgressionChoice,
+}: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [wiggleValue, setWiggleValue] = useState<number | null>(null);
@@ -72,6 +80,7 @@ export function CountingGame({ domainProgress, settings, mediaReady, speechStatu
         seed: `counting-${round.targetCount}-${nextAttempts}`,
         targetSegments: buildPhraseSegments(quantityHe, quantityEn, settings.languageMode, settings.englishVoiceLocale),
         tier: summary.milestone ? 'milestone' : 'standard',
+        recommendation: summary.recommendation,
       });
       return;
     }
@@ -105,16 +114,13 @@ export function CountingGame({ domainProgress, settings, mediaReady, speechStatu
       retryActive={retryBusy}
       successOverlay={
         celebration ? (
-          <SuccessOverlay
+          <RoundSuccessOverlay
+            celebration={celebration}
             settings={settings}
             scope={SPEECH_SCOPE}
-            seed={celebration.seed}
-            targetSegments={celebration.targetSegments}
-            tier={celebration.tier}
-            onAdvance={() => {
-              setCelebration(null);
-              startNextRound();
-            }}
+            onDismiss={() => setCelebration(null)}
+            onProgressionChoice={onProgressionChoice}
+            startNextRound={startNextRound}
           />
         ) : undefined
       }

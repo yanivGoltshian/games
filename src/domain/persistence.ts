@@ -1,5 +1,16 @@
-import { createInitialProgress, createInitialSettings, STORAGE_SCHEMA_VERSION } from './progression';
-import type { AppProgress, ConceptStat, DomainProgress, ToddlerSettings } from './types';
+import {
+  createInitialProgress,
+  createInitialSettings,
+  RECENT_RESULT_LIMIT,
+  STORAGE_SCHEMA_VERSION,
+} from './progression';
+import type {
+  AppProgress,
+  ConceptStat,
+  DomainProgress,
+  RecentRoundResult,
+  ToddlerSettings,
+} from './types';
 import { DOMAIN_KEYS } from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,6 +69,21 @@ function sanitizeSettings(input: unknown, prefersReducedMotion: boolean): Toddle
   };
 }
 
+function sanitizeRecentResult(value: unknown): RecentRoundResult | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const success = value.success === true;
+  return {
+    completedAt: Math.max(0, Math.round(asNumber(value.completedAt, 0))),
+    level: clampLevel(value.level),
+    success,
+    firstAttempt: success && value.firstAttempt === true,
+    attempts: Math.max(1, Math.round(asNumber(value.attempts, 1))),
+  };
+}
+
 function sanitizeDomain(value: unknown, fallback: DomainProgress): DomainProgress {
   if (!isRecord(value)) {
     return fallback;
@@ -69,15 +95,37 @@ function sanitizeDomain(value: unknown, fallback: DomainProgress): DomainProgres
   );
   const attempts = Math.max(0, Math.round(asNumber(value.attempts, fallback.attempts)));
   const successes = Math.max(0, Math.min(attempts, Math.round(asNumber(value.successes, fallback.successes))));
+  const level = clampLevel(value.level);
+  const recentSource = Array.isArray(value.recentResults) ? value.recentResults : [];
+  const recentResults = recentSource
+    .map(sanitizeRecentResult)
+    .filter((result): result is RecentRoundResult => result !== null)
+    .slice(-RECENT_RESULT_LIMIT);
+  const completedRounds = Math.max(
+    successes,
+    Math.round(asNumber(value.completedRounds, successes)),
+  );
+  const firstAttemptSuccesses = Math.max(
+    0,
+    Math.min(completedRounds, Math.round(asNumber(value.firstAttemptSuccesses, 0))),
+  );
 
   return {
     attempts,
     successes,
     streak: Math.max(0, Math.round(asNumber(value.streak, fallback.streak))),
-    level: clampLevel(value.level),
+    level,
+    highestLevel: Math.max(level, clampLevel(value.highestLevel)) as DomainProgress['highestLevel'],
+    completedRounds,
+    firstAttemptSuccesses,
+    totalAttempts: Math.max(attempts, Math.round(asNumber(value.totalAttempts, attempts))),
     mastery: Math.min(1, Math.max(0, asNumber(value.mastery, fallback.mastery))),
     stars: Math.max(0, Math.round(asNumber(value.stars, fallback.stars))),
     lastPracticedAt: Math.max(0, Math.round(asNumber(value.lastPracticedAt, fallback.lastPracticedAt))),
+    lastProgressionChoice: value.lastProgressionChoice === 'next' || value.lastProgressionChoice === 'replay'
+      ? value.lastProgressionChoice
+      : null,
+    recentResults,
     concepts,
   };
 }
@@ -121,7 +169,7 @@ export function migrateStoredProgress(
     return base;
   }
 
-  if (raw.version === STORAGE_SCHEMA_VERSION) {
+  if (raw.version === STORAGE_SCHEMA_VERSION || raw.version === 2) {
     const settings = sanitizeSettings(raw.settings, prefersReducedMotion);
     const domains = sanitizeDomains(raw.domains, base.domains);
     const totalStars = asNumber(raw.totalStars, Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0));

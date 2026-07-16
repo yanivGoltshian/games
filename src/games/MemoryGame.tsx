@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type TransitionEvent } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
-import { SuccessOverlay } from '../components/SuccessOverlay';
 import { learningConcepts } from '../content/concepts';
 import { gameMeta } from '../content/games';
 import { generateMemoryRound } from '../domain/rounds';
@@ -16,12 +15,21 @@ import {
   scheduleMemoryMismatchClose,
   scheduleMemoryRevealFallback,
 } from './memoryCelebration';
+import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
 const SPEECH_SCOPE = 'game:memory';
 
-export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
+export function MemoryGame({
+  domainProgress,
+  settings,
+  mediaReady,
+  speechStatus,
+  onBack,
+  onCompleteRound,
+  onProgressionChoice,
+}: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [misses, setMisses] = useState(0);
   const [celebrationState, dispatchCelebration] = useReducer(
@@ -161,6 +169,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
             ? buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale)
             : [],
           tier: summary.milestone ? 'milestone' : 'standard',
+          recommendation: summary.recommendation,
         };
         dispatchCelebration({
           type: 'queue',
@@ -225,16 +234,13 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
       retryActive={retryBusy}
       successOverlay={
         celebration ? (
-          <SuccessOverlay
+          <RoundSuccessOverlay
+            celebration={celebration}
             settings={settings}
             scope={SPEECH_SCOPE}
-            seed={celebration.seed}
-            targetSegments={celebration.targetSegments}
-            tier={celebration.tier}
-            onAdvance={() => {
-              dispatchCelebration({ type: 'dismiss' });
-              startNextRound();
-            }}
+            onDismiss={() => dispatchCelebration({ type: 'dismiss' })}
+            onProgressionChoice={onProgressionChoice}
+            startNextRound={startNextRound}
           />
         ) : undefined
       }

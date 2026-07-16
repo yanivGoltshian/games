@@ -16,6 +16,7 @@ const celebration: CelebrationInfo = {
   seed: 'final-pair',
   targetSegments: [{ text: 'כלב', locale: 'he-IL' }],
   tier: 'standard',
+  recommendation: null,
 };
 
 describe('memory final-pair reveal', () => {

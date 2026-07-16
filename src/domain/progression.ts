@@ -3,13 +3,16 @@ import type {
   ConceptStat,
   DomainKey,
   DomainProgress,
+  LevelRecommendation,
+  ProgressionChoice,
   ProgressUpdateSummary,
   RecordedRound,
   ToddlerSettings,
 } from './types';
 import { DOMAIN_KEYS } from './types';
 
-export const STORAGE_SCHEMA_VERSION = 2;
+export const STORAGE_SCHEMA_VERSION = 3;
+export const RECENT_RESULT_LIMIT = 5;
 const LEVEL_THRESHOLDS = [0, 0.42, 0.62, 1] as const;
 
 export function clamp(value: number, min = 0, max = 1): number {
@@ -41,9 +44,15 @@ export function createInitialDomainProgress(): DomainProgress {
     successes: 0,
     streak: 0,
     level: 1,
+    highestLevel: 1,
+    completedRounds: 0,
+    firstAttemptSuccesses: 0,
+    totalAttempts: 0,
     mastery: 0,
     stars: 0,
     lastPracticedAt: 0,
+    lastProgressionChoice: null,
+    recentResults: [],
     concepts: {},
   };
 }
@@ -97,6 +106,39 @@ function updateConceptStat(previous: ConceptStat, success: boolean, practiceAtte
   return next;
 }
 
+export function recommendLevelAdvance(domain: DomainProgress): LevelRecommendation | null {
+  if (domain.level >= 3 || domain.mastery < LEVEL_THRESHOLDS[domain.level]) {
+    return null;
+  }
+
+  const recentAtCurrentLevel = domain.recentResults
+    .filter((result) => result.level === domain.level)
+    .slice(-RECENT_RESULT_LIMIT);
+  if (recentAtCurrentLevel.length < 3) {
+    return null;
+  }
+
+  const successes = recentAtCurrentLevel.filter((result) => result.success).length;
+  const firstAttempts = recentAtCurrentLevel.filter((result) => result.firstAttempt).length;
+  const successRate = successes / recentAtCurrentLevel.length;
+  const firstAttemptRate = firstAttempts / recentAtCurrentLevel.length;
+  const recentFirstAttemptStreak = [...recentAtCurrentLevel]
+    .reverse()
+    .findIndex((result) => !result.success || !result.firstAttempt);
+  const consecutiveFirstAttempts = recentFirstAttemptStreak === -1
+    ? recentAtCurrentLevel.length
+    : recentFirstAttemptStreak;
+
+  if (successRate < 0.8 || firstAttemptRate < 0.8 || consecutiveFirstAttempts < 3) {
+    return null;
+  }
+
+  return {
+    currentLevel: domain.level,
+    nextLevel: (domain.level + 1) as DomainProgress['level'],
+  };
+}
+
 export function applyRoundResult(
   progress: AppProgress,
   domainKey: DomainKey,
@@ -108,7 +150,9 @@ export function applyRoundResult(
   const concepts = round.concepts.length > 0 ? Array.from(new Set(round.concepts)) : [domainKey];
   const nextConcepts = { ...domain.concepts };
   const requiredActions = Math.max(1, Math.round(round.requiredActions ?? 1));
-  const practiceAttempts = Math.max(1, Math.ceil(Math.max(1, round.attempts) / requiredActions));
+  const roundAttempts = Math.max(1, Math.round(round.attempts));
+  const practiceAttempts = Math.max(1, Math.ceil(roundAttempts / requiredActions));
+  const firstAttempt = success && roundAttempts <= requiredActions;
 
   for (const conceptId of concepts) {
     const previous = nextConcepts[conceptId] ?? createInitialConceptStat();
@@ -117,33 +161,40 @@ export function applyRoundResult(
 
   const attempts = domain.attempts + 1;
   const successes = domain.successes + (success ? 1 : 0);
-  const streak = success && practiceAttempts === 1 ? domain.streak + 1 : 0;
+  const streak = firstAttempt ? domain.streak + 1 : 0;
+  const recentResults = [
+    ...domain.recentResults,
+    {
+      completedAt: now,
+      level: domain.level,
+      success,
+      firstAttempt,
+      attempts: roundAttempts,
+    },
+  ].slice(-RECENT_RESULT_LIMIT);
 
   const domainBeforeMastery = {
     ...domain,
     attempts,
     successes,
     streak,
+    completedRounds: domain.completedRounds + (success ? 1 : 0),
+    firstAttemptSuccesses: domain.firstAttemptSuccesses + (firstAttempt ? 1 : 0),
+    totalAttempts: domain.totalAttempts + roundAttempts,
+    recentResults,
     concepts: nextConcepts,
   };
 
   const mastery = computeDomainMastery(domainBeforeMastery);
-  let level = domain.level;
-  let leveledUp = false;
-  if (success && level < 3 && streak >= level * 3 && mastery >= LEVEL_THRESHOLDS[level]) {
-    level = (level + 1) as DomainProgress['level'];
-    leveledUp = true;
-  }
-
-  const starsEarned = success ? 1 + (leveledUp ? 1 : 0) : 0;
-  const milestone = success && (leveledUp || streak % 4 === 0);
   const nextDomain: DomainProgress = {
     ...domainBeforeMastery,
-    level,
     mastery,
-    stars: domain.stars + starsEarned,
+    stars: domain.stars + (success ? 1 : 0),
     lastPracticedAt: now,
   };
+  const recommendation = success ? recommendLevelAdvance(nextDomain) : null;
+  const starsEarned = success ? 1 : 0;
+  const milestone = success && (recommendation !== null || streak % 4 === 0);
 
   const nextProgress: AppProgress = {
     ...progress,
@@ -159,10 +210,47 @@ export function applyRoundResult(
     progress: nextProgress,
     summary: {
       starsEarned,
-      leveledUp,
+      leveledUp: false,
       milestone,
-      level,
+      level: nextDomain.level,
       mastery,
+      firstAttempt,
+      recommendation,
     },
+  };
+}
+
+export function applyProgressionChoice(
+  progress: AppProgress,
+  domainKey: DomainKey,
+  choice: ProgressionChoice,
+  now = Date.now(),
+): { progress: AppProgress; domain: DomainProgress; accepted: boolean } {
+  const domain = progress.domains[domainKey];
+  const recommendation = recommendLevelAdvance(domain);
+  if (choice === 'next' && recommendation === null) {
+    return { progress, domain, accepted: false };
+  }
+
+  const level = choice === 'next' ? recommendation!.nextLevel : domain.level;
+  const nextDomain: DomainProgress = {
+    ...domain,
+    level,
+    highestLevel: Math.max(domain.highestLevel, level) as DomainProgress['highestLevel'],
+    lastProgressionChoice: choice,
+  };
+  const nextProgress: AppProgress = {
+    ...progress,
+    updatedAt: now,
+    domains: {
+      ...progress.domains,
+      [domainKey]: nextDomain,
+    },
+  };
+
+  return {
+    progress: nextProgress,
+    domain: nextDomain,
+    accepted: true,
   };
 }

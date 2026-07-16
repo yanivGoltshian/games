@@ -1,7 +1,6 @@
 import { createRef, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { sceneBackgroundImage } from '../art/puzzleScenes';
 import { GameShell } from '../components/GameShell';
-import { SuccessOverlay } from '../components/SuccessOverlay';
 import { useMeasuredSize } from '../components/useMeasuredSize';
 import { type DragItemState, useToddlerDrag } from '../components/drag/useToddlerDrag';
 import { gameMeta } from '../content/games';
@@ -11,6 +10,7 @@ import type { PuzzlePieceRound, PuzzleScene } from '../domain/types';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
+import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
@@ -26,7 +26,15 @@ function pieceArtStyle(scene: PuzzleScene, rows: number, cols: number, piece: Pu
   };
 }
 
-export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
+export function PuzzleGame({
+  domainProgress,
+  settings,
+  mediaReady,
+  speechStatus,
+  onBack,
+  onCompleteRound,
+  onProgressionChoice,
+}: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [misses, setMisses] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
@@ -143,6 +151,7 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
           seed: `puzzle-${round.scene.id}-${nextAttempts}`,
           targetSegments: buildPhraseSegments(round.scene.titleHe, round.scene.titleEn, settings.languageMode, settings.englishVoiceLocale),
           tier: summary.milestone ? 'milestone' : 'standard',
+          recommendation: summary.recommendation,
         });
       }
       return true;
@@ -165,16 +174,13 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
       retryActive={retryBusy}
       successOverlay={
         celebration ? (
-          <SuccessOverlay
+          <RoundSuccessOverlay
+            celebration={celebration}
             settings={settings}
             scope={SPEECH_SCOPE}
-            seed={celebration.seed}
-            targetSegments={celebration.targetSegments}
-            tier={celebration.tier}
-            onAdvance={() => {
-              setCelebration(null);
-              startNextRound();
-            }}
+            onDismiss={() => setCelebration(null)}
+            onProgressionChoice={onProgressionChoice}
+            startNextRound={startNextRound}
           />
         ) : undefined
       }
