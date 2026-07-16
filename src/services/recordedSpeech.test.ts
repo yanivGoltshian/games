@@ -211,6 +211,62 @@ describe('recorded iPad speech', () => {
     await expect(Promise.all([car, dog])).resolves.toEqual([undefined, undefined]);
   });
 
+  it('reuses an active same-locale decode after its original caller is cancelled', async () => {
+    const { context, sources, decodeAudioData } = createContext();
+    let releaseDecode: ((value: AudioBuffer) => void) | undefined;
+    const decode = new Promise<AudioBuffer>((resolve) => {
+      releaseDecode = resolve;
+    });
+    decodeAudioData.mockImplementationOnce(() => decode);
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('manifest.json')) {
+        return new Response(JSON.stringify({
+          version: 1,
+          entries: {
+            'en-US\u0000car': { src: '/speech/en-US.mp3', offset: 4, duration: 0.6 },
+            'en-US\u0000dog': { src: '/speech/en-US.mp3', offset: 8, duration: 0.7 },
+          },
+        }));
+      }
+      return new Response(new Uint8Array([1, 2, 3]));
+    });
+    const player = new RecordedSpeechPlayer(
+      () => context,
+      async () => undefined,
+      fetcher,
+      () => true,
+    );
+
+    const car = player.play({
+      text: 'car',
+      locale: 'en-US',
+      volume: 1,
+      onStart: vi.fn(),
+    });
+    await vi.waitFor(() => {
+      expect(decodeAudioData).toHaveBeenCalledOnce();
+    });
+    player.cancel();
+    const dog = player.play({
+      text: 'dog',
+      locale: 'en-US',
+      volume: 1,
+      onStart: vi.fn(),
+    });
+    await flush();
+
+    expect(fetcher.mock.calls.filter(([input]) => String(input) === '/speech/en-US.mp3')).toHaveLength(1);
+    expect(decodeAudioData).toHaveBeenCalledOnce();
+
+    releaseDecode?.({ duration: 10 } as AudioBuffer);
+    await expect(car).resolves.toBeUndefined();
+    await vi.waitFor(() => {
+      expect(sources).toHaveLength(1);
+    });
+    sources[0]?.onended?.();
+    await expect(dog).resolves.toBeUndefined();
+  });
+
   it('evicts the previous locale buffer when the requested locale changes', async () => {
     const { context, sources, decodeAudioData } = createContext();
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
@@ -332,6 +388,107 @@ describe('recorded iPad speech', () => {
     ]);
     sources[0]?.onended?.();
     await expect(english).resolves.toBeUndefined();
+  });
+
+  it('skips a superseded queued locale before loading the latest locale', async () => {
+    const { context, sources, decodeAudioData } = createContext();
+    let releaseFirstDecode: ((value: AudioBuffer) => void) | undefined;
+    const firstDecode = new Promise<AudioBuffer>((resolve) => {
+      releaseFirstDecode = resolve;
+    });
+    const events: string[] = [];
+    let activeDecodes = 0;
+    let maximumActiveDecodes = 0;
+    decodeAudioData
+      .mockImplementationOnce(async () => {
+        activeDecodes += 1;
+        maximumActiveDecodes = Math.max(maximumActiveDecodes, activeDecodes);
+        events.push('decode:he-IL:start');
+        const buffer = await firstDecode;
+        events.push('decode:he-IL:end');
+        activeDecodes -= 1;
+        return buffer;
+      })
+      .mockImplementationOnce(async () => {
+        activeDecodes += 1;
+        maximumActiveDecodes = Math.max(maximumActiveDecodes, activeDecodes);
+        events.push('decode:en-US:start');
+        activeDecodes -= 1;
+        return { duration: 10 } as AudioBuffer;
+      });
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('manifest.json')) {
+        return new Response(JSON.stringify({
+          version: 1,
+          entries: {
+            'he-IL\u0000אוטו': { src: '/speech/he-IL.mp3', offset: 2.5, duration: 0.75 },
+            'en-GB\u0000car': { src: '/speech/en-GB.mp3', offset: 5, duration: 0.65 },
+            'en-US\u0000car': { src: '/speech/en-US.mp3', offset: 4, duration: 0.6 },
+          },
+        }));
+      }
+      events.push(`fetch:${url}`);
+      return new Response(new Uint8Array([1, 2, 3]));
+    });
+    const player = new RecordedSpeechPlayer(
+      () => context,
+      async () => undefined,
+      fetcher,
+      () => true,
+    );
+
+    const hebrew = player.play({
+      text: 'אוטו',
+      locale: 'he-IL',
+      volume: 1,
+      onStart: vi.fn(),
+    });
+    await vi.waitFor(() => {
+      expect(decodeAudioData).toHaveBeenCalledOnce();
+    });
+
+    player.cancel();
+    const british = player.play({
+      text: 'car',
+      locale: 'en-GB',
+      volume: 1,
+      onStart: vi.fn(),
+    });
+    await flush();
+    player.cancel();
+    const american = player.play({
+      text: 'car',
+      locale: 'en-US',
+      volume: 1,
+      onStart: vi.fn(),
+    });
+    await flush();
+
+    expect(events).toEqual([
+      'fetch:/speech/he-IL.mp3',
+      'decode:he-IL:start',
+    ]);
+
+    releaseFirstDecode?.({ duration: 10 } as AudioBuffer);
+    await expect(Promise.all([hebrew, british])).resolves.toEqual([undefined, undefined]);
+    await vi.waitFor(() => {
+      expect(decodeAudioData).toHaveBeenCalledTimes(2);
+      expect(sources).toHaveLength(1);
+    });
+
+    expect(maximumActiveDecodes).toBe(1);
+    expect(events).toEqual([
+      'fetch:/speech/he-IL.mp3',
+      'decode:he-IL:start',
+      'decode:he-IL:end',
+      'fetch:/speech/en-US.mp3',
+      'decode:en-US:start',
+    ]);
+    expect(fetcher.mock.calls.some(([input]) => String(input) === '/speech/en-GB.mp3')).toBe(false);
+
+    sources[0]?.onended?.();
+    await expect(american).resolves.toBeUndefined();
   });
 
   it('surfaces audio loading failures and allows a later retry', async () => {

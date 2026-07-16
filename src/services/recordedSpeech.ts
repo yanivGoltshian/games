@@ -113,8 +113,8 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     if (!clip) {
       throw new Error(`Recorded speech is missing for ${options.locale}: ${options.text}`);
     }
-    const buffer = await this.loadBuffer(clip.src);
-    if (generation !== this.cancellationGeneration) {
+    const buffer = await this.loadBuffer(clip.src, generation);
+    if (!buffer || generation !== this.cancellationGeneration) {
       return;
     }
 
@@ -180,7 +180,10 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     return this.manifestPromise;
   }
 
-  private loadBuffer(src: string): Promise<AudioBuffer> {
+  private loadBuffer(src: string, generation: number): Promise<AudioBuffer | null> {
+    if (generation !== this.cancellationGeneration) {
+      return Promise.resolve(null);
+    }
     if (this.bufferCache?.src === src) {
       return Promise.resolve(this.bufferCache.buffer);
     }
@@ -190,8 +193,8 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     if (this.pendingBuffer) {
       const previous = this.pendingBuffer.promise;
       return previous.then(
-        () => this.loadBuffer(src),
-        () => this.loadBuffer(src),
+        () => this.loadBuffer(src, generation),
+        () => this.loadBuffer(src, generation),
       );
     }
 

@@ -161,6 +161,30 @@ describe('SpeechService recorded fallback', () => {
     expect(backend.played).toHaveLength(0);
   });
 
+  it('continues with the next queued request after a recorded playback failure', async () => {
+    service.unlock(createInitialSettings());
+    await flush();
+    backend.failNextPlay = true;
+
+    const failed = service.speakSegments(
+      [{ text: 'broken', locale: 'en-US' }],
+      createInitialSettings(),
+      { scope: 'listening', key: 'broken' },
+    );
+    const queued = service.speakSegments(
+      [{ text: 'next prompt', locale: 'en-US' }],
+      createInitialSettings(),
+      { scope: 'listening', key: 'next' },
+    );
+
+    await expect(failed).resolves.toMatchObject({ status: 'error' });
+    await flush();
+    expect(backend.played.map((item) => item.text)).toEqual(['next prompt']);
+
+    backend.complete();
+    await expect(queued).resolves.toMatchObject({ status: 'completed' });
+  });
+
   it('lets an active retry word finish before coalescing the newer retry', async () => {
     service.unlock(createInitialSettings());
     await flush();
