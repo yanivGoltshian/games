@@ -2,7 +2,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { collectRecordedSpeechCatalog } from './recordedSpeechCatalog';
-import { hasNiqqud, stripNiqqud } from './hebrewPronunciation';
+import { learningConcepts } from './concepts';
+import {
+  getHebrewPronunciationSkeleton,
+  hasNiqqud,
+  stripNiqqud,
+} from './hebrewPronunciation';
 
 interface Manifest {
   entries: Record<string, {
@@ -35,11 +40,14 @@ describe('recorded speech asset coverage', () => {
   it('pre-caches the manifest and all three sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
-    expect(serviceWorker).toContain("sean-learning-adventure-v16");
+    expect(serviceWorker).toContain("sean-learning-adventure-v17");
     expect(serviceWorker).toContain("'/speech/manifest.json'");
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");
     expect(serviceWorker).toContain("'/speech/en-GB.mp3'");
+    for (const concept of learningConcepts) {
+      expect(serviceWorker).toContain(`'${concept.image}'`);
+    }
   });
 });
 
@@ -47,23 +55,24 @@ describe('recorded speech pronunciation layer', () => {
   const catalog = collectRecordedSpeechCatalog();
   const byLocale = (locale: string) => catalog.filter((entry) => entry.locale === locale);
 
-  it('keeps a stable count of 154 unique phrases per locale', () => {
+  it('keeps a stable count of 490 unique phrases per locale', () => {
     for (const locale of ['he-IL', 'en-US', 'en-GB']) {
       const entries = byLocale(locale);
-      expect(entries).toHaveLength(154);
+      expect(entries).toHaveLength(490);
       const keys = entries.map((entry) => entry.text);
-      expect(new Set(keys).size).toBe(154);
+      expect(new Set(keys).size).toBe(490);
     }
   });
 
   it('gives every Hebrew entry a pointed spokenText that strips back to the source', () => {
     const hebrew = byLocale('he-IL');
-    expect(hebrew).toHaveLength(154);
+    expect(hebrew).toHaveLength(490);
     for (const entry of hebrew) {
       expect(entry.spokenText, `missing spokenText for ${entry.text}`).toBeTruthy();
       const spoken = entry.spokenText as string;
       expect(hasNiqqud(spoken), `no niqqud in "${entry.text}"`).toBe(true);
-      expect(nfc(stripNiqqud(spoken)), `strip mismatch for "${entry.text}"`).toBe(nfc(entry.text));
+      expect(nfc(stripNiqqud(spoken)), `strip mismatch for "${entry.text}"`)
+        .toBe(getHebrewPronunciationSkeleton(entry.text));
     }
   });
 

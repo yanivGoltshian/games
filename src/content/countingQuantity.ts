@@ -1,26 +1,21 @@
-import { countingConceptIds } from './concepts';
+import {
+  countingConceptIds,
+  countingConcepts,
+  requireLearningConcept,
+  type CountingConceptId,
+} from './concepts';
+import type { HebrewGrammaticalGender } from '../domain/types';
 import type { RetryLocale } from './retry';
+
+export type { CountingConceptId } from './concepts';
 
 export const SUPPORTED_COUNTING_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 export type SupportedCountingCount = (typeof SUPPORTED_COUNTING_COUNTS)[number];
-export type CountingConceptId = (typeof countingConceptIds)[number];
-export type HebrewGrammaticalGender = 'masculine' | 'feminine';
-
-interface CountingConceptQuantityMeta {
-  he: {
-    singular: string;
-    plural: string;
-    gender: HebrewGrammaticalGender;
-  };
-  en: {
-    singular: string;
-    plural: string;
-  };
-}
 
 export interface CountingQuantityForms {
   he: string;
+  heSpoken: string;
   en: string;
 }
 
@@ -37,6 +32,19 @@ export const COUNT_ALOUD_WORDS_HE: Record<SupportedCountingCount, string> = {
   8: 'שמונה',
   9: 'תשע',
   10: 'עשר',
+};
+
+export const COUNT_ALOUD_WORDS_HE_SPOKEN: Record<SupportedCountingCount, string> = {
+  1: 'אַחַת',
+  2: 'שְׁתַּיִים',
+  3: 'שָׁלוֹשׁ',
+  4: 'אַרְבַּע',
+  5: 'חָמֵשׁ',
+  6: 'שֵׁשׁ',
+  7: 'שֶׁבַע',
+  8: 'שְׁמוֹנֶה',
+  9: 'תֵּשַׁע',
+  10: 'עֶשֶׂר',
 };
 
 export const COUNT_ALOUD_WORDS_EN: Record<SupportedCountingCount, string> = {
@@ -79,18 +87,33 @@ const HEBREW_QUANTITY_WORDS: Record<HebrewGrammaticalGender, Record<SupportedCou
   },
 };
 
-export const COUNTING_CONCEPT_QUANTITY_META: Record<CountingConceptId, CountingConceptQuantityMeta> = {
-  apple: {
-    he: { singular: 'תפוח', plural: 'תפוחים', gender: 'masculine' },
-    en: { singular: 'apple', plural: 'apples' },
+const HEBREW_QUANTITY_WORDS_SPOKEN: Record<
+  HebrewGrammaticalGender,
+  Record<SupportedCountingCount, string>
+> = {
+  masculine: {
+    1: 'אֶחָד',
+    2: 'שְׁנֵי',
+    3: 'שְׁלוֹשָׁה',
+    4: 'אַרְבָּעָה',
+    5: 'חֲמִישָׁה',
+    6: 'שִׁישָׁה',
+    7: 'שִׁבְעָה',
+    8: 'שְׁמוֹנָה',
+    9: 'תִּשְׁעָה',
+    10: 'עֲשָׂרָה',
   },
-  ball: {
-    he: { singular: 'כדור', plural: 'כדורים', gender: 'masculine' },
-    en: { singular: 'ball', plural: 'balls' },
-  },
-  banana: {
-    he: { singular: 'בננה', plural: 'בננות', gender: 'feminine' },
-    en: { singular: 'banana', plural: 'bananas' },
+  feminine: {
+    1: 'אַחַת',
+    2: 'שְׁתֵּי',
+    3: 'שָׁלוֹשׁ',
+    4: 'אַרְבַּע',
+    5: 'חָמֵשׁ',
+    6: 'שֵׁשׁ',
+    7: 'שֶׁבַע',
+    8: 'שְׁמוֹנֶה',
+    9: 'תֵּשַׁע',
+    10: 'עֶשֶׂר',
   },
 };
 
@@ -102,63 +125,106 @@ function toSupportedCountingCount(count: number): SupportedCountingCount {
   return count as SupportedCountingCount;
 }
 
-function buildHebrewQuantityPhrase(conceptId: CountingConceptId, count: SupportedCountingCount): string {
-  const concept = COUNTING_CONCEPT_QUANTITY_META[conceptId];
-  const quantityWord = HEBREW_QUANTITY_WORDS[concept.he.gender][count];
-  if (count === 1) {
-    return `${concept.he.singular} ${quantityWord}`;
+function requireCountingQuantity(conceptId: CountingConceptId) {
+  const concept = requireLearningConcept(conceptId);
+  if (!concept.quantity) {
+    throw new Error(`Concept is not available for counting: ${conceptId}`);
   }
-
-  return `${quantityWord} ${concept.he.plural}`;
+  return concept.quantity;
 }
 
-function buildEnglishQuantityPhrase(conceptId: CountingConceptId, count: SupportedCountingCount): string {
-  const concept = COUNTING_CONCEPT_QUANTITY_META[conceptId];
+function buildHebrewQuantityPhrase(
+  conceptId: CountingConceptId,
+  count: SupportedCountingCount,
+): Pick<CountingQuantityForms, 'he' | 'heSpoken'> {
+  const concept = requireCountingQuantity(conceptId);
+  const quantityWord = HEBREW_QUANTITY_WORDS[concept.he.gender][count];
+  const quantityWordSpoken = HEBREW_QUANTITY_WORDS_SPOKEN[concept.he.gender][count];
+  if (count === 1) {
+    return {
+      he: `${concept.he.singular} ${quantityWord}`,
+      heSpoken: `${concept.he.singularSpoken} ${quantityWordSpoken}`,
+    };
+  }
+
+  return {
+    he: `${quantityWord} ${concept.he.countedPlural}`,
+    heSpoken: `${quantityWordSpoken} ${concept.he.countedPluralSpoken}`,
+  };
+}
+
+function buildEnglishQuantityPhrase(
+  conceptId: CountingConceptId,
+  count: SupportedCountingCount,
+): string {
+  const concept = requireCountingQuantity(conceptId);
   const quantityWord = COUNT_ALOUD_WORDS_EN[count];
   const noun = count === 1 ? concept.en.singular : concept.en.plural;
   return `${quantityWord} ${noun}`;
 }
 
 function createQuantityFormSet(conceptId: CountingConceptId): CountingQuantityFormSet {
+  const form = (count: SupportedCountingCount): CountingQuantityForms => ({
+    ...buildHebrewQuantityPhrase(conceptId, count),
+    en: buildEnglishQuantityPhrase(conceptId, count),
+  });
+
   return {
-    1: { he: buildHebrewQuantityPhrase(conceptId, 1), en: buildEnglishQuantityPhrase(conceptId, 1) },
-    2: { he: buildHebrewQuantityPhrase(conceptId, 2), en: buildEnglishQuantityPhrase(conceptId, 2) },
-    3: { he: buildHebrewQuantityPhrase(conceptId, 3), en: buildEnglishQuantityPhrase(conceptId, 3) },
-    4: { he: buildHebrewQuantityPhrase(conceptId, 4), en: buildEnglishQuantityPhrase(conceptId, 4) },
-    5: { he: buildHebrewQuantityPhrase(conceptId, 5), en: buildEnglishQuantityPhrase(conceptId, 5) },
-    6: { he: buildHebrewQuantityPhrase(conceptId, 6), en: buildEnglishQuantityPhrase(conceptId, 6) },
-    7: { he: buildHebrewQuantityPhrase(conceptId, 7), en: buildEnglishQuantityPhrase(conceptId, 7) },
-    8: { he: buildHebrewQuantityPhrase(conceptId, 8), en: buildEnglishQuantityPhrase(conceptId, 8) },
-    9: { he: buildHebrewQuantityPhrase(conceptId, 9), en: buildEnglishQuantityPhrase(conceptId, 9) },
-    10: { he: buildHebrewQuantityPhrase(conceptId, 10), en: buildEnglishQuantityPhrase(conceptId, 10) },
+    1: form(1),
+    2: form(2),
+    3: form(3),
+    4: form(4),
+    5: form(5),
+    6: form(6),
+    7: form(7),
+    8: form(8),
+    9: form(9),
+    10: form(10),
   };
 }
 
-export const COUNTING_QUANTITY_FORMS: Record<CountingConceptId, CountingQuantityFormSet> = {
-  apple: createQuantityFormSet('apple'),
-  ball: createQuantityFormSet('ball'),
-  banana: createQuantityFormSet('banana'),
-};
+export const COUNTING_QUANTITY_FORMS = Object.fromEntries(
+  countingConcepts.map((concept) => [concept.id, createQuantityFormSet(concept.id)]),
+) as Readonly<Record<CountingConceptId, CountingQuantityFormSet>>;
 
-export const SUPPORTED_COUNTING_CONCEPT_IDS = Object.keys(
-  COUNTING_CONCEPT_QUANTITY_META,
-) as CountingConceptId[];
+export const SUPPORTED_COUNTING_CONCEPT_IDS: readonly CountingConceptId[] = countingConceptIds;
 
-export function getCountingQuantityPhrase(locale: RetryLocale, conceptId: CountingConceptId, count: number): string {
+export function getCountingQuantityPhrase(
+  locale: RetryLocale,
+  conceptId: CountingConceptId,
+  count: number,
+): string {
   const supportedCount = toSupportedCountingCount(count);
   return COUNTING_QUANTITY_FORMS[conceptId][supportedCount][locale];
 }
 
+export function getCountingQuantitySpokenPhrase(
+  conceptId: CountingConceptId,
+  count: number,
+): string {
+  const supportedCount = toSupportedCountingCount(count);
+  return COUNTING_QUANTITY_FORMS[conceptId][supportedCount].heSpoken;
+}
+
 export function getCountingQuestion(locale: RetryLocale, conceptId: CountingConceptId): string {
-  const concept = COUNTING_CONCEPT_QUANTITY_META[conceptId];
+  const concept = requireCountingQuantity(conceptId);
   return locale === 'he'
     ? `כמה ${concept.he.plural} יש כאן?`
     : `How many ${concept.en.plural} are here?`;
 }
 
+export function getCountingQuestionSpoken(conceptId: CountingConceptId): string {
+  const concept = requireCountingQuantity(conceptId);
+  return `כַּמָּה ${concept.he.pluralSpoken} יֵשׁ כָּאן?`;
+}
+
 export function getCountAloudWord(locale: RetryLocale, count: number): string {
   const supportedCount = toSupportedCountingCount(count);
   return locale === 'he' ? COUNT_ALOUD_WORDS_HE[supportedCount] : COUNT_ALOUD_WORDS_EN[supportedCount];
+}
+
+export function getCountAloudSpokenWord(count: number): string {
+  return COUNT_ALOUD_WORDS_HE_SPOKEN[toSupportedCountingCount(count)];
 }
 
 export function countingConceptQuantityCoverage(): string[] {

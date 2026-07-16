@@ -1,3 +1,14 @@
+import { learningConcepts, puzzleScenes } from './concepts';
+import {
+  COUNTING_QUANTITY_FORMS,
+  SUPPORTED_COUNTING_CONCEPT_IDS,
+  SUPPORTED_COUNTING_COUNTS,
+  getCountAloudSpokenWord,
+  getCountAloudWord,
+  getCountingQuestion,
+  getCountingQuestionSpoken,
+} from './countingQuantity';
+
 /**
  * Hebrew pronunciation layer for the recorded-speech fallback.
  *
@@ -7,10 +18,9 @@
  * pronunciation (shin/sin, gendered numbers, dagesh, definite gutturals) without
  * ever changing the base consonants of the source string.
  *
- * Invariant enforced by tests: for every entry,
- *   stripNiqqud(NFC(spokenText)) === NFC(sourceText)
- * i.e. the pointed form only ADDS niqqud marks — it never alters letters,
- * spacing, or punctuation.
+ * Usually the pointed form only adds niqqud. A reviewed full-spelling noun may
+ * contract to its canonical pointed spelling (for example ברווז -> בַּרְוָז);
+ * getHebrewPronunciationSkeleton derives those explicit catalog exceptions.
  */
 
 /** Hebrew niqqud + dagesh + shin/sin dots (excludes base letters and maqaf). */
@@ -27,10 +37,61 @@ export function hasNiqqud(value: string): boolean {
   return NIQQUD_PATTERN.test(value.normalize('NFC'));
 }
 
+export function getHebrewPronunciationSkeleton(source: string): string {
+  const replacements = learningConcepts.flatMap((concept) => {
+    const pairs = [[concept.he, stripNiqqud(concept.spokenHe)]] as Array<[string, string]>;
+    if (concept.quantity) {
+      pairs.push(
+        [concept.quantity.he.plural, stripNiqqud(concept.quantity.he.pluralSpoken)],
+        [concept.quantity.he.countedPlural, stripNiqqud(concept.quantity.he.countedPluralSpoken)],
+      );
+    }
+    return pairs;
+  }).filter(([visual, spoken]) => visual !== spoken)
+    .sort(([left], [right]) => right.length - left.length);
+
+  return replacements.reduce(
+    (skeleton, [visual, spoken]) => skeleton.replaceAll(visual, spoken),
+    source.normalize('NFC'),
+  );
+}
+
 export const HEBREW_UNLOCK_PRIMER = {
   sourceText: 'שלום שון',
   spokenText: 'שָׁלוֹם שׁוֹן',
 } as const;
+
+function collectCatalogPronunciations(): Record<string, string> {
+  const pronunciations: Record<string, string> = {};
+  const add = (source: string, spoken: string): void => {
+    pronunciations[source] = spoken;
+  };
+
+  learningConcepts.forEach((concept) => {
+    add(concept.he, concept.spokenHe);
+    add(`איפה ${concept.he}?`, `אֵיפֹה ${concept.spokenHe}?`);
+  });
+
+  puzzleScenes.forEach((scene) => {
+    add(scene.titleHe, scene.titleHeSpoken);
+    add(scene.promptHe, scene.promptHeSpoken);
+  });
+
+  SUPPORTED_COUNTING_CONCEPT_IDS.forEach((conceptId) => {
+    add(getCountingQuestion('he', conceptId), getCountingQuestionSpoken(conceptId));
+    SUPPORTED_COUNTING_COUNTS.forEach((count) => {
+      const quantity = COUNTING_QUANTITY_FORMS[conceptId][count];
+      add(quantity.he, quantity.heSpoken);
+      add(`יש כאן ${quantity.he}.`, `יֵשׁ כָּאן ${quantity.heSpoken}.`);
+    });
+  });
+
+  SUPPORTED_COUNTING_COUNTS.forEach((count) => {
+    add(getCountAloudWord('he', count), getCountAloudSpokenWord(count));
+  });
+
+  return pronunciations;
+}
 
 /**
  * Manually, context-aware niqqud for every unique Hebrew phrase in the catalog.
@@ -38,6 +99,8 @@ export const HEBREW_UNLOCK_PRIMER = {
  * pointed forms fed to Azure neural text to speech.
  */
 export const HEBREW_PRONUNCIATIONS: Readonly<Record<string, string>> = {
+  ...collectCatalogPronunciations(),
+
   // Web Speech unlock primer.
   [HEBREW_UNLOCK_PRIMER.sourceText]: HEBREW_UNLOCK_PRIMER.spokenText,
 

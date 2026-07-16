@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { REALISTIC_CONCEPT_IDS } from '../art/conceptAssets';
-import { ORIGINAL_PUZZLE_SCENE_IDS } from '../art/puzzleScenes';
-import { learningConcepts } from '../content/concepts';
+import { ORIGINAL_PUZZLE_SCENE_IDS, sceneImageHref } from '../art/puzzleScenes';
+import { conceptPuzzleScenes, learningConcepts } from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
 import { createInitialDomainProgress } from './progression';
 import {
@@ -12,8 +12,29 @@ import {
   generateNumberPairsRound,
   generatePuzzleRound,
   generateSortingRound,
+  getCountingRoundSignature,
+  getListeningRoundSignature,
+  getMemoryRoundSignature,
   getNumberPairsRoundSignature,
+  getPuzzleRoundSignature,
 } from './rounds';
+
+const NEW_CONCEPT_IDS = [
+  'duck',
+  'rabbit',
+  'elephant',
+  'strawberry',
+  'orange',
+  'carrot',
+  'cup',
+  'spoon',
+  'chair',
+  'bus',
+  'train',
+  'airplane',
+  'flower',
+  'tree',
+] as const;
 
 function permutations(values: readonly number[]): number[][] {
   if (values.length === 0) {
@@ -27,9 +48,9 @@ function permutations(values: readonly number[]): number[][] {
 
 describe('round generation', () => {
   it('limits every generated vocabulary concept to a licensed realistic asset', () => {
-    const assetIds = new Set(REALISTIC_CONCEPT_IDS);
+    const assetIds = new Set<string>(REALISTIC_CONCEPT_IDS);
     const levels = [1, 2, 3] as const;
-    expect(learningConcepts.every((concept) => assetIds.has(concept.id as (typeof REALISTIC_CONCEPT_IDS)[number]))).toBe(true);
+    expect(learningConcepts.every((concept) => assetIds.has(concept.id))).toBe(true);
 
     for (let index = 0; index < 50; index += 1) {
       const domain = createInitialDomainProgress();
@@ -39,9 +60,14 @@ describe('round generation', () => {
       const memory = generateMemoryRound(domain, `art-memory-${index}`);
       const puzzle = generatePuzzleRound(domain, `art-puzzle-${index}`);
       expect([listening.targetId, ...listening.optionIds, counting.countingConceptId, ...memory.pairConceptIds]
-        .every((conceptId) => assetIds.has(conceptId as (typeof REALISTIC_CONCEPT_IDS)[number]))).toBe(true);
-      expect(ORIGINAL_PUZZLE_SCENE_IDS).toContain(puzzle.scene.id);
+        .every((conceptId) => assetIds.has(conceptId))).toBe(true);
+      expect(sceneImageHref(puzzle.scene)).not.toBe('');
     }
+    expect(ORIGINAL_PUZZLE_SCENE_IDS).toEqual([
+      'blue-forest-party',
+      'rescue-planes',
+      'giant-carrot-garden',
+    ]);
   });
 
   it('is deterministic for the same listening seed', () => {
@@ -52,15 +78,22 @@ describe('round generation', () => {
     expect(first).toEqual(second);
   });
 
-  it('groups listening choices by semantic category', () => {
+  it('prioritizes same-category listening choices before deterministic fallback choices', () => {
     const domain = createInitialDomainProgress();
     domain.level = 3;
-    const round = generateListeningRound(domain, 'semantic-group');
-    const categories = round.optionIds.map(
-      (conceptId) => learningConcepts.find((concept) => concept.id === conceptId)?.category,
-    );
+    for (let index = 0; index < 80; index += 1) {
+      const round = generateListeningRound(domain, `semantic-group-${index}`);
+      const target = learningConcepts.find((concept) => concept.id === round.targetId)!;
+      const availableSameCategory = learningConcepts.filter(
+        (concept) => concept.id !== target.id && concept.category === target.category,
+      ).length;
+      const selectedSameCategory = round.optionIds.filter(
+        (conceptId) => conceptId !== target.id
+          && learningConcepts.find((concept) => concept.id === conceptId)?.category === target.category,
+      ).length;
 
-    expect(new Set(categories).size).toBe(1);
+      expect(selectedSameCategory).toBe(Math.min(round.optionIds.length - 1, availableSameCategory));
+    }
   });
 
   it('respects counting difficulty bands', () => {
@@ -79,7 +112,7 @@ describe('round generation', () => {
     domain.level = 3;
     const seenConcepts = new Set<string>();
 
-    for (let index = 0; index < 50; index += 1) {
+    for (let index = 0; index < 500; index += 1) {
       const round = generateCountingRound(domain, `counting-question-${index}`);
       const conceptId = round.countingConceptId as CountingConceptId;
       seenConcepts.add(conceptId);
@@ -89,7 +122,25 @@ describe('round generation', () => {
       expect(round.promptEn).not.toBe('How many do you see?');
     }
 
-    expect([...seenConcepts].sort()).toEqual(['apple', 'ball', 'banana']);
+    expect([...seenConcepts].sort()).toEqual([
+      'airplane',
+      'apple',
+      'ball',
+      'banana',
+      'bus',
+      'carrot',
+      'chair',
+      'cup',
+      'duck',
+      'elephant',
+      'flower',
+      'orange',
+      'rabbit',
+      'spoon',
+      'strawberry',
+      'train',
+      'tree',
+    ]);
   });
 
   it('builds sorting bins that match the requested rule', () => {
@@ -147,6 +198,17 @@ describe('round generation', () => {
       expect(round.options).toContain(round.targetCount);
     });
 
+    it('keeps level-one counting on the original three countable concepts', () => {
+      const domain = createInitialDomainProgress();
+      const seen = new Set<string>();
+
+      for (let index = 0; index < 100; index += 1) {
+        seen.add(generateCountingRound(domain, `counting-level-1-${index}`).countingConceptId);
+      }
+
+      expect([...seen].sort()).toEqual(['apple', 'ball', 'banana']);
+    });
+
     it('sorts exactly two objects across exactly two bins', () => {
       const domain = createInitialDomainProgress();
       const round = generateSortingRound(domain, 'sorting-level-1');
@@ -162,12 +224,114 @@ describe('round generation', () => {
       expect(round.pieces).toHaveLength(2);
     });
 
+    it('keeps level-one puzzles on the three original scenes', () => {
+      const domain = createInitialDomainProgress();
+
+      for (let index = 0; index < 100; index += 1) {
+        expect(generatePuzzleRound(domain, `puzzle-level-1-${index}`).scene.image.kind).toBe('original');
+      }
+    });
+
     it('builds a two-pair memory round', () => {
       const domain = createInitialDomainProgress();
       const round = generateMemoryRound(domain, 'memory-level-1');
 
       expect(round.pairConceptIds).toHaveLength(2);
       expect(round.cards).toHaveLength(4);
+    });
+  });
+
+  describe('expanded concept coverage and anti-repetition', () => {
+    it('covers all 14 approved concepts in listening, memory, counting, and object puzzles', () => {
+      const domain = createInitialDomainProgress();
+      domain.level = 3;
+      const listening = new Set<string>();
+      const memory = new Set<string>();
+      const counting = new Set<string>();
+      const puzzles = new Set<string>();
+
+      for (let index = 0; index < 1_200; index += 1) {
+        const listeningRound = generateListeningRound(domain, `coverage-listening-${index}`);
+        listening.add(listeningRound.targetId);
+        generateMemoryRound(domain, `coverage-memory-${index}`).pairConceptIds.forEach((id) => memory.add(id));
+        counting.add(generateCountingRound(domain, `coverage-counting-${index}`).countingConceptId);
+        const puzzleScene = generatePuzzleRound(domain, `coverage-puzzle-${index}`).scene;
+        if (puzzleScene.image.kind === 'concept') {
+          puzzles.add(puzzleScene.image.conceptId);
+        }
+      }
+
+      for (const conceptId of NEW_CONCEPT_IDS) {
+        expect(listening).toContain(conceptId);
+        expect(memory).toContain(conceptId);
+        expect(counting).toContain(conceptId);
+        expect(puzzles).toContain(conceptId);
+      }
+      expect(conceptPuzzleScenes).toHaveLength(NEW_CONCEPT_IDS.length);
+    });
+
+    it('is deterministic for identical seeds and recent-round histories', () => {
+      const domain = createInitialDomainProgress();
+      domain.level = 3;
+      const history = ['unrelated-signature'];
+
+      expect(generateListeningRound(domain, 'stable', history)).toEqual(
+        generateListeningRound(domain, 'stable', history),
+      );
+      expect(generateCountingRound(domain, 'stable', history)).toEqual(
+        generateCountingRound(domain, 'stable', history),
+      );
+      expect(generateMemoryRound(domain, 'stable', history)).toEqual(
+        generateMemoryRound(domain, 'stable', history),
+      );
+      expect(generatePuzzleRound(domain, 'stable', history)).toEqual(
+        generatePuzzleRound(domain, 'stable', history),
+      );
+    });
+
+    it('avoids immediate concept reuse while keeping every generator bounded', () => {
+      const domain = createInitialDomainProgress();
+      domain.level = 3;
+      let listeningHistory: string[] = [];
+      let countingHistory: string[] = [];
+      let memoryHistory: string[] = [];
+      let puzzleHistory: string[] = [];
+      let previousListening = new Set<string>();
+      let previousCountingConcept = '';
+      let previousMemory = new Set<string>();
+      let previousPuzzle = '';
+
+      for (let index = 0; index < 24; index += 1) {
+        const listeningRound = generateListeningRound(domain, 'recent-safe', listeningHistory);
+        const listeningIds = new Set(listeningRound.optionIds);
+        if (previousListening.size > 0) {
+          expect([...listeningIds].some((id) => previousListening.has(id))).toBe(false);
+        }
+        previousListening = listeningIds;
+        listeningHistory = [...listeningHistory, getListeningRoundSignature(listeningRound)].slice(-8);
+
+        const countingRound = generateCountingRound(domain, 'recent-safe', countingHistory);
+        if (previousCountingConcept) {
+          expect(countingRound.countingConceptId).not.toBe(previousCountingConcept);
+        }
+        previousCountingConcept = countingRound.countingConceptId;
+        countingHistory = [...countingHistory, getCountingRoundSignature(countingRound)].slice(-8);
+
+        const memoryRound = generateMemoryRound(domain, 'recent-safe', memoryHistory);
+        const memoryIds = new Set(memoryRound.pairConceptIds);
+        if (previousMemory.size > 0) {
+          expect([...memoryIds].some((id) => previousMemory.has(id))).toBe(false);
+        }
+        previousMemory = memoryIds;
+        memoryHistory = [...memoryHistory, getMemoryRoundSignature(memoryRound)].slice(-8);
+
+        const puzzleRound = generatePuzzleRound(domain, 'recent-safe', puzzleHistory);
+        if (previousPuzzle) {
+          expect(puzzleRound.scene.id).not.toBe(previousPuzzle);
+        }
+        previousPuzzle = puzzleRound.scene.id;
+        puzzleHistory = [...puzzleHistory, getPuzzleRoundSignature(puzzleRound)].slice(-8);
+      }
     });
   });
 

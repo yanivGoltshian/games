@@ -1,4 +1,5 @@
 import type { PuzzleScene } from '../domain/types';
+import { conceptAssetHref } from './conceptAssets';
 
 const svgDataUri = (svg: string): string => `data:image/svg+xml,${encodeURIComponent(svg)}`;
 
@@ -88,6 +89,10 @@ const PUZZLE_SCENE_IMAGES: Record<string, string> = {
 export const ORIGINAL_PUZZLE_SCENE_IDS = Object.keys(PUZZLE_SCENE_IMAGES);
 
 export function sceneImageHref(scene: PuzzleScene): string {
+  if (scene.image.kind === 'concept') {
+    return conceptAssetHref(scene.image.conceptId);
+  }
+
   const image = PUZZLE_SCENE_IMAGES[scene.id];
   if (!image) {
     throw new Error(`Missing original puzzle scene: ${scene.id}`);

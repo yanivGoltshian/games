@@ -5,7 +5,7 @@ import { useMeasuredSize } from '../components/useMeasuredSize';
 import { type DragItemState, useToddlerDrag } from '../components/drag/useToddlerDrag';
 import { gameMeta } from '../content/games';
 import { buildPuzzleMissModelLine } from '../content/feedbackSpeech';
-import { generatePuzzleRound } from '../domain/rounds';
+import { generatePuzzleRound, getPuzzleRoundSignature } from '../domain/rounds';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
@@ -33,7 +33,12 @@ export function PuzzleGame({
   const surfaceRef = useRef<HTMLDivElement>(null);
   const size = useMeasuredSize(surfaceRef);
 
-  const { round, roundKey, startNextRound } = useAdaptiveRound('puzzle', domainProgress, generatePuzzleRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound(
+    'puzzle',
+    domainProgress,
+    generatePuzzleRound,
+    { getSignature: getPuzzleRoundSignature, limit: 8 },
+  );
   const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;

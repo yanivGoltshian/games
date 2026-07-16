@@ -1,17 +1,23 @@
-export const REALISTIC_CONCEPT_ASSETS = {
-  apple: '/assets/vocabulary/apple.webp',
-  ball: '/assets/vocabulary/ball.webp',
-  banana: '/assets/vocabulary/banana.webp',
-  car: '/assets/vocabulary/car.webp',
-  cat: '/assets/vocabulary/cat.webp',
-  dog: '/assets/vocabulary/dog.webp',
-  shoe: '/assets/vocabulary/shoe.webp',
-} as const;
+import {
+  getLearningConcept,
+  learningConcepts,
+  type LearningConceptId,
+} from '../content/concepts';
 
-export type RealisticConceptId = keyof typeof REALISTIC_CONCEPT_ASSETS;
+export type RealisticConceptId = LearningConceptId;
 
-export const REALISTIC_CONCEPT_IDS = Object.keys(REALISTIC_CONCEPT_ASSETS) as RealisticConceptId[];
+export const REALISTIC_CONCEPT_IDS: readonly RealisticConceptId[] = learningConcepts.map(
+  (concept) => concept.id,
+);
 
 export function hasRealisticConceptAsset(conceptId: string): conceptId is RealisticConceptId {
-  return Object.hasOwn(REALISTIC_CONCEPT_ASSETS, conceptId);
+  return getLearningConcept(conceptId) !== undefined;
+}
+
+export function conceptAssetHref(conceptId: string): string {
+  const concept = getLearningConcept(conceptId);
+  if (!concept) {
+    throw new Error(`Missing realistic asset for concept: ${conceptId}`);
+  }
+  return concept.image;
 }

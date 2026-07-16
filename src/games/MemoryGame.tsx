@@ -3,7 +3,7 @@ import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
 import { learningConcepts } from '../content/concepts';
 import { gameMeta } from '../content/games';
-import { generateMemoryRound } from '../domain/rounds';
+import { generateMemoryRound, getMemoryRoundSignature } from '../domain/rounds';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService, type SpeechResult } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
@@ -42,7 +42,12 @@ export function MemoryGame({
   const firstLabelPromiseRef = useRef<Promise<SpeechResult> | null>(null);
   const roundGenerationRef = useRef(0);
 
-  const { round, roundKey, startNextRound } = useAdaptiveRound('memory', domainProgress, generateMemoryRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound(
+    'memory',
+    domainProgress,
+    generateMemoryRound,
+    { getSignature: getMemoryRoundSignature, limit: 8 },
+  );
   const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;

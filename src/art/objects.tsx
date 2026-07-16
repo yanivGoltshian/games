@@ -1,5 +1,5 @@
 import type { ArtProps } from './a11y';
-import { REALISTIC_CONCEPT_ASSETS, hasRealisticConceptAsset } from './conceptAssets';
+import { conceptAssetHref } from './conceptAssets';
 
 export interface ConceptArtProps extends ArtProps {
   conceptId: string;
@@ -7,13 +7,9 @@ export interface ConceptArtProps extends ArtProps {
 
 /** Renders a locally bundled, generated studio image for a stable content id. */
 export function ConceptArt({ conceptId, label, className }: ConceptArtProps) {
-  if (!hasRealisticConceptAsset(conceptId)) {
-    throw new Error(`Missing realistic asset for concept: ${conceptId}`);
-  }
-
   return (
     <img
-      src={REALISTIC_CONCEPT_ASSETS[conceptId]}
+      src={conceptAssetHref(conceptId)}
       alt={label ?? ''}
       aria-hidden={label ? undefined : 'true'}
       className={`concept-photo ${className ?? ''}`.trim()}

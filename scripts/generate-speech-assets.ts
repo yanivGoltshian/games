@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import {
   mkdtempSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -53,6 +54,12 @@ interface AudioProbe {
 interface GeneratedClip {
   path: string;
   duration: number;
+}
+
+interface ExistingLocaleAssets {
+  manifest: RecordedSpeechManifest;
+  spritePath: string;
+  regenerateMatch: string;
 }
 
 function run(command: string, args: string[]): { stdout: string; stderr: string } {
@@ -222,6 +229,7 @@ async function generateLocale(
   manifest: RecordedSpeechManifest,
   endpoint: string,
   authorizer: SpeechAuthorizer,
+  existing?: ExistingLocaleAssets,
 ): Promise<void> {
   const tempDirectory = mkdtempSync(join(tmpdir(), `sean-speech-${locale}-`));
 
@@ -237,6 +245,22 @@ async function generateLocale(
       silencePath,
     ]);
 
+    let existingPcmPath: string | undefined;
+    if (existing) {
+      existingPcmPath = join(tempDirectory, 'existing.wav');
+      verifyAudio(existing.spritePath, 'mp3');
+      run('ffmpeg', [
+        '-loglevel', 'error',
+        '-y',
+        '-i', existing.spritePath,
+        '-ar', String(SAMPLE_RATE),
+        '-ac', '1',
+        '-c:a', 'pcm_s16le',
+        existingPcmPath,
+      ]);
+      verifyAudio(existingPcmPath, 'pcm_s16le');
+    }
+
     const clips = new Array<GeneratedClip>(entries.length);
     await mapWithConcurrency(
       entries,
@@ -246,17 +270,40 @@ async function generateLocale(
         const prefix = String(index).padStart(3, '0');
         const responsePath = join(tempDirectory, `${prefix}-azure.wav`);
         const normalizedPath = join(tempDirectory, `${prefix}.wav`);
-        const audio = await synthesize(endpoint, authorizer, locale, spokenText);
-        writeFileSync(responsePath, audio);
-        run('ffmpeg', [
-          '-loglevel', 'error',
-          '-y',
-          '-i', responsePath,
-          '-ar', String(SAMPLE_RATE),
-          '-ac', '1',
-          '-c:a', 'pcm_s16le',
-          normalizedPath,
-        ]);
+        const shouldRegenerate = !existing || entry.text.includes(existing.regenerateMatch);
+        if (shouldRegenerate) {
+          const audio = await synthesize(endpoint, authorizer, locale, spokenText);
+          writeFileSync(responsePath, audio);
+          run('ffmpeg', [
+            '-loglevel', 'error',
+            '-y',
+            '-i', responsePath,
+            '-ar', String(SAMPLE_RATE),
+            '-ac', '1',
+            '-c:a', 'pcm_s16le',
+            normalizedPath,
+          ]);
+        } else {
+          const clip = existing.manifest.entries[manifestKey(locale, entry.text)];
+          if (!clip || !existingPcmPath) {
+            throw new Error(`Existing speech assets are missing ${locale}: ${entry.text}`);
+          }
+          const sourceDuration = clip.duration - PLAYBACK_TAIL_SECONDS;
+          if (sourceDuration <= 0.1) {
+            throw new Error(`Existing speech clip is too short to reuse: ${locale}: ${entry.text}`);
+          }
+          run('ffmpeg', [
+            '-loglevel', 'error',
+            '-y',
+            '-ss', String(clip.offset),
+            '-t', String(sourceDuration),
+            '-i', existingPcmPath,
+            '-ar', String(SAMPLE_RATE),
+            '-ac', '1',
+            '-c:a', 'pcm_s16le',
+            normalizedPath,
+          ]);
+        }
         const duration = verifyAudio(normalizedPath, 'pcm_s16le');
         verifyAudible(normalizedPath);
         clips[index] = { path: normalizedPath, duration };
@@ -316,23 +363,55 @@ async function main(): Promise<void> {
   for (const entry of catalog) {
     (grouped[entry.locale] ??= []).push(entry);
   }
-  const manifest: RecordedSpeechManifest = { version: 1, entries: {} };
+  const regenerateMatch = process.env.AZURE_SPEECH_REGENERATE_MATCH?.trim();
+  let manifest: RecordedSpeechManifest = { version: 1, entries: {} };
 
   mkdirSync(outputDirectory, { recursive: true });
-  for (const locale of Object.keys(NEURAL_VOICES) as SpeechLocale[]) {
+  if (regenerateMatch) {
+    const manifestPath = join(outputDirectory, 'manifest.json');
+    const existingManifest = JSON.parse(
+      readFileSync(manifestPath, 'utf8'),
+    ) as RecordedSpeechManifest;
+    const locale: SpeechLocale = 'he-IL';
     const localeEntries = grouped[locale] ?? [];
+    const selectedEntries = localeEntries.filter((entry) => entry.text.includes(regenerateMatch));
+    if (selectedEntries.length === 0) {
+      throw new Error(`No Hebrew speech entries match: ${regenerateMatch}`);
+    }
+    manifest = {
+      version: existingManifest.version,
+      entries: { ...existingManifest.entries },
+    };
     console.log(
-      `Generating ${localeEntries.length} ${locale} clips with ${NEURAL_VOICES[locale].name}`,
+      `Regenerating ${selectedEntries.length} matching ${locale} clips with ${NEURAL_VOICES[locale].name}`,
     );
-    await generateLocale(locale, localeEntries, manifest, endpoint, authorizer);
+    await generateLocale(locale, localeEntries, manifest, endpoint, authorizer, {
+      manifest: existingManifest,
+      spritePath: join(outputDirectory, `${locale}.mp3`),
+      regenerateMatch,
+    });
+  } else {
+    for (const locale of Object.keys(NEURAL_VOICES) as SpeechLocale[]) {
+      const localeEntries = grouped[locale] ?? [];
+      console.log(
+        `Generating ${localeEntries.length} ${locale} clips with ${NEURAL_VOICES[locale].name}`,
+      );
+      await generateLocale(locale, localeEntries, manifest, endpoint, authorizer);
+    }
   }
   writeFileSync(
     join(outputDirectory, 'manifest.json'),
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
-  console.log(
-    `Generated ${catalog.length} clips across ${Object.keys(NEURAL_VOICES).length} audio sprites.`,
-  );
+  if (regenerateMatch) {
+    console.log(
+      `Rebuilt the he-IL sprite and preserved ${catalog.length} manifest clips.`,
+    );
+  } else {
+    console.log(
+      `Generated ${catalog.length} clips across ${Object.keys(NEURAL_VOICES).length} audio sprites.`,
+    );
+  }
 }
 
 await main();

@@ -70,10 +70,7 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   sortingItems.forEach((item) => addPair(item.he, item.en));
   puzzleScenes.forEach((scene) => {
     addPair(scene.titleHe, scene.titleEn);
-    addPair(
-      `נחבר את ${scene.titleHe}`,
-      `Let’s rebuild the ${scene.titleEn}`,
-    );
+    addPair(scene.promptHe, scene.promptEn);
   });
 
   learningConcepts.forEach((concept) => {

@@ -1,4 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { learningConcepts } from './concepts';
+import {
+  getHebrewPronunciationSkeleton,
+  hasNiqqud,
+  stripNiqqud,
+} from './hebrewPronunciation';
 import {
   COUNTING_QUANTITY_FORMS,
   SUPPORTED_COUNTING_CONCEPT_IDS,
@@ -9,62 +15,71 @@ import {
   getCountingQuantityPhrase,
 } from './countingQuantity';
 
+const EXPECTED_COUNTING_IDS = [
+  'apple',
+  'ball',
+  'banana',
+  'duck',
+  'rabbit',
+  'elephant',
+  'strawberry',
+  'orange',
+  'carrot',
+  'cup',
+  'spoon',
+  'chair',
+  'bus',
+  'train',
+  'airplane',
+  'flower',
+  'tree',
+] as const;
+
 describe('counting quantity wording', () => {
-  it('covers exactly the current counting concepts', () => {
-    expect(SUPPORTED_COUNTING_CONCEPT_IDS).toEqual(['apple', 'ball', 'banana']);
-    expect(countingConceptQuantityCoverage()).toEqual(SUPPORTED_COUNTING_CONCEPT_IDS);
+  it('covers every semantically countable concept in stable progression order', () => {
+    expect(SUPPORTED_COUNTING_CONCEPT_IDS).toEqual(EXPECTED_COUNTING_IDS);
+    expect(countingConceptQuantityCoverage()).toEqual(EXPECTED_COUNTING_IDS);
+    expect(learningConcepts.filter((concept) => concept.quantity !== null).map((concept) => concept.id))
+      .toEqual(expect.arrayContaining([...EXPECTED_COUNTING_IDS]));
   });
 
-  it('keeps all Hebrew and English quantity forms for counts 1-10', () => {
-    const expected = {
-      apple: {
-        1: { he: 'תפוח אחד', en: 'one apple' },
-        2: { he: 'שני תפוחים', en: 'two apples' },
-        3: { he: 'שלושה תפוחים', en: 'three apples' },
-        4: { he: 'ארבעה תפוחים', en: 'four apples' },
-        5: { he: 'חמישה תפוחים', en: 'five apples' },
-        6: { he: 'שישה תפוחים', en: 'six apples' },
-        7: { he: 'שבעה תפוחים', en: 'seven apples' },
-        8: { he: 'שמונה תפוחים', en: 'eight apples' },
-        9: { he: 'תשעה תפוחים', en: 'nine apples' },
-        10: { he: 'עשרה תפוחים', en: 'ten apples' },
-      },
-      ball: {
-        1: { he: 'כדור אחד', en: 'one ball' },
-        2: { he: 'שני כדורים', en: 'two balls' },
-        3: { he: 'שלושה כדורים', en: 'three balls' },
-        4: { he: 'ארבעה כדורים', en: 'four balls' },
-        5: { he: 'חמישה כדורים', en: 'five balls' },
-        6: { he: 'שישה כדורים', en: 'six balls' },
-        7: { he: 'שבעה כדורים', en: 'seven balls' },
-        8: { he: 'שמונה כדורים', en: 'eight balls' },
-        9: { he: 'תשעה כדורים', en: 'nine balls' },
-        10: { he: 'עשרה כדורים', en: 'ten balls' },
-      },
-      banana: {
-        1: { he: 'בננה אחת', en: 'one banana' },
-        2: { he: 'שתי בננות', en: 'two bananas' },
-        3: { he: 'שלוש בננות', en: 'three bananas' },
-        4: { he: 'ארבע בננות', en: 'four bananas' },
-        5: { he: 'חמש בננות', en: 'five bananas' },
-        6: { he: 'שש בננות', en: 'six bananas' },
-        7: { he: 'שבע בננות', en: 'seven bananas' },
-        8: { he: 'שמונה בננות', en: 'eight bananas' },
-        9: { he: 'תשע בננות', en: 'nine bananas' },
-        10: { he: 'עשר בננות', en: 'ten bananas' },
-      },
-    } as const;
-
+  it('keeps complete, pointed Hebrew and natural English forms for counts 1-10', () => {
     for (const conceptId of SUPPORTED_COUNTING_CONCEPT_IDS) {
       for (const count of SUPPORTED_COUNTING_COUNTS) {
-        expect(COUNTING_QUANTITY_FORMS[conceptId][count]).toEqual(expected[conceptId][count]);
-        expect(getCountingQuantityPhrase('he', conceptId, count)).toBe(expected[conceptId][count].he);
-        expect(getCountingQuantityPhrase('en', conceptId, count)).toBe(expected[conceptId][count].en);
+        const form = COUNTING_QUANTITY_FORMS[conceptId][count];
+        expect(form.he).not.toBe('');
+        expect(form.en).not.toBe('');
+        expect(hasNiqqud(form.he)).toBe(false);
+        expect(hasNiqqud(form.heSpoken)).toBe(true);
+        expect(stripNiqqud(form.heSpoken).normalize('NFC'))
+          .toBe(getHebrewPronunciationSkeleton(form.he));
+        expect(getCountingQuantityPhrase('he', conceptId, count)).toBe(form.he);
+        expect(getCountingQuantityPhrase('en', conceptId, count)).toBe(form.en);
       }
     }
   });
 
-  it('keeps count-aloud words and English singular/plural wording natural', () => {
+  it('preserves the original apple, ball, and banana quantity phrases', () => {
+    expect(getCountingQuantityPhrase('he', 'apple', 1)).toBe('תפוח אחד');
+    expect(getCountingQuantityPhrase('he', 'apple', 10)).toBe('עשרה תפוחים');
+    expect(getCountingQuantityPhrase('he', 'ball', 2)).toBe('שני כדורים');
+    expect(getCountingQuantityPhrase('he', 'banana', 3)).toBe('שלוש בננות');
+    expect(getCountingQuantityPhrase('en', 'banana', 6)).toBe('six bananas');
+  });
+
+  it('uses reviewed gender and irregular plurals for critical new nouns', () => {
+    expect(getCountingQuantityPhrase('he', 'cup', 1)).toBe('כוס אחת');
+    expect(getCountingQuantityPhrase('he', 'cup', 2)).toBe('שתי כוסות');
+    expect(getCountingQuantityPhrase('he', 'spoon', 1)).toBe('כפית אחת');
+    expect(getCountingQuantityPhrase('he', 'spoon', 3)).toBe('שלוש כפיות');
+    expect(getCountingQuantityPhrase('he', 'train', 1)).toBe('רכבת אחת');
+    expect(getCountingQuantityPhrase('he', 'train', 2)).toBe('שתי רכבות');
+    expect(getCountingQuantityPhrase('he', 'chair', 2)).toBe('שני כיסאות');
+    expect(getCountingQuantityPhrase('he', 'tree', 2)).toBe('שני עצים');
+    expect(getCountingQuantityPhrase('en', 'strawberry', 2)).toBe('two strawberries');
+  });
+
+  it('keeps count-aloud words independent from noun gender', () => {
     expect(SUPPORTED_COUNTING_COUNTS.map((count) => getCountAloudWord('he', count))).toEqual([
       'אחת',
       'שתיים',
@@ -89,22 +104,12 @@ describe('counting quantity wording', () => {
       'nine',
       'ten',
     ]);
-    expect(getCountingQuantityPhrase('en', 'apple', 1)).toBe('one apple');
-    expect(getCountingQuantityPhrase('en', 'apple', 2)).toBe('two apples');
-    expect(getCountingQuantityPhrase('en', 'banana', 1)).toBe('one banana');
-    expect(getCountingQuantityPhrase('en', 'banana', 6)).toBe('six bananas');
   });
 
   it('builds toddler-natural concept-specific counting questions', () => {
-    expect(SUPPORTED_COUNTING_CONCEPT_IDS.map((conceptId) => getCountingQuestion('he', conceptId))).toEqual([
-      'כמה תפוחים יש כאן?',
-      'כמה כדורים יש כאן?',
-      'כמה בננות יש כאן?',
-    ]);
-    expect(SUPPORTED_COUNTING_CONCEPT_IDS.map((conceptId) => getCountingQuestion('en', conceptId))).toEqual([
-      'How many apples are here?',
-      'How many balls are here?',
-      'How many bananas are here?',
-    ]);
+    expect(getCountingQuestion('he', 'cup')).toBe('כמה כוסות יש כאן?');
+    expect(getCountingQuestion('he', 'spoon')).toBe('כמה כפיות יש כאן?');
+    expect(getCountingQuestion('he', 'train')).toBe('כמה רכבות יש כאן?');
+    expect(getCountingQuestion('en', 'tree')).toBe('How many trees are here?');
   });
 });

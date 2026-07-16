@@ -7,6 +7,17 @@ export type SpeechLocale = 'he-IL' | EnglishVoiceLocale;
 export type ColorId = 'red' | 'blue' | 'green' | 'yellow';
 export type ShapeId = 'circle' | 'square' | 'triangle' | 'star';
 export type SortingRule = 'color' | 'shape';
+export type ConceptCategory =
+  | 'animal'
+  | 'clothing'
+  | 'furniture'
+  | 'fruit'
+  | 'nature'
+  | 'tableware'
+  | 'toy'
+  | 'transport'
+  | 'vegetable';
+export type HebrewGrammaticalGender = 'masculine' | 'feminine';
 
 export interface ToddlerSettings {
   languageMode: LanguageMode;
@@ -84,9 +95,29 @@ export interface LevelRecommendation {
 
 export interface LearningConcept {
   id: string;
-  category: 'animal' | 'object';
+  category: ConceptCategory;
   he: string;
+  spokenHe: string;
   en: string;
+  image: string;
+  introducedAtLevel: 1 | 2 | 3;
+  puzzle: boolean;
+  quantity: {
+    order: number;
+    he: {
+      singular: string;
+      singularSpoken: string;
+      plural: string;
+      pluralSpoken: string;
+      countedPlural: string;
+      countedPluralSpoken: string;
+      gender: HebrewGrammaticalGender;
+    };
+    en: {
+      singular: string;
+      plural: string;
+    };
+  } | null;
   /**
    * V1 service seam: when a stable content id has a matching recorded file
    * here, the speech service can prefer it over platform TTS without any
@@ -138,7 +169,17 @@ export interface SortingRound {
 export interface PuzzleScene {
   id: string;
   titleHe: string;
+  titleHeSpoken: string;
   titleEn: string;
+  promptHe: string;
+  promptHeSpoken: string;
+  promptEn: string;
+  image: {
+    kind: 'original';
+  } | {
+    kind: 'concept';
+    conceptId: string;
+  };
 }
 
 export interface PuzzlePieceRound {

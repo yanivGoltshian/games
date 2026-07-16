@@ -4,7 +4,12 @@ import { GameShell } from '../components/GameShell';
 import { getCountingQuantityPhrase, type CountingConceptId } from '../content/countingQuantity';
 import { gameMeta } from '../content/games';
 import { buildCountingMissModel, getCountingLayout } from '../domain/countingFeedback';
-import { NUMBER_WORDS_EN, NUMBER_WORDS_HE, generateCountingRound } from '../domain/rounds';
+import {
+  NUMBER_WORDS_EN,
+  NUMBER_WORDS_HE,
+  generateCountingRound,
+  getCountingRoundSignature,
+} from '../domain/rounds';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
@@ -32,7 +37,12 @@ export function CountingGame({
   const [wiggleValue, setWiggleValue] = useState<number | null>(null);
   const [hintedValue, setHintedValue] = useState<number | null>(null);
 
-  const { round, roundKey, startNextRound } = useAdaptiveRound('counting', domainProgress, generateCountingRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound(
+    'counting',
+    domainProgress,
+    generateCountingRound,
+    { getSignature: getCountingRoundSignature, limit: 8 },
+  );
   const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;

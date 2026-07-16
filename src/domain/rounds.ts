@@ -1,4 +1,10 @@
-import { countingConceptIds, learningConcepts, puzzleScenes, sortingItems } from '../content/concepts';
+import {
+  countingConceptIds,
+  learningConcepts,
+  puzzleScenes,
+  requireLearningConcept,
+  sortingItems,
+} from '../content/concepts';
 import { getCountingQuestion } from '../content/countingQuantity';
 import { buildPracticeWeights, createInitialConceptStat } from './progression';
 import { createSeededRandom, pickWeightedUnique } from './rng';
@@ -18,18 +24,11 @@ import type {
 export const NUMBER_WORDS_HE = ['אפס', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר'];
 export const NUMBER_WORDS_EN = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 export const NUMBER_PAIRS_GENERATION_ATTEMPTS = 32;
+export const LEARNING_ROUND_GENERATION_ATTEMPTS = 32;
 
-const listeningStages: string[][] = [
-  ['ball', 'car', 'banana', 'dog', 'cat', 'apple'],
-  ['ball', 'car', 'banana', 'dog', 'cat', 'apple', 'shoe'],
-  learningConcepts.map((concept) => concept.id),
-];
-
-const memoryStages: string[][] = [
-  ['ball', 'car', 'banana', 'dog', 'cat', 'apple'],
-  ['ball', 'car', 'banana', 'dog', 'cat', 'apple', 'shoe'],
-  learningConcepts.map((concept) => concept.id),
-];
+const learningStages: string[][] = ([1, 2, 3] as const).map((level) => learningConcepts
+  .filter((concept) => concept.introducedAtLevel <= level)
+  .map((concept) => concept.id));
 
 export const SORTING_COLOR_LABELS: Record<ColorId, { he: string; en: string }> = {
   red: { he: 'אדום', en: 'red' },
@@ -46,11 +45,7 @@ export const SORTING_SHAPE_LABELS: Record<ShapeId, { he: string; en: string }> =
 };
 
 function conceptById(id: string) {
-  const concept = learningConcepts.find((item) => item.id === id);
-  if (!concept) {
-    throw new Error(`Unknown concept: ${id}`);
-  }
-  return concept;
+  return requireLearningConcept(id);
 }
 
 function uniqueNumberOptions(random: ReturnType<typeof createSeededRandom>, target: number, max: number, optionCount: number): number[] {
@@ -61,10 +56,65 @@ function uniqueNumberOptions(random: ReturnType<typeof createSeededRandom>, targ
   return random.shuffle([...options]);
 }
 
-export function generateListeningRound(domain: DomainProgress, seed: string | number): ListeningRound {
+interface RepeatSafeCandidateConfig<TRound> {
+  seed: string | number;
+  scope: string;
+  recentSignatures: readonly string[];
+  create: (seed: string | number) => TRound;
+  getSignature: (round: TRound) => string;
+  getTokens: (round: TRound) => readonly string[];
+  getSignatureTokens: (signature: string) => readonly string[];
+}
+
+function repeatPenalty<TRound>(
+  round: TRound,
+  config: RepeatSafeCandidateConfig<TRound>,
+): number {
+  const signature = config.getSignature(round);
+  const tokens = new Set(config.getTokens(round));
+  let penalty = config.recentSignatures.includes(signature) ? 10_000 : 0;
+
+  config.recentSignatures.forEach((recentSignature, index) => {
+    const recentTokens = new Set(config.getSignatureTokens(recentSignature));
+    const overlap = [...tokens].filter((token) => recentTokens.has(token)).length;
+    penalty += overlap * (index + 1);
+    if (index === config.recentSignatures.length - 1) {
+      penalty += overlap * 1_000;
+    }
+  });
+
+  return penalty;
+}
+
+function createRepeatSafeRound<TRound>(config: RepeatSafeCandidateConfig<TRound>): TRound {
+  if (config.recentSignatures.length === 0) {
+    return config.create(config.seed);
+  }
+
+  let bestRound: TRound | undefined;
+  let bestPenalty = Number.POSITIVE_INFINITY;
+  for (let attempt = 0; attempt < LEARNING_ROUND_GENERATION_ATTEMPTS; attempt += 1) {
+    const candidate = config.create(`${String(config.seed)}:${config.scope}:${attempt}`);
+    const penalty = repeatPenalty(candidate, config);
+    if (penalty < bestPenalty) {
+      bestRound = candidate;
+      bestPenalty = penalty;
+    }
+    if (penalty === 0) {
+      return candidate;
+    }
+  }
+
+  if (!bestRound) {
+    throw new Error(`Unable to create a ${config.scope} round.`);
+  }
+  return bestRound;
+}
+
+function createListeningCandidate(domain: DomainProgress, seed: string | number): ListeningRound {
   const random = createSeededRandom(seed);
-  const stageIndex = Math.min(listeningStages.length - 1, Math.max(0, domain.level - 1));
-  const available = [...listeningStages[stageIndex]!];
+  const stageIndex = Math.min(learningStages.length - 1, Math.max(0, domain.level - 1));
+  const available = [...learningStages[stageIndex]!];
   // Level 1 keeps the very first choices to exactly two clear pictures.
   const optionCount = domain.level === 1 ? 2 : domain.level === 2 ? 3 : 4;
   const weights = buildPracticeWeights(domain, available);
@@ -79,7 +129,13 @@ export function generateListeningRound(domain: DomainProgress, seed: string | nu
     Math.min(optionCount - 1, sameCategoryIds.length),
     random,
   );
-  const optionIds = random.shuffle([targetId, ...distractorIds]);
+  const fallbackIds = pickWeightedUnique(
+    available.filter((conceptId) => conceptId !== targetId && !distractorIds.includes(conceptId)),
+    weights,
+    optionCount - 1 - distractorIds.length,
+    random,
+  );
+  const optionIds = random.shuffle([targetId, ...distractorIds, ...fallbackIds]);
 
   return {
     targetId,
@@ -89,13 +145,36 @@ export function generateListeningRound(domain: DomainProgress, seed: string | nu
   };
 }
 
-export function generateCountingRound(domain: DomainProgress, seed: string | number): CountingRound {
+export function getListeningRoundSignature(round: ListeningRound): string {
+  return `${round.targetId}|${[...round.optionIds].sort().join(',')}`;
+}
+
+export function generateListeningRound(
+  domain: DomainProgress,
+  seed: string | number,
+  recentSignatures: readonly string[] = [],
+): ListeningRound {
+  return createRepeatSafeRound({
+    seed,
+    scope: 'listening',
+    recentSignatures,
+    create: (candidateSeed) => createListeningCandidate(domain, candidateSeed),
+    getSignature: getListeningRoundSignature,
+    getTokens: (round) => round.optionIds,
+    getSignatureTokens: (signature) => signature.split('|')[1]?.split(',') ?? [],
+  });
+}
+
+function createCountingCandidate(domain: DomainProgress, seed: string | number): CountingRound {
   const random = createSeededRandom(seed);
   const maxCount = domain.level === 1 ? 3 : domain.level === 2 ? 5 : 10;
   // Level 1 offers only the target plus one distractor number.
   const optionCount = domain.level === 1 ? 2 : domain.level === 2 ? 3 : 4;
   const targetCount = random.int(1, maxCount);
-  const countingConceptId = countingConceptIds[random.int(0, countingConceptIds.length - 1)]!;
+  const availableConceptIds = countingConceptIds.filter(
+    (conceptId) => requireLearningConcept(conceptId).introducedAtLevel <= domain.level,
+  );
+  const countingConceptId = availableConceptIds[random.int(0, availableConceptIds.length - 1)]!;
 
   return {
     targetCount,
@@ -106,6 +185,29 @@ export function generateCountingRound(domain: DomainProgress, seed: string | num
     answerHe: NUMBER_WORDS_HE[targetCount] ?? String(targetCount),
     answerEn: NUMBER_WORDS_EN[targetCount] ?? String(targetCount),
   };
+}
+
+export function getCountingRoundSignature(round: CountingRound): string {
+  return `${round.countingConceptId}|${round.targetCount}|${[...round.options].sort((left, right) => left - right).join(',')}`;
+}
+
+export function generateCountingRound(
+  domain: DomainProgress,
+  seed: string | number,
+  recentSignatures: readonly string[] = [],
+): CountingRound {
+  return createRepeatSafeRound({
+    seed,
+    scope: 'counting',
+    recentSignatures,
+    create: (candidateSeed) => createCountingCandidate(domain, candidateSeed),
+    getSignature: getCountingRoundSignature,
+    getTokens: (round) => [`concept:${round.countingConceptId}`, `count:${round.targetCount}`],
+    getSignatureTokens: (signature) => {
+      const [conceptId, count] = signature.split('|');
+      return conceptId && count ? [`concept:${conceptId}`, `count:${count}`] : [];
+    },
+  });
 }
 
 function pickSortingRule(domain: DomainProgress, random: ReturnType<typeof createSeededRandom>): SortingRule {
@@ -151,10 +253,14 @@ export function generateSortingRound(domain: DomainProgress, seed: string | numb
   };
 }
 
-export function generatePuzzleRound(domain: DomainProgress, seed: string | number): PuzzleRound {
+function createPuzzleCandidate(domain: DomainProgress, seed: string | number): PuzzleRound {
   const random = createSeededRandom(seed);
   const [rows, cols] = domain.level === 1 ? [1, 2] : domain.level === 2 ? [2, 2] : [3, 3];
-  const scene = random.pick(puzzleScenes);
+  const availableScenes = puzzleScenes.filter((scene) => (
+    scene.image.kind === 'original'
+    || requireLearningConcept(scene.image.conceptId).introducedAtLevel <= domain.level
+  ));
+  const scene = random.pick(availableScenes);
   const pieces = Array.from({ length: rows * cols }, (_, index) => ({
     id: `${scene.id}-${index}`,
     row: Math.floor(index / cols),
@@ -166,16 +272,36 @@ export function generatePuzzleRound(domain: DomainProgress, seed: string | numbe
     rows,
     cols,
     pieces,
-    promptHe: `נחבר את ${scene.titleHe}`,
-    promptEn: `Let’s rebuild the ${scene.titleEn}`,
+    promptHe: scene.promptHe,
+    promptEn: scene.promptEn,
   };
 }
 
-export function generateMemoryRound(domain: DomainProgress, seed: string | number): MemoryRound {
+export function getPuzzleRoundSignature(round: PuzzleRound): string {
+  return round.scene.id;
+}
+
+export function generatePuzzleRound(
+  domain: DomainProgress,
+  seed: string | number,
+  recentSignatures: readonly string[] = [],
+): PuzzleRound {
+  return createRepeatSafeRound({
+    seed,
+    scope: 'puzzle',
+    recentSignatures,
+    create: (candidateSeed) => createPuzzleCandidate(domain, candidateSeed),
+    getSignature: getPuzzleRoundSignature,
+    getTokens: (round) => [round.scene.id],
+    getSignatureTokens: (signature) => [signature],
+  });
+}
+
+function createMemoryCandidate(domain: DomainProgress, seed: string | number): MemoryRound {
   const random = createSeededRandom(seed);
-  const stageIndex = Math.min(memoryStages.length - 1, Math.max(0, domain.level - 1));
+  const stageIndex = Math.min(learningStages.length - 1, Math.max(0, domain.level - 1));
   const pairCount = domain.level === 1 ? 2 : domain.level === 2 ? 3 : 4;
-  const available = [...memoryStages[stageIndex]!];
+  const available = [...learningStages[stageIndex]!];
   const weights = buildPracticeWeights(domain, available);
   const pairConceptIds = pickWeightedUnique(available, weights, pairCount, random);
   const cards = random.shuffle(
@@ -191,6 +317,26 @@ export function generateMemoryRound(domain: DomainProgress, seed: string | numbe
     promptHe: 'פותחים שני קלפים ומחפשים זוג',
     promptEn: 'Open two cards and find a pair',
   };
+}
+
+export function getMemoryRoundSignature(round: MemoryRound): string {
+  return [...round.pairConceptIds].sort().join(',');
+}
+
+export function generateMemoryRound(
+  domain: DomainProgress,
+  seed: string | number,
+  recentSignatures: readonly string[] = [],
+): MemoryRound {
+  return createRepeatSafeRound({
+    seed,
+    scope: 'memory',
+    recentSignatures,
+    create: (candidateSeed) => createMemoryCandidate(domain, candidateSeed),
+    getSignature: getMemoryRoundSignature,
+    getTokens: (round) => round.pairConceptIds,
+    getSignatureTokens: (signature) => signature.split(','),
+  });
 }
 
 export function getNumberPairsRoundSignature(
