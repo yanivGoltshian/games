@@ -1,30 +1,20 @@
 import { createRef, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { sceneBackgroundImage } from '../art/puzzleScenes';
 import { GameShell } from '../components/GameShell';
+import { PuzzlePieceArt } from '../components/puzzle/PuzzlePieceArt';
 import { useMeasuredSize } from '../components/useMeasuredSize';
 import { type DragItemState, useToddlerDrag } from '../components/drag/useToddlerDrag';
 import { gameMeta } from '../content/games';
 import { buildPuzzleMissModelLine } from '../content/feedbackSpeech';
 import { generatePuzzleRound } from '../domain/rounds';
-import type { PuzzlePieceRound, PuzzleScene } from '../domain/types';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
+import { computePuzzleLayout } from './puzzleGeometry';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
 const SPEECH_SCOPE = 'game:puzzle';
-
-function pieceArtStyle(scene: PuzzleScene, rows: number, cols: number, piece: PuzzlePieceRound): CSSProperties {
-  const x = cols === 1 ? '50%' : `${(piece.col / (cols - 1)) * 100}%`;
-  const y = rows === 1 ? '50%' : `${(piece.row / (rows - 1)) * 100}%`;
-  return {
-    backgroundImage: sceneBackgroundImage(scene),
-    backgroundSize: `${cols * 100}% ${rows * 100}%`,
-    backgroundPosition: `${x} ${y}`,
-  };
-}
 
 export function PuzzleGame({
   domainProgress,
@@ -53,9 +43,10 @@ export function PuzzleGame({
     [round],
   );
 
-  const boardSize = Math.min(size.width - 28, 300);
-  const slotWidth = boardSize / round.cols;
-  const slotHeight = boardSize / round.rows;
+  const layout = useMemo(
+    () => computePuzzleLayout(size.width, size.height, round.rows, round.cols, round.pieces.length),
+    [round.cols, round.pieces.length, round.rows, size.height, size.width],
+  );
 
   const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
@@ -70,26 +61,30 @@ export function PuzzleGame({
   speakPromptRef.current = speakPrompt;
 
   useEffect(() => {
-    const columns = Math.min(2, round.pieces.length);
-    const gap = 14;
-    const pieceWidth = slotWidth;
-    const pieceHeight = slotHeight;
-    const totalWidth = columns * pieceWidth + (columns - 1) * gap;
-    const startX = Math.max(18, (size.width - totalWidth) / 2);
-    const startY = boardSize + 38;
-
-    setItems(
-      Object.fromEntries(
-        round.pieces.map((piece, index) => {
-          const row = Math.floor(index / columns);
-          const col = index % columns;
-          const x = startX + col * (pieceWidth + gap);
-          const y = startY + row * (pieceHeight + gap);
-          return [piece.id, { x, y, homeX: x, homeY: y, width: pieceWidth, height: pieceHeight, locked: false }];
-        }),
-      ),
-    );
-  }, [boardSize, round, size.width, slotHeight, slotWidth]);
+    if (layout.boardSize <= 0) {
+      return;
+    }
+    setItems((current) => Object.fromEntries(
+      round.pieces.map((piece, index) => {
+        const previous = current[piece.id];
+        const home = layout.homes[index]!;
+        const snappedX = layout.boardX + piece.col * layout.pieceWidth;
+        const snappedY = layout.boardY + piece.row * layout.pieceHeight;
+        return [
+          piece.id,
+          {
+            x: previous?.locked ? snappedX : home.x,
+            y: previous?.locked ? snappedY : home.y,
+            homeX: previous?.locked ? snappedX : home.x,
+            homeY: previous?.locked ? snappedY : home.y,
+            width: layout.pieceWidth,
+            height: layout.pieceHeight,
+            locked: previous?.locked ?? false,
+          },
+        ];
+      }),
+    ));
+  }, [layout, round.pieces]);
 
   useEffect(() => {
     setSolvedIds([]);
@@ -185,18 +180,37 @@ export function PuzzleGame({
         ) : undefined
       }
     >
-      <div ref={surfaceRef} className="drag-surface puzzle-surface" style={{ '--board-size': `${boardSize}px` } as CSSProperties}>
-        <div className="puzzle-board" style={{ width: boardSize, height: boardSize }}>
+      <div
+        ref={surfaceRef}
+        className={`drag-surface puzzle-surface puzzle-surface--${layout.orientation}`}
+        style={{ '--board-size': `${layout.boardSize}px` } as CSSProperties}
+      >
+        <div
+          className="puzzle-board"
+          style={{
+            width: layout.boardSize,
+            height: layout.boardSize,
+            left: layout.boardX,
+            top: layout.boardY,
+          }}
+        >
           {round.pieces.map((piece) => (
             <button
               key={piece.id}
               ref={zoneRefs[piece.id]}
               className={`puzzle-slot ${hoverZoneId === piece.id ? 'is-zone-hover' : ''} ${hintSlotId === piece.id || speechStatus.activeCue === `puzzle-slot:${piece.id}` ? 'is-teaching-hint' : ''}`}
               type="button"
-              style={{ width: slotWidth, height: slotHeight, left: piece.col * slotWidth, top: piece.row * slotHeight, ...pieceArtStyle(round.scene, round.rows, round.cols, piece) }}
+              style={{
+                width: layout.pieceWidth,
+                height: layout.pieceHeight,
+                left: piece.col * layout.pieceWidth,
+                top: piece.row * layout.pieceHeight,
+              }}
               {...bindZone(piece.id)}
               aria-label={englishOnly ? `Place for puzzle piece ${piece.row + 1}-${piece.col + 1}` : `מקום לחתיכה ${piece.row + 1}-${piece.col + 1}`}
-            />
+            >
+              <PuzzlePieceArt scene={round.scene} row={piece.row} col={piece.col} rows={round.rows} cols={round.cols} />
+            </button>
           ))}
         </div>
 
@@ -212,11 +226,13 @@ export function PuzzleGame({
             <button
               key={piece.id}
               className={`puzzle-piece ${isSelected ? 'is-selected' : ''} ${state.locked ? 'is-placed' : ''} ${isDragging ? 'is-dragging' : ''} ${isWiggling ? 'is-wiggling' : ''}`}
-              style={{ width: state.width, height: state.height, left: `${state.x}px`, top: `${state.y}px`, ...pieceArtStyle(round.scene, round.rows, round.cols, piece) }}
+              style={{ width: state.width, height: state.height, left: `${state.x}px`, top: `${state.y}px` }}
               type="button"
               {...bindItem(piece.id)}
               aria-label={englishOnly ? `${round.scene.titleEn} puzzle piece` : `חתיכת פאזל של ${round.scene.titleHe}`}
-            />
+            >
+              <PuzzlePieceArt scene={round.scene} row={piece.row} col={piece.col} rows={round.rows} cols={round.cols} />
+            </button>
           );
         })}
       </div>

@@ -36,12 +36,18 @@ body,
   height: 100%;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   background: var(--color-canvas);
   color: var(--color-ink);
   /* Child routes must never page-scroll; caregiver routes opt back in below. */
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 button,
@@ -53,6 +59,7 @@ input {
 
 button {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 /* Keep technical/English fragments inside Hebrew caregiver copy visually LTR. */
@@ -635,38 +642,86 @@ option {
 
 .puzzle-surface {
   min-height: 0;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 20% 15%, oklch(100% 0 0 / 0.85), transparent 30%),
+    linear-gradient(145deg, var(--color-plum-soft), var(--color-surface-soft));
 }
 
 .puzzle-board {
-  position: relative;
-  margin: var(--space-3) auto 0;
-  border-radius: var(--radius-lg);
+  position: absolute;
+  border: clamp(7px, 1.3vmin, 14px) solid color-mix(in oklch, var(--color-plum) 48%, white);
+  border-radius: clamp(var(--radius-md), 2.4vmin, var(--radius-xl));
   overflow: hidden;
-  background: oklch(100% 0 0 / 0.5);
-  box-shadow: var(--shadow-inset-ring);
+  background:
+    linear-gradient(45deg, oklch(100% 0 0 / 0.38) 25%, transparent 25% 75%, oklch(100% 0 0 / 0.38) 75%),
+    color-mix(in oklch, var(--color-plum-soft) 60%, white);
+  background-size: 24px 24px;
+  box-shadow:
+    0 16px 28px oklch(35% 0.08 310 / 0.2),
+    inset 0 0 0 3px oklch(100% 0 0 / 0.8);
 }
 
 .puzzle-slot {
   position: absolute;
-  border: 2px dashed oklch(100% 0 0 / 0.7);
-  opacity: 0.32;
-  transition: opacity var(--motion-fast) var(--motion-ease);
+  overflow: visible;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  opacity: 0.2;
+  transition: opacity var(--motion-fast) var(--motion-ease), filter var(--motion-fast) var(--motion-ease);
 }
 
 .puzzle-slot.is-zone-hover {
-  opacity: 0.7;
-  border-style: solid;
+  opacity: 0.72;
+  filter: drop-shadow(0 0 12px var(--color-ocean));
 }
 
 .puzzle-slot.is-teaching-hint {
   opacity: 0.82;
-  border-color: var(--color-honey-strong);
-  border-style: solid;
+  filter: drop-shadow(0 0 12px var(--color-honey-strong));
 }
 
 .puzzle-piece {
-  background-repeat: no-repeat;
-  background-color: var(--color-surface);
+  overflow: visible;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 9px 7px oklch(30% 0.06 45 / 0.28));
+}
+
+.puzzle-piece.is-dragging {
+  box-shadow: none;
+  filter: drop-shadow(0 16px 10px oklch(30% 0.06 45 / 0.34));
+}
+
+.puzzle-piece.is-placed {
+  filter: none;
+}
+
+.puzzle-piece-art {
+  position: absolute;
+  inset: -20%;
+  width: 140%;
+  height: 140%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.puzzle-piece-art__shine {
+  fill: transparent;
+  stroke: oklch(100% 0 0 / 0.32);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.puzzle-piece-art__edge {
+  fill: none;
+  stroke: color-mix(in oklch, var(--color-ink) 52%, white);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
 /* -------------------------------------------------------------------- */
@@ -831,8 +886,66 @@ option {
   overflow: hidden;
 }
 
-.success-card__mascot {
-  width: min(38vw, 168px);
+.success-card__celebration {
+  width: min(52vw, 240px);
+  max-height: min(30dvh, 210px);
+  overflow: visible;
+}
+
+.celebration-art__float,
+.celebration-art--balloons {
+  animation: celebration-float 1.7s var(--motion-ease) infinite alternate;
+}
+
+.celebration-art__hop,
+.celebration-art--rainbow-hop {
+  animation: celebration-hop 1.05s var(--motion-ease) infinite alternate;
+}
+
+.celebration-art__twinkle,
+.celebration-art__sparkle--twinkle,
+.celebration-art--trophy-spark {
+  transform-origin: center;
+  animation: celebration-twinkle 900ms var(--motion-ease) infinite alternate;
+}
+
+.celebration-art__wiggle {
+  transform-origin: 150px 115px;
+  animation: celebration-wiggle 620ms var(--motion-ease) infinite alternate;
+}
+
+.celebration-art__confetti {
+  animation: celebration-confetti 1.1s var(--motion-ease) infinite alternate;
+}
+
+.celebration-art__flame {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+@keyframes celebration-float {
+  from { transform: translateY(3px) rotate(-1deg); }
+  to { transform: translateY(-7px) rotate(1deg); }
+}
+
+@keyframes celebration-hop {
+  from { transform: translateY(2px) scale(0.98); }
+  to { transform: translateY(-7px) scale(1.02); }
+}
+
+@keyframes celebration-twinkle {
+  from { opacity: 0.65; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes celebration-wiggle {
+  from { transform: rotate(-8deg); }
+  to { transform: rotate(10deg); }
+}
+
+@keyframes celebration-confetti {
+  from { transform: translateY(-2px) rotate(-8deg); }
+  to { transform: translateY(8px) rotate(12deg); }
 }
 
 .success-card__praise {
@@ -1286,7 +1399,9 @@ select {
   .puppy-mascot__tail,
   .puppy-mascot--happy,
   .puppy-mascot--milestone,
-  .confetti-piece {
+  .confetti-piece,
+  .celebration-art,
+  .celebration-art * {
     transition: none !important;
     animation: none !important;
   }
@@ -1312,7 +1427,9 @@ body[data-reduced-motion='true'] .is-wiggling,
 body[data-reduced-motion='true'] .puppy-mascot__tail,
 body[data-reduced-motion='true'] .puppy-mascot--happy,
 body[data-reduced-motion='true'] .puppy-mascot--milestone,
-body[data-reduced-motion='true'] .confetti-piece {
+body[data-reduced-motion='true'] .confetti-piece,
+body[data-reduced-motion='true'] .celebration-art,
+body[data-reduced-motion='true'] .celebration-art * {
   transition: none !important;
   animation: none !important;
 }

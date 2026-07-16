@@ -34,8 +34,7 @@ export const sortingItems: SortingItemDefinition[] = [
 ];
 
 export const puzzleScenes: PuzzleScene[] = [
-  { id: 'dog', titleHe: 'כלב', titleEn: 'dog' },
-  { id: 'cat', titleHe: 'חתול', titleEn: 'cat' },
-  { id: 'car', titleHe: 'אוטו', titleEn: 'car' },
-  { id: 'apple', titleHe: 'תפוח', titleEn: 'apple' },
+  { id: 'blue-forest-party', titleHe: 'מסיבת היער הכחולה', titleEn: 'blue forest party' },
+  { id: 'rescue-planes', titleHe: 'הרפתקת מטוסי ההצלה', titleEn: 'rescue planes adventure' },
+  { id: 'giant-carrot-garden', titleHe: 'גינת הגזר הענק', titleEn: 'giant carrot garden' },
 ];

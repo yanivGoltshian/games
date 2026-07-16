@@ -165,7 +165,7 @@ export function generatePuzzleRound(domain: DomainProgress, seed: string | numbe
     rows,
     cols,
     pieces,
-    promptHe: `נעזור ל${scene.titleHe} לחזור להיות שלם`,
+    promptHe: `נחבר את ${scene.titleHe}`,
     promptEn: `Let’s rebuild the ${scene.titleEn}`,
   };
 }

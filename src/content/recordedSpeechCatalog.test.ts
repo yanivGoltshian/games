@@ -35,7 +35,7 @@ describe('recorded speech asset coverage', () => {
   it('pre-caches the manifest and all three sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
-    expect(serviceWorker).toContain("sean-learning-adventure-v13");
+    expect(serviceWorker).toContain("sean-learning-adventure-v14");
     expect(serviceWorker).toContain("'/speech/manifest.json'");
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");
@@ -47,18 +47,18 @@ describe('recorded speech pronunciation layer', () => {
   const catalog = collectRecordedSpeechCatalog();
   const byLocale = (locale: string) => catalog.filter((entry) => entry.locale === locale);
 
-  it('keeps a stable count of 141 unique phrases per locale', () => {
+  it('keeps a stable count of 143 unique phrases per locale', () => {
     for (const locale of ['he-IL', 'en-US', 'en-GB']) {
       const entries = byLocale(locale);
-      expect(entries).toHaveLength(141);
+      expect(entries).toHaveLength(143);
       const keys = entries.map((entry) => entry.text);
-      expect(new Set(keys).size).toBe(141);
+      expect(new Set(keys).size).toBe(143);
     }
   });
 
   it('gives every Hebrew entry a pointed spokenText that strips back to the source', () => {
     const hebrew = byLocale('he-IL');
-    expect(hebrew).toHaveLength(141);
+    expect(hebrew).toHaveLength(143);
     for (const entry of hebrew) {
       expect(entry.spokenText, `missing spokenText for ${entry.text}`).toBeTruthy();
       const spoken = entry.spokenText as string;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { REALISTIC_CONCEPT_IDS } from '../art/conceptAssets';
+import { ORIGINAL_PUZZLE_SCENE_IDS } from '../art/puzzleScenes';
 import { learningConcepts } from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
 import { createInitialDomainProgress } from './progression';
@@ -18,8 +19,9 @@ describe('round generation', () => {
       const counting = generateCountingRound(domain, `art-counting-${index}`);
       const memory = generateMemoryRound(domain, `art-memory-${index}`);
       const puzzle = generatePuzzleRound(domain, `art-puzzle-${index}`);
-      expect([listening.targetId, ...listening.optionIds, counting.countingConceptId, ...memory.pairConceptIds, puzzle.scene.id]
+      expect([listening.targetId, ...listening.optionIds, counting.countingConceptId, ...memory.pairConceptIds]
         .every((conceptId) => assetIds.has(conceptId as (typeof REALISTIC_CONCEPT_IDS)[number]))).toBe(true);
+      expect(ORIGINAL_PUZZLE_SCENE_IDS).toContain(puzzle.scene.id);
     }
   });
 

@@ -66,7 +66,7 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   puzzleScenes.forEach((scene) => {
     addPair(scene.titleHe, scene.titleEn);
     addPair(
-      `נעזור ל${scene.titleHe} לחזור להיות שלם`,
+      `נחבר את ${scene.titleHe}`,
       `Let’s rebuild the ${scene.titleEn}`,
     );
   });

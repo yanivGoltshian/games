@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { ConfettiBurst } from '../art/confetti';
-import { PuppyMascotArt } from '../art/mascot';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CelebrationArt } from '../art/celebrations';
 import { REAL_WORLD_PAUSE_EN, REAL_WORLD_PAUSE_HE, type PraiseTier } from '../content/praise';
 import type { LevelRecommendation, ToddlerSettings } from '../domain/types';
+import { selectCelebrationVariant, type CelebrationVariant } from '../games/celebrationVariants';
 import { selectPraiseSegments } from '../games/praiseSpeech';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService, type SpeechSegment } from '../services/speech';
@@ -24,6 +24,7 @@ export interface SuccessOverlayProps {
 const STANDARD_MINIMUM_MS = 1400;
 const MILESTONE_MINIMUM_MS = 1800;
 const LIVENESS_GUARD_MS = 15_000;
+let previousCelebrationVariant: CelebrationVariant | null = null;
 
 /**
  * Inline, non-blocking success moment: puppy mascot, tasteful confetti,
@@ -45,6 +46,11 @@ export function SuccessOverlay({
   const advanceRef = useRef(onAdvance);
   const advancedRef = useRef(false);
   const finishTimerRef = useRef<number | null>(null);
+  const [celebrationVariant] = useState(() => {
+    const nextVariant = selectCelebrationVariant(seed, previousCelebrationVariant);
+    previousCelebrationVariant = nextVariant;
+    return nextVariant;
+  });
   advanceRef.current = onAdvance;
   const praise = useMemo(
     () => selectPraiseSegments(settings, tier, seed),
@@ -136,9 +142,11 @@ export function SuccessOverlay({
       aria-label={recommendation ? recommendationText : undefined}
       onPointerDown={recommendation ? undefined : () => advanceOnce(true)}
     >
-      <div className={`success-card ${tier === 'milestone' ? 'success-card--milestone' : ''}`}>
-        <ConfettiBurst richness={tier === 'milestone' ? 'milestone' : 'standard'} />
-        <PuppyMascotArt mood={tier === 'milestone' ? 'milestone' : 'happy'} className="success-card__mascot" />
+      <div
+        className={`success-card success-card--${celebrationVariant} ${tier === 'milestone' ? 'success-card--milestone' : ''}`}
+        data-celebration-variant={celebrationVariant}
+      >
+        <CelebrationArt variant={celebrationVariant} className="success-card__celebration" />
         <p className="success-card__praise">{praise.displayText}</p>
         {tier === 'milestone' ? (
           <p className="success-card__pause">{settings.languageMode === 'en' ? REAL_WORLD_PAUSE_EN : REAL_WORLD_PAUSE_HE}</p>
