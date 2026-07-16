@@ -11,13 +11,16 @@ import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
+import { useRetryFeedback } from './useRetryFeedback';
 
 const BASE_ITEM_SIZE = 96;
 const SPEECH_SCOPE = 'game:sorting';
 
 export function SortingGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
+  const [misses, setMisses] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
+  const [hintZoneId, setHintZoneId] = useState<string | null>(null);
   const [placements, setPlacements] = useState<Record<string, string>>({});
   const [items, setItems] = useState<Record<string, DragItemState>>({});
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -26,6 +29,7 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
   const size = useMeasuredSize(surfaceRef);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound('sorting', domainProgress, generateSortingRound);
+  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
   const zoneRefs = useMemo(
@@ -75,7 +79,9 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
   useEffect(() => {
     setPlacements({});
     setAttempts(0);
+    setMisses(0);
     setCelebration(null);
+    setHintZoneId(null);
     lastSpokenSelection.current = null;
     if (mediaReady) {
       void speakPromptRef.current();
@@ -100,21 +106,43 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
     items,
     setItems,
     zones: zoneRefs,
+    disabled: retryBusy,
     onDrop: (itemId, zoneId) => {
+      if (retryBusy) {
+        return false;
+      }
+      speechService.supersedeRetry(SPEECH_SCOPE);
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       const definition = round.items.find((item) => item.id === itemId);
       const isMatch = definition ? (round.rule === 'color' ? definition.colorId === zoneId : definition.shapeId === zoneId) : false;
       if (!isMatch) {
-        soundService.playTap(settings);
+        const nextMisses = misses + 1;
+        setMisses(nextMisses);
         const targetId = definition ? (round.rule === 'color' ? definition.colorId : definition.shapeId) : null;
         const targetBin = round.bins.find((bin) => bin.id === targetId);
-        if (targetBin && mediaReady) {
-          void speechService.speakSegments(
-            buildPhraseSegments(targetBin.labelHe, targetBin.labelEn, settings.languageMode, settings.englishVoiceLocale),
-            settings,
-            { scope: SPEECH_SCOPE, key: 'target-bin', priority: 'label', staleAfterSuccess: true },
-          );
+        if (targetBin) {
+          if (settings.quietMode || !speechStatus.supported) {
+            setHintZoneId(targetBin.id);
+          }
+          const modelLine = round.rule === 'color'
+            ? {
+                he: `הצבע הוא ${targetBin.labelHe}. שמים בסל ה${targetBin.labelHe}.`,
+                en: `The color is ${targetBin.labelEn}. Put it in the ${targetBin.labelEn} basket.`,
+                pauseAfterMs: 220,
+                cue: `sort-zone:${targetBin.id}`,
+              }
+            : {
+                he: `הצורה היא ${targetBin.labelHe}. שמים בסל עם ${targetBin.labelHe}.`,
+                en: `The shape is a ${targetBin.labelEn}. Put it in the basket with the ${targetBin.labelEn}.`,
+                pauseAfterMs: 220,
+                cue: `sort-zone:${targetBin.id}`,
+              };
+          void runRetry({
+            missCount: nextMisses,
+            seed: `${roundKey}:${nextMisses}:${itemId}`,
+            modelLines: [modelLine],
+          }).finally(() => setHintZoneId(null));
         }
         return false;
       }
@@ -185,6 +213,7 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
+      retryActive={retryBusy}
       successOverlay={
         celebration ? (
           <SuccessOverlay
@@ -207,7 +236,7 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
             <button
               key={bin.id}
               ref={zoneRefs[bin.id]}
-              className={`sort-zone ${hoverZoneId === bin.id ? 'is-zone-hover' : ''}`}
+              className={`sort-zone ${hoverZoneId === bin.id ? 'is-zone-hover' : ''} ${hintZoneId === bin.id || speechStatus.activeCue === `sort-zone:${bin.id}` ? 'is-teaching-hint' : ''}`}
               type="button"
               {...bindZone(bin.id)}
               aria-label={englishOnly ? `${bin.labelEn} basket` : `סל ${bin.labelHe}`}

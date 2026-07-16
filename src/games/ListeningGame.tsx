@@ -9,6 +9,7 @@ import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
+import { useRetryFeedback } from './useRetryFeedback';
 
 const WIGGLE_MS = 520;
 const SPEECH_SCOPE = 'game:listening';
@@ -19,6 +20,7 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
   const [wiggleId, setWiggleId] = useState<string | null>(null);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound('listening', domainProgress, generateListeningRound);
+  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
 
@@ -44,16 +46,16 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
   }, [mediaReady, roundKey]);
 
   const handleChoice = (optionId: string) => {
-    if (celebration) {
+    if (celebration || retryBusy) {
       return;
     }
 
     const concept = learningConcepts.find((item) => item.id === optionId)!;
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
-    soundService.playTap(settings);
 
     if (optionId === round.targetId) {
+      soundService.playTap(settings);
       const summary = onCompleteRound({ attempts: nextAttempts, requiredActions: 1, concepts: [round.targetId] });
       setCelebration({
         seed: `listening-${round.targetId}-${nextAttempts}`,
@@ -63,20 +65,12 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
       return;
     }
 
-    // Gentle wiggle (no red/failure language), then label what was tapped and
-    // immediately re-model the target so the child hears it again.
     setWiggleId(optionId);
     window.setTimeout(() => setWiggleId((current) => (current === optionId ? null : current)), WIGGLE_MS);
-    const labelSegments = buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale);
-    const promptSegments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
-    if (labelSegments.length > 0) {
-      labelSegments[labelSegments.length - 1] = { ...labelSegments[labelSegments.length - 1]!, pauseAfterMs: 280 };
-    }
-    void speechService.speakSegments([...labelSegments, ...promptSegments], settings, {
-      scope: SPEECH_SCOPE,
-      key: 'feedback',
-      priority: 'label',
-      staleAfterSuccess: true,
+    void runRetry({
+      missCount: nextAttempts,
+      seed: `${roundKey}:${nextAttempts}`,
+      modelLines: [{ he: round.promptHe, en: round.promptEn, pauseAfterMs: 240 }],
     });
   };
 
@@ -93,6 +87,7 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
+      retryActive={retryBusy}
       successOverlay={
         celebration ? (
           <SuccessOverlay
@@ -116,6 +111,7 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
             <button
               key={optionId}
               className={`choice-button ${wiggleId === optionId ? 'is-wiggling' : ''}`}
+              disabled={retryBusy}
               onClick={() => handleChoice(optionId)}
               type="button"
               aria-label={englishOnly ? concept.en : concept.he}

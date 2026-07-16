@@ -34,6 +34,7 @@ interface UseToddlerDragOptions {
   setItems: Dispatch<SetStateAction<Record<string, DragItemState>>>;
   zones: Record<string, RefObject<HTMLElement | null>>;
   onDrop: (itemId: string, zoneId: string) => boolean;
+  disabled?: boolean;
 }
 
 const WIGGLE_MS = 520;
@@ -45,7 +46,7 @@ const WIGGLE_MS = 520;
  * dragging, zone-hover, and a brief wiggle-then-return on a wrong drop) so
  * every game can render consistent, non-color-only feedback.
  */
-export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop }: UseToddlerDragOptions) {
+export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, disabled = false }: UseToddlerDragOptions) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverZoneId, setHoverZoneId] = useState<string | null>(null);
@@ -158,6 +159,11 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop }: U
   };
 
   const attemptDrop = (itemId: string, zoneId: string | null): void => {
+    if (disabled) {
+      resetItem(itemId);
+      setSelectedId(null);
+      return;
+    }
     if (!zoneId || !onDrop(itemId, zoneId)) {
       wiggleThenReset(itemId);
       setSelectedId((current) => (current === itemId ? null : current));
@@ -166,11 +172,13 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop }: U
     setSelectedId(null);
   };
 
-  const bindItem = (itemId: string) => ({
+  const bindItem = (itemId: string) => {
+    const unavailable = disabled || Boolean(items[itemId]?.locked);
+    return {
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       const surfaceRect = surfaceRef.current?.getBoundingClientRect();
       const item = itemsRef.current[itemId];
-      if (!surfaceRect || !item || item.locked) {
+      if (disabled || !surfaceRect || !item || item.locked) {
         return;
       }
 
@@ -231,29 +239,37 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop }: U
       resetItem(itemId);
     },
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+      if (disabled) {
+        return;
+      }
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         setSelectedId((current) => (current === itemId ? null : itemId));
       }
     },
-    tabIndex: 0,
+    disabled: unavailable,
+    tabIndex: unavailable ? -1 : 0,
     role: 'button' as const,
     'aria-pressed': selectedId === itemId,
-  });
+    'aria-disabled': unavailable,
+  };
+  };
 
   const bindZone = (zoneId: string) => ({
     onClick: () => {
-      if (selectedId) {
+      if (!disabled && selectedId) {
         attemptDrop(selectedId, zoneId);
       }
     },
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-      if ((event.key === 'Enter' || event.key === ' ') && selectedId) {
+      if (!disabled && (event.key === 'Enter' || event.key === ' ') && selectedId) {
         event.preventDefault();
         attemptDrop(selectedId, zoneId);
       }
     },
-    tabIndex: 0,
+    disabled,
+    tabIndex: disabled ? -1 : 0,
+    'aria-disabled': disabled,
   });
 
   return {

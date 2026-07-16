@@ -420,40 +420,112 @@ option {
   aspect-ratio: 1;
 }
 
+.choice-grid--numbers {
+  --answer-count: 2;
+  --number-choice-size: min(21vw, 22dvh, 160px);
+  grid-template-columns: repeat(var(--answer-count), var(--number-choice-size));
+  flex: 0 0 min(24dvh, 200px);
+  gap: clamp(var(--space-2), 2vw, var(--space-4));
+}
+
+.choice-grid--numbers .choice-button {
+  width: var(--number-choice-size);
+  height: var(--number-choice-size);
+  padding: clamp(3px, 1vmin, 10px);
+}
+
 .number-dots {
+  --dot-columns: 1;
+  --dot-size: clamp(7px, calc(var(--number-choice-size) / 7), 24px);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(22px, 1fr));
-  gap: 8px;
-  max-width: 70%;
+  grid-template-columns: repeat(var(--dot-columns), var(--dot-size));
+  justify-content: center;
+  align-content: center;
+  gap: clamp(2px, 0.8vmin, 6px);
+  width: 90%;
+  height: 90%;
 }
 
 .number-dots__dot {
-  width: clamp(16px, 6vw, 28px);
-  height: clamp(16px, 6vw, 28px);
+  width: var(--dot-size);
+  height: var(--dot-size);
   border-radius: 999px;
   background: linear-gradient(145deg, var(--color-honey), var(--color-honey-strong));
   box-shadow: inset 0 0 0 2px oklch(100% 0 0 / 0.5);
 }
 
 .counting-cloud {
-  display: flex;
-  flex-wrap: wrap;
+  --count-columns: 1;
+  --count-item-size: clamp(128px, 30vmin, 270px);
+  display: grid;
+  grid-template-columns: repeat(var(--count-columns), var(--count-item-size));
+  grid-auto-rows: var(--count-item-size);
   justify-content: center;
   align-content: center;
-  gap: var(--space-3);
-  flex: 0 1 40%;
+  gap: clamp(8px, 1.8vmin, 18px);
+  flex: 1 1 auto;
   min-height: 0;
-  padding: var(--space-3);
+  width: 100%;
+  padding: clamp(var(--space-1), 1.5vmin, var(--space-3));
+}
+
+.counting-cloud--single {
+  --count-item-size: clamp(138px, 30vmin, 270px);
+}
+
+.counting-cloud--early {
+  --count-item-size: clamp(92px, 24vmin, 220px);
+}
+
+.counting-cloud--middle {
+  --count-item-size: clamp(70px, 18vmin, 160px);
+}
+
+.counting-cloud--full {
+  --count-item-size: clamp(50px, 13vmin, 112px);
 }
 
 .counting-cloud__item {
-  display: block;
-  width: clamp(48px, 12vw, 84px);
+  display: grid;
+  place-items: center;
+  width: var(--count-item-size);
+  height: var(--count-item-size);
+  aspect-ratio: 1;
+  border-radius: 28%;
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    filter var(--motion-fast) var(--motion-ease);
 }
 
 .counting-cloud__art {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.counting-cloud__art.concept-photo {
+  object-fit: contain;
+  background: transparent;
+  box-shadow: 0 12px 24px oklch(32% 0.04 240 / 0.16);
+}
+
+.counting-cloud__item.is-counting {
+  transform: translateY(-6px) scale(1.1);
+  filter: drop-shadow(0 0 16px color-mix(in oklch, var(--color-honey) 55%, transparent));
+}
+
+.counting-cloud__item.is-counting-fallback {
+  box-shadow: 0 0 0 5px color-mix(in oklch, var(--color-honey) 18%, transparent);
+  animation: silent-count-pulse 300ms var(--motion-ease) both;
+  animation-delay: calc(var(--count-index) * 40ms);
+}
+
+@keyframes silent-count-pulse {
+  50% {
+    transform: translateY(-5px) scale(1.08);
+    filter: drop-shadow(0 0 14px color-mix(in oklch, var(--color-honey) 48%, transparent));
+  }
 }
 
 /* -------------------------------------------------------------------- */
@@ -492,6 +564,18 @@ option {
   border-color: var(--color-ocean-strong);
   background: var(--color-ocean-soft);
   border-style: solid;
+}
+
+.sort-zone.is-teaching-hint,
+.puzzle-slot.is-teaching-hint,
+.choice-button.is-teaching-hint {
+  animation: teaching-pulse 820ms var(--motion-ease) infinite alternate;
+}
+
+.sort-zone.is-teaching-hint {
+  border-color: var(--color-honey-strong);
+  border-style: solid;
+  background: color-mix(in oklch, var(--color-honey-soft) 72%, white);
 }
 
 .sort-zone__art {
@@ -560,6 +644,12 @@ option {
 
 .puzzle-slot.is-zone-hover {
   opacity: 0.7;
+  border-style: solid;
+}
+
+.puzzle-slot.is-teaching-hint {
+  opacity: 0.82;
+  border-color: var(--color-honey-strong);
   border-style: solid;
 }
 
@@ -650,6 +740,55 @@ option {
 
 .is-wiggling {
   animation: gentle-wiggle var(--motion-wiggle-duration) var(--motion-ease);
+}
+
+@keyframes teaching-pulse {
+  from {
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-honey) 24%, transparent);
+    transform: scale(1);
+  }
+  to {
+    box-shadow: 0 0 0 9px color-mix(in oklch, var(--color-honey) 8%, transparent);
+    transform: scale(1.025);
+  }
+}
+
+.choice-button:disabled,
+.sort-zone:disabled,
+.draggable-chip:disabled,
+.puzzle-piece:disabled,
+.memory-card:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.retry-coach {
+  position: absolute;
+  inset-inline-end: clamp(4px, 1vw, 12px);
+  inset-block-start: clamp(4px, 1vw, 12px);
+  z-index: 2;
+  width: clamp(58px, 9vmin, 82px);
+  padding: 4px;
+  border-radius: 42%;
+  background: oklch(100% 0 0 / 0.72);
+  box-shadow: 0 10px 24px oklch(35% 0.05 40 / 0.14);
+  opacity: 0;
+  transform: translateY(10px) scale(0.9);
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+  pointer-events: none;
+}
+
+.retry-coach.is-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.retry-coach__mascot {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* -------------------------------------------------------------------- */
@@ -1084,6 +1223,11 @@ select {
   .portal-card,
   .rail-button,
   .choice-button,
+  .counting-cloud__item,
+  .sort-zone.is-teaching-hint,
+  .puzzle-slot.is-teaching-hint,
+  .choice-button.is-teaching-hint,
+  .retry-coach,
   .is-wiggling,
   .puppy-mascot__tail,
   .puppy-mascot--happy,
@@ -1104,6 +1248,11 @@ body[data-reduced-motion='true'] .danger-button,
 body[data-reduced-motion='true'] .portal-card,
 body[data-reduced-motion='true'] .rail-button,
 body[data-reduced-motion='true'] .choice-button,
+body[data-reduced-motion='true'] .counting-cloud__item,
+body[data-reduced-motion='true'] .sort-zone.is-teaching-hint,
+body[data-reduced-motion='true'] .puzzle-slot.is-teaching-hint,
+body[data-reduced-motion='true'] .choice-button.is-teaching-hint,
+body[data-reduced-motion='true'] .retry-coach,
 body[data-reduced-motion='true'] .is-wiggling,
 body[data-reduced-motion='true'] .puppy-mascot__tail,
 body[data-reduced-motion='true'] .puppy-mascot--happy,

@@ -6,22 +6,24 @@ import { learningConcepts } from '../content/concepts';
 import { gameMeta } from '../content/games';
 import { generateMemoryRound } from '../domain/rounds';
 import { soundService } from '../services/sound';
-import { buildPhraseSegments, speechService } from '../services/speech';
+import { buildPhraseSegments, speechService, type SpeechResult } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
+import { useRetryFeedback } from './useRetryFeedback';
 
 const SPEECH_SCOPE = 'game:memory';
 
 export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
+  const [misses, setMisses] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [flippedIds, setFlippedIds] = useState<string[]>([]);
   const [matchedPairIds, setMatchedPairIds] = useState<string[]>([]);
-  const [wiggleIds, setWiggleIds] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
+  const firstLabelPromiseRef = useRef<Promise<SpeechResult> | null>(null);
+  const roundGenerationRef = useRef(0);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound('memory', domainProgress, generateMemoryRound);
+  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
 
@@ -39,23 +41,19 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
 
   useEffect(() => {
     setAttempts(0);
+    setMisses(0);
     setCelebration(null);
     setFlippedIds([]);
     setMatchedPairIds([]);
-    setWiggleIds([]);
-    setBusy(false);
+    firstLabelPromiseRef.current = null;
+    roundGenerationRef.current += 1;
     if (mediaReady) {
       void speakPromptRef.current();
     }
-    return () => {
-      if (timeoutRef.current !== null) {
-        window.clearTimeout(timeoutRef.current);
-      }
-    };
   }, [mediaReady, roundKey]);
 
   const handleCardClick = (cardId: string) => {
-    if (busy || celebration || flippedIds.includes(cardId)) {
+    if (retryBusy || celebration || flippedIds.includes(cardId)) {
       return;
     }
 
@@ -65,20 +63,18 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     }
 
     soundService.playTap(settings);
-    // Labeling tap: name the object as soon as the card is revealed.
     const concept = learningConcepts.find((item) => item.id === card.conceptId);
-    if (concept && mediaReady) {
-      void speechService.speakSegments(
-        buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
-        settings,
-        { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label', staleAfterSuccess: true },
-      );
-    }
-
     const nextFlipped = [...flippedIds, cardId];
     setFlippedIds(nextFlipped);
 
     if (nextFlipped.length < 2) {
+      if (concept) {
+        firstLabelPromiseRef.current = speechService.speakSegments(
+          buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
+          settings,
+          { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label' },
+        );
+      }
       return;
     }
 
@@ -86,6 +82,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     setAttempts(nextAttempts);
     const [firstId] = nextFlipped;
     const firstCard = round.cards.find((item) => item.id === firstId)!;
+    const firstConcept = learningConcepts.find((item) => item.id === firstCard.conceptId);
 
     if (firstCard.pairId === card.pairId) {
       const nextMatched = [...matchedPairIds, card.pairId];
@@ -103,20 +100,38 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
           targetSegments: concept ? buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale) : [],
           tier: summary.milestone ? 'milestone' : 'standard',
         });
+      } else if (concept) {
+        void speechService.speakSegments(
+          buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
+          settings,
+          { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label' },
+        );
       }
+      firstLabelPromiseRef.current = null;
       return;
     }
 
-    setBusy(true);
-    setWiggleIds(nextFlipped);
-    timeoutRef.current = window.setTimeout(
-      () => {
+    const generation = roundGenerationRef.current;
+    const nextMisses = misses + 1;
+    setMisses(nextMisses);
+    const firstLabel = firstLabelPromiseRef.current;
+    firstLabelPromiseRef.current = null;
+    const modelLines = [
+      ...(firstLabel || !firstConcept ? [] : [{ he: firstConcept.he, en: firstConcept.en, pauseAfterMs: 180 }]),
+      ...(concept ? [{ he: concept.he, en: concept.en, pauseAfterMs: 220 }] : []),
+    ];
+    void runRetry({
+      missCount: nextMisses,
+      seed: `${roundKey}:${nextMisses}:${firstCard.conceptId}:${card.conceptId}`,
+      modelLines,
+      phraseScope: 'memory-search',
+      beforeSpeech: firstLabel,
+      lockUntilComplete: true,
+    }).then(() => {
+      if (generation === roundGenerationRef.current) {
         setFlippedIds([]);
-        setWiggleIds([]);
-        setBusy(false);
-      },
-      settings.reducedMotion ? 350 : 700,
-    );
+      }
+    });
   };
 
   return (
@@ -132,6 +147,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
+      retryActive={retryBusy}
       successOverlay={
         celebration ? (
           <SuccessOverlay
@@ -152,11 +168,11 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
         {round.cards.map((card) => {
           const concept = learningConcepts.find((item) => item.id === card.conceptId)!;
           const flipped = flippedIds.includes(card.id) || matchedPairIds.includes(card.pairId);
-          const wiggling = wiggleIds.includes(card.id);
           return (
             <button
               key={card.id}
-              className={`memory-card ${flipped ? 'memory-card--flipped' : ''} ${wiggling ? 'is-wiggling' : ''}`}
+              className={`memory-card ${flipped ? 'memory-card--flipped' : ''}`}
+              disabled={retryBusy}
               onClick={() => handleCardClick(card.id)}
               type="button"
               aria-label={flipped ? (englishOnly ? concept.en : concept.he) : (englishOnly ? 'Hidden card' : 'קלף סגור')}

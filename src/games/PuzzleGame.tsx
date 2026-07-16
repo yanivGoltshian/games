@@ -11,6 +11,7 @@ import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
+import { useRetryFeedback } from './useRetryFeedback';
 
 const SPEECH_SCOPE = 'game:puzzle';
 
@@ -26,13 +27,16 @@ function pieceArtStyle(scene: PuzzleScene, rows: number, cols: number, piece: Pu
 
 export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
+  const [misses, setMisses] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
+  const [hintSlotId, setHintSlotId] = useState<string | null>(null);
   const [items, setItems] = useState<Record<string, DragItemState>>({});
   const [solvedIds, setSolvedIds] = useState<string[]>([]);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const size = useMeasuredSize(surfaceRef);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound('puzzle', domainProgress, generatePuzzleRound);
+  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
   const zoneRefs = useMemo(
@@ -81,7 +85,9 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
   useEffect(() => {
     setSolvedIds([]);
     setAttempts(0);
+    setMisses(0);
     setCelebration(null);
+    setHintSlotId(null);
     if (mediaReady) {
       void speakPromptRef.current();
     }
@@ -92,18 +98,30 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
     items,
     setItems,
     zones: zoneRefs,
+    disabled: retryBusy,
     onDrop: (itemId, zoneId) => {
+      if (retryBusy) {
+        return false;
+      }
+      speechService.supersedeRetry(SPEECH_SCOPE);
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       if (itemId !== zoneId) {
-        soundService.playTap(settings);
-        if (mediaReady) {
-          void speechService.speakSegments(
-            buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale),
-            settings,
-            { scope: SPEECH_SCOPE, key: 'feedback', priority: 'label', staleAfterSuccess: true },
-          );
+        const nextMisses = misses + 1;
+        setMisses(nextMisses);
+        if (nextMisses >= 2 && (settings.quietMode || !speechStatus.supported)) {
+          setHintSlotId(itemId);
         }
+        void runRetry({
+          missCount: nextMisses,
+          seed: `${roundKey}:${nextMisses}:${itemId}`,
+          modelLines: [{
+            he: nextMisses >= 2 ? 'החתיכה מתאימה למקום המואר. נסה שם.' : 'כמעט. נסה מקום אחר.',
+            en: nextMisses >= 2 ? 'The piece fits in the glowing spot. Try there.' : 'Almost. Try another spot.',
+            pauseAfterMs: 220,
+            ...(nextMisses >= 2 ? { cue: `puzzle-slot:${itemId}` } : {}),
+          }],
+        }).finally(() => setHintSlotId(null));
         return false;
       }
 
@@ -148,6 +166,7 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
+      retryActive={retryBusy}
       successOverlay={
         celebration ? (
           <SuccessOverlay
@@ -170,7 +189,7 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
             <button
               key={piece.id}
               ref={zoneRefs[piece.id]}
-              className={`puzzle-slot ${hoverZoneId === piece.id ? 'is-zone-hover' : ''}`}
+              className={`puzzle-slot ${hoverZoneId === piece.id ? 'is-zone-hover' : ''} ${hintSlotId === piece.id || speechStatus.activeCue === `puzzle-slot:${piece.id}` ? 'is-teaching-hint' : ''}`}
               type="button"
               style={{ width: slotWidth, height: slotHeight, left: piece.col * slotWidth, top: piece.row * slotHeight, ...pieceArtStyle(round.scene, round.rows, round.cols, piece) }}
               {...bindZone(piece.id)}

@@ -70,6 +70,13 @@ class SoundService {
     ]);
   }
 
+  playRetry(settings: ToddlerSettings): void {
+    this.playSequence(settings, [
+      { frequency: 440, duration: 0.08, gain: 0.055 },
+      { frequency: 494, duration: 0.1, gain: 0.05 },
+    ]);
+  }
+
   playCelebrate(settings: ToddlerSettings): void {
     this.playSequence(settings, [
       { frequency: 523, duration: 0.1, gain: 0.1 },

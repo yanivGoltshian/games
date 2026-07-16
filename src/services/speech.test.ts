@@ -135,6 +135,143 @@ describe('SpeechService', () => {
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
+  it('plays retry modeling before encouragement and exposes the active teaching cue', async () => {
+    const settings = createInitialSettings();
+    const cues: Array<string | null> = [];
+    const unsubscribe = service.subscribe((status) => cues.push(status.activeCue));
+    const done = service.speakRetrySequence(
+      [{ text: 'אחת', locale: 'he-IL', cue: 'count-item:0' }],
+      [{ text: 'כמעט, שון. נסה שוב.', locale: 'he-IL' }],
+      settings,
+      { scope: 'game:counting', key: 'retry' },
+    );
+    await flush();
+
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['אחת']);
+    expect(cues).toContain('count-item:0');
+
+    synthesis.finishCurrent();
+    await vi.advanceTimersByTimeAsync(300);
+    await flush();
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual([
+      'אחת',
+      'כמעט, שון. נסה שוב.',
+    ]);
+    expect(cues.at(-1)).toBeNull();
+
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+    unsubscribe();
+  });
+
+  it('coalesces queued retries while preserving active target pronunciation', async () => {
+    const settings = createInitialSettings();
+    const target = service.speakSegments([{ text: 'שלושה תפוחים', locale: 'he-IL' }], settings, {
+      scope: 'game:counting',
+      key: 'target',
+      priority: 'label',
+    });
+    await flush();
+
+    const firstRetry = service.speakRetrySequence(
+      [{ text: 'בוא נספור יחד', locale: 'he-IL' }],
+      [{ text: 'נסה שוב', locale: 'he-IL' }],
+      settings,
+      { scope: 'game:counting', key: 'retry' },
+    );
+    const latestRetry = service.speakRetrySequence(
+      [{ text: 'יש שלושה תפוחים', locale: 'he-IL' }],
+      [{ text: 'עוד ניסיון קטן', locale: 'he-IL' }],
+      settings,
+      { scope: 'game:counting', key: 'retry' },
+    );
+
+    await expect(firstRetry).resolves.toMatchObject({ status: 'superseded' });
+    expect(synthesis.cancelCount).toBe(0);
+    synthesis.finishCurrent();
+    await expect(target).resolves.toMatchObject({ status: 'completed' });
+    await flush();
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual([
+      'שלושה תפוחים',
+      'יש שלושה תפוחים',
+    ]);
+
+    synthesis.finishCurrent();
+    await vi.advanceTimersByTimeAsync(300);
+    await flush();
+    synthesis.finishCurrent();
+    await expect(latestRetry).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('soft-supersedes active retry speech when a newer retry arrives', async () => {
+    const settings = createInitialSettings();
+    const first = service.speakRetrySequence(
+      [{ text: 'הסל הכחול', locale: 'he-IL' }],
+      [{ text: 'נסה שוב', locale: 'he-IL' }],
+      settings,
+      { scope: 'game:sorting', key: 'retry' },
+    );
+    await flush();
+
+    const latest = service.speakRetrySequence(
+      [{ text: 'הסל הירוק', locale: 'he-IL' }],
+      [{ text: 'עוד ניסיון קטן', locale: 'he-IL' }],
+      settings,
+      { scope: 'game:sorting', key: 'retry' },
+    );
+    await flush();
+
+    expect(synthesis.cancelCount).toBe(0);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['הסל הכחול']);
+
+    synthesis.finishCurrent();
+    await expect(first).resolves.toMatchObject({ status: 'superseded' });
+    await flush();
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['הסל הכחול', 'הסל הירוק']);
+
+    synthesis.finishCurrent();
+    await vi.advanceTimersByTimeAsync(300);
+    await flush();
+    synthesis.finishCurrent();
+    await expect(latest).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('supersedes active retry feedback only after the current word finishes', async () => {
+    const settings = createInitialSettings();
+    const retry = service.speakRetrySequence(
+      [
+        { text: 'אחת', locale: 'he-IL' },
+        { text: 'שתיים', locale: 'he-IL' },
+      ],
+      [{ text: 'נסה שוב', locale: 'he-IL' }],
+      settings,
+      { scope: 'game:counting', key: 'retry' },
+    );
+    await flush();
+
+    const success = service.speakSuccessSequence(
+      [{ text: 'שני תפוחים', locale: 'he-IL' }],
+      [{ text: 'יופי!', locale: 'he-IL' }],
+      settings,
+      { scope: 'game:counting', key: 'success' },
+    );
+    await flush();
+
+    expect(synthesis.cancelCount).toBe(0);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['אחת']);
+
+    synthesis.finishCurrent();
+    await expect(retry).resolves.toMatchObject({ status: 'superseded' });
+    await flush();
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['אחת', 'שני תפוחים']);
+
+    synthesis.finishCurrent();
+    await vi.advanceTimersByTimeAsync(300);
+    await flush();
+    synthesis.finishCurrent();
+    await expect(success).resolves.toMatchObject({ status: 'completed' });
+  });
+
   it('supersedes active wrong-answer feedback when the round succeeds', async () => {
     const settings = createInitialSettings();
     const feedback = service.speakSegments(

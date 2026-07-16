@@ -4,6 +4,7 @@ export interface SpeechSegment {
   text: string;
   locale: SpeechLocale;
   pauseAfterMs?: number;
+  cue?: string;
 }
 
 export interface SpeechStatus {
@@ -11,9 +12,10 @@ export interface SpeechStatus {
   voiceAvailable: boolean;
   speaking: boolean;
   activeRequestId: number | null;
+  activeCue: string | null;
 }
 
-export type SpeechPriority = 'prompt' | 'label' | 'success' | 'replay';
+export type SpeechPriority = 'prompt' | 'label' | 'retry' | 'success' | 'replay';
 export type SpeechResultStatus = 'completed' | 'cancelled' | 'superseded' | 'skipped' | 'unsupported' | 'error' | 'timed-out';
 export type SpeechCancelReason = 'navigation' | 'replay' | 'visibility';
 
@@ -49,6 +51,7 @@ interface QueuedSpeechRequest {
 const PRIORITY_WEIGHT: Record<SpeechPriority, number> = {
   prompt: 20,
   label: 40,
+  retry: 60,
   replay: 80,
   success: 100,
 };
@@ -109,6 +112,7 @@ export class SpeechService {
   private nextRequestId = 1;
   private nextOrder = 1;
   private voicesReadyPromise: Promise<void> | null = null;
+  private activeCue: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -153,6 +157,7 @@ export class SpeechService {
       voiceAvailable: voices.length > 0,
       speaking: this.active !== null,
       activeRequestId: this.active?.id ?? null,
+      activeCue: this.activeCue,
     };
   }
 
@@ -235,6 +240,7 @@ export class SpeechService {
       return;
     }
     this.active.cancelledAs = status;
+    this.activeCue = null;
     this.active.cancelCurrent?.();
   }
 
@@ -249,6 +255,15 @@ export class SpeechService {
     this.removeQueued((request) => request.scope === scope, status);
     if (this.active?.scope === scope) {
       this.interruptActive(status);
+    }
+  }
+
+  supersedeRetry(scope: string): void {
+    this.removeQueued((request) => request.scope === scope && request.priority === 'retry');
+    if (this.active?.scope === scope && this.active.priority === 'retry') {
+      // Preserve the word already being spoken; runRequest observes this state
+      // at the next utterance boundary and then advances to the newer request.
+      this.active.cancelledAs = 'superseded';
     }
   }
 
@@ -339,6 +354,11 @@ export class SpeechService {
         settled = true;
         window.clearTimeout(guard);
         request.cancelCurrent = null;
+        if (this.activeCue === segment.cue) {
+          this.activeCue = null;
+          this.notify();
+        }
+
         resolve(status);
       };
       const guardMs = Math.max(UTTERANCE_GUARD_BASE_MS, segment.text.length * 450);
@@ -351,7 +371,10 @@ export class SpeechService {
         window.speechSynthesis.cancel();
         finish(request.cancelledAs ?? 'cancelled');
       };
-      utterance.onstart = () => this.notify();
+      utterance.onstart = () => {
+        this.activeCue = segment.cue ?? null;
+        this.notify();
+      };
       utterance.onend = () => finish(request.cancelledAs ?? 'completed');
       utterance.onerror = (event) => {
         const cancelled = event.error === 'canceled' || event.error === 'interrupted';
@@ -373,6 +396,9 @@ export class SpeechService {
     }
 
     for (const segment of request.segments) {
+      if (request.cancelledAs) {
+        return request.cancelledAs;
+      }
       const utteranceStatus = await this.speakUtterance(segment, request);
       if (utteranceStatus !== 'completed') {
         return utteranceStatus;
@@ -380,6 +406,9 @@ export class SpeechService {
       const pauseStatus = await this.wait(segment.pauseAfterMs ?? 0, request);
       if (pauseStatus !== 'completed') {
         return pauseStatus;
+      }
+      if (request.cancelledAs) {
+        return request.cancelledAs;
       }
     }
     return 'completed';
@@ -419,7 +448,13 @@ export class SpeechService {
     const scope = options?.scope ?? 'app';
     this.removeQueued((request) => request.scope === scope && request.priority !== 'success');
     if (this.active?.scope === scope && this.active.staleAfterSuccess) {
-      this.interruptActive('superseded');
+      if (this.active.priority === 'retry') {
+        // A new attempt may make the remaining retry stale, but the word
+        // already being pronounced must reach its natural boundary.
+        this.active.cancelledAs = 'superseded';
+      } else {
+        this.interruptActive('superseded');
+      }
     }
 
     const segments = [...targetSegments, ...praiseSegments];
@@ -428,6 +463,26 @@ export class SpeechService {
       segments[targetEndIndex] = { ...segments[targetEndIndex]!, pauseAfterMs: 280 };
     }
     return this.enqueue(segments, settings, { ...options, priority: 'success' });
+  }
+
+  speakRetrySequence(
+    modelSegments: SpeechSegment[],
+    encouragementSegments: SpeechSegment[],
+    settings: ToddlerSettings,
+    options?: Omit<SpeechRequestOptions, 'priority'>,
+  ): Promise<SpeechResult> {
+    this.supersedeRetry(options?.scope ?? 'app');
+    const segments = [...modelSegments, ...encouragementSegments];
+    const modelEndIndex = modelSegments.length - 1;
+    if (modelEndIndex >= 0 && encouragementSegments.length > 0) {
+      segments[modelEndIndex] = { ...segments[modelEndIndex]!, pauseAfterMs: 260 };
+    }
+    return this.enqueue(segments, settings, {
+      ...options,
+      key: options?.key ?? 'retry',
+      priority: 'retry',
+      staleAfterSuccess: true,
+    });
   }
 
   speakConcept(
@@ -473,6 +528,30 @@ export function buildPhraseSegments(
     ];
   }
   return [{ text: he, locale: 'he-IL' }];
+}
+
+export interface LocalizedSpeechLine {
+  he: string;
+  en: string;
+  pauseAfterMs?: number;
+  cue?: string;
+}
+
+export function buildLocalizedSegments(
+  lines: readonly LocalizedSpeechLine[],
+  mode: ToddlerSettings['languageMode'],
+  englishVoiceLocale: EnglishVoiceLocale,
+): SpeechSegment[] {
+  return lines.flatMap((line) => {
+    const segments = buildPhraseSegments(line.he, line.en, mode, englishVoiceLocale);
+    return segments.map((segment, index) => ({
+      ...segment,
+      ...(line.cue === undefined ? {} : { cue: line.cue }),
+      ...(index === segments.length - 1 && line.pauseAfterMs !== undefined
+        ? { pauseAfterMs: line.pauseAfterMs }
+        : {}),
+    }));
+  });
 }
 
 export const speechService = new SpeechService();

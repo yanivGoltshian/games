@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { HomeIconArt, ReplayIconArt } from '../art/controls';
+import { PuppyMascotArt } from '../art/mascot';
 import type { LanguageMode } from '../domain/types';
 
 interface GameShellProps {
@@ -16,6 +17,7 @@ interface GameShellProps {
   liveStatus: string;
   languageMode: LanguageMode;
   successOverlay?: ReactNode;
+  retryActive?: boolean;
   children: ReactNode;
 }
 
@@ -38,6 +40,7 @@ export function GameShell({
   liveStatus,
   languageMode,
   successOverlay,
+  retryActive = false,
   children,
 }: GameShellProps) {
   return (
@@ -76,7 +79,12 @@ export function GameShell({
         {liveStatus}
       </p>
 
-      <section className="game-stage">{children}</section>
+      <section className="game-stage">
+        {children}
+        <div className={`retry-coach ${retryActive ? 'is-active' : ''}`} aria-hidden="true">
+          <PuppyMascotArt mood="idle" className="retry-coach__mascot" />
+        </div>
+      </section>
 
       {successOverlay}
     </main>
