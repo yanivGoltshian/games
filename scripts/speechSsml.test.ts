@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getHebrewPronunciation,
+  stripNiqqud,
+} from '../src/content/hebrewPronunciation.js';
+import {
   buildSpeechSsml,
   NEURAL_VOICES,
   readSpeechEnvironment,
@@ -28,6 +32,34 @@ describe('Azure neural speech SSML', () => {
       'Sean &amp; &lt;break time=&quot;9s&quot;&gt; &quot;wait&quot;',
     );
     expect(ssml).not.toContain('<break time="9s">');
+  });
+
+  it('separates Sean from the level-up verb without changing source text', () => {
+    const sourceText = 'איזה כיף, שון עולה שלב!';
+    const spokenText = getHebrewPronunciation(sourceText);
+    const ssml = buildSpeechSsml('he-IL', spokenText).normalize('NFC');
+
+    expect(stripNiqqud(spokenText)).toBe(sourceText);
+    expect(ssml).toContain(
+      'שׁוֹן<break time="160ms"/> עוֹלֶה'.normalize('NFC'),
+    );
+    expect(ssml).toContain(',<break time="120ms"/>');
+    expect(ssml).toContain('!<break time="240ms"/>');
+  });
+
+  it.each([
+    'בוא נמיין לפי צבע',
+    'בוא נמיין לפי צורה',
+  ])('uses a focused IPA override for the sorting verb in "%s"', (sourceText) => {
+    const spokenText = getHebrewPronunciation(sourceText);
+    const ssml = buildSpeechSsml('he-IL', spokenText).normalize('NFC');
+    const fullSpelling = 'נְמַיֵּין'.normalize('NFC');
+
+    expect(stripNiqqud(spokenText)).toBe(sourceText);
+    expect(ssml).toContain(
+      `<phoneme alphabet="ipa" ph="nemaiˈen">${fullSpelling}</phoneme>`,
+    );
+    expect(ssml).toContain('בּוֹא<break time="160ms"/> ');
   });
 });
 

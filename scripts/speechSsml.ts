@@ -42,6 +42,13 @@ const punctuationPauses = new Map<string, number>([
   ['?', 260],
 ]);
 
+const HEBREW_LEVEL_UP_SPOKEN =
+  'אֵיזֶה כֵּיף, שׁוֹן עוֹלֶה שָׁלָב!'.normalize('NFC');
+const HEBREW_SORT_PROMPT_PREFIX =
+  'בּוֹא נְמַיֵּין'.normalize('NFC');
+const HEBREW_SORT_FULL_SPELLING = 'נְמַיֵּין'.normalize('NFC');
+const HEBREW_SORT_IPA = 'nemaiˈen';
+
 function escapeXml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -67,9 +74,35 @@ function addNaturalPauses(text: string): string {
   return chunks.join('');
 }
 
+function addTargetedHebrewPronunciation(text: string): string {
+  if (text === HEBREW_LEVEL_UP_SPOKEN) {
+    return [
+      addNaturalPauses('אֵיזֶה כֵּיף, שׁוֹן'),
+      '<break time="160ms"/>',
+      addNaturalPauses(' עוֹלֶה שָׁלָב!'),
+    ].join('');
+  }
+
+  if (text.startsWith(`${HEBREW_SORT_PROMPT_PREFIX} `)) {
+    return [
+      escapeXml('בּוֹא'),
+      '<break time="160ms"/> ',
+      `<phoneme alphabet="ipa" ph="${escapeXml(HEBREW_SORT_IPA)}">`,
+      escapeXml(HEBREW_SORT_FULL_SPELLING),
+      '</phoneme>',
+      addNaturalPauses(text.slice(HEBREW_SORT_PROMPT_PREFIX.length)),
+    ].join('');
+  }
+
+  return addNaturalPauses(text);
+}
+
 export function buildSpeechSsml(locale: SpeechLocale, spokenText: string): string {
   const voice = NEURAL_VOICES[locale];
-  const speech = addNaturalPauses(spokenText.normalize('NFC'));
+  const normalizedText = spokenText.normalize('NFC');
+  const speech = locale === 'he-IL'
+    ? addTargetedHebrewPronunciation(normalizedText)
+    : addNaturalPauses(normalizedText);
 
   return [
     `<speak version="1.0" xml:lang="${locale}" xmlns="http://www.w3.org/2001/10/synthesis">`,
