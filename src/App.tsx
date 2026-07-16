@@ -50,10 +50,10 @@ export default function App() {
   }, [progress.settings.languageMode, progress.settings.reducedMotion, route.kind]);
 
   const unlockMedia = useCallback(() => {
+    speechService.unlock(progress.settings);
     soundService.unlock();
-    speechService.unlock();
     setMediaReady(true);
-  }, []);
+  }, [progress.settings]);
 
   const updateSettings = (patch: Partial<ToddlerSettings>) => {
     setProgress((current) => ({
@@ -121,7 +121,12 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell" onKeyDownCapture={unlockMedia} onPointerDownCapture={unlockMedia}>
+    <div
+      className="app-shell"
+      onClickCapture={unlockMedia}
+      onKeyDownCapture={unlockMedia}
+      onPointerDownCapture={unlockMedia}
+    >
       <div className="background-orb background-orb--one" aria-hidden="true" />
       <div className="background-orb background-orb--two" aria-hidden="true" />
       <div className="background-orb background-orb--three" aria-hidden="true" />
