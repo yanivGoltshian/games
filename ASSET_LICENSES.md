@@ -1,20 +1,31 @@
 # Visual asset provenance
 
-The app never hotlinks visual assets. Every photograph is downloaded, cropped
-to a centered square, resized to 900 by 900 pixels where applicable, stripped
-of metadata, and encoded locally as WebP for offline use. Interface controls,
-portals, environments, mascot, and reward artwork remain original project
-artwork.
+The app never hotlinks visual assets. Interface controls, portals, environments,
+mascot, and reward artwork remain original project artwork.
 
-| Local file | Source | Creator / credit | License | Changes |
-| --- | --- | --- | --- | --- |
-| `public/assets/vocabulary/apple.webp` | [Fuji apple](https://commons.wikimedia.org/wiki/File:Fuji_apple.jpg) | Scott Bauer, USDA Agricultural Research Service | Public domain, U.S. federal government work | Cropped to one foreground apple, resized to 640 by 640, encoded as WebP |
-| `public/assets/vocabulary/banana.webp` | [Yellow banana on white background](https://unsplash.com/photos/yellow-banana-on-white-background-Kl3467edwsE) | Mockup Graphics | [Unsplash License](https://unsplash.com/license) | Center cropped, resized to 900 by 900, encoded as WebP |
-| `public/assets/vocabulary/ball.webp` | [Soccer ball on a grass field](https://unsplash.com/photos/white-and-black-soccer-ball-on-grass-field-dKCKiC0BQtU) | Wesley Tingey | [Unsplash License](https://unsplash.com/license) | Center cropped, resized to 900 by 900, encoded as WebP |
-| `public/assets/vocabulary/car.webp` | [Red model car on white](https://unsplash.com/photos/red-porsche-911-on-white-background-ugkB_S2_O5s) | Jake | [Unsplash License](https://unsplash.com/license) | Center cropped, resized to 900 by 900, encoded as WebP |
-| `public/assets/vocabulary/cat.webp` | [Orange and white cat on white](https://unsplash.com/photos/an-orange-and-white-cat-laying-down-on-a-white-background-m3aUz6JXrNk) | Claire Abdo | [Unsplash License](https://unsplash.com/license) | Center cropped, resized to 900 by 900, encoded as WebP |
-| `public/assets/vocabulary/dog.webp` | [Golden retriever on white](https://unsplash.com/photos/a-golden-retriever-dog-laying-down-on-a-white-background-OggEaiQdyFM) | Faber Leonardo | [Unsplash License](https://unsplash.com/license) | Center cropped, resized to 900 by 900, encoded as WebP |
-| `public/assets/vocabulary/shoe.webp` | [Single maroon shoe](https://unsplash.com/photos/unpaired-maroon-plimsoll-on-top-of-yellow-textile-a-QH9MAAVNI) | Paul Gaudriault | [Unsplash License](https://unsplash.com/license) | Center cropped, resized to 900 by 900, encoded as WebP |
+## Generated vocabulary set
 
-Courtesy credits remain in this repository even where attribution is not
-required. No photograph is used to imply endorsement by its creator or source.
+The seven vocabulary images below were generated specifically for this project
+with Azure Foundry GPT-Image-2 on 2026-07-16. They are AI-generated outputs,
+not third-party stock photographs, so no USDA, Unsplash, or other stock-photo
+license or attribution applies to these files.
+
+The shared prompt intent was a single familiar object or animal, centered and
+fully visible, rendered as a coherent photorealistic studio image on a clean
+white seamless background with soft natural lighting and shadow. The images
+avoid text, logos, people, extra props, confusing context, and cropped body
+parts so each concept remains immediately recognizable to a young child.
+
+| Local file | Model and source | Generated source | Local processing |
+| --- | --- | --- | --- |
+| `public/assets/vocabulary/apple.webp` | Azure Foundry GPT-Image-2 | 1024 by 1024 PNG generated 2026-07-16 | Resized proportionally to 900 by 900, metadata omitted, encoded as high-quality WebP |
+| `public/assets/vocabulary/banana.webp` | Azure Foundry GPT-Image-2 | 1024 by 1024 PNG generated 2026-07-16 | Resized proportionally to 900 by 900, metadata omitted, encoded as high-quality WebP |
+| `public/assets/vocabulary/ball.webp` | Azure Foundry GPT-Image-2 | 1024 by 1024 PNG generated 2026-07-16 | Resized proportionally to 900 by 900, metadata omitted, encoded as high-quality WebP |
+| `public/assets/vocabulary/car.webp` | Azure Foundry GPT-Image-2 | 1024 by 1024 PNG generated 2026-07-16 | Resized proportionally to 900 by 900, metadata omitted, encoded as high-quality WebP |
+| `public/assets/vocabulary/shoe.webp` | Azure Foundry GPT-Image-2 | 1024 by 1024 PNG generated 2026-07-16 | Resized proportionally to 900 by 900, metadata omitted, encoded as high-quality WebP |
+| `public/assets/vocabulary/dog.webp` | Azure Foundry GPT-Image-2 | 1024 by 1024 PNG generated 2026-07-16 | Resized proportionally to 900 by 900, metadata omitted, encoded as high-quality WebP |
+| `public/assets/vocabulary/cat.webp` | Azure Foundry GPT-Image-2 | 1024 by 1024 PNG generated 2026-07-16 | Resized proportionally to 900 by 900, metadata omitted, encoded as high-quality WebP |
+
+The estimated total Azure generation cost for this approved batch was $0.2114.
+The original PNG outputs remain in the generating session artifacts rather
+than the application bundle.

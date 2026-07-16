@@ -1,4 +1,5 @@
 import { countingConceptIds, learningConcepts, puzzleScenes, sortingItems } from '../content/concepts';
+import { getCountingQuestion } from '../content/countingQuantity';
 import { buildPracticeWeights, createInitialConceptStat } from './progression';
 import { createSeededRandom, pickWeightedUnique } from './rng';
 import type {
@@ -98,8 +99,8 @@ export function generateCountingRound(domain: DomainProgress, seed: string | num
     targetCount,
     options: uniqueNumberOptions(random, targetCount, maxCount, optionCount),
     countingConceptId,
-    promptHe: 'כמה יש כאן?',
-    promptEn: 'How many do you see?',
+    promptHe: getCountingQuestion('he', countingConceptId),
+    promptEn: getCountingQuestion('en', countingConceptId),
     answerHe: NUMBER_WORDS_HE[targetCount] ?? String(targetCount),
     answerEn: NUMBER_WORDS_EN[targetCount] ?? String(targetCount),
   };

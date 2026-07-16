@@ -5,6 +5,7 @@ import {
   SUPPORTED_COUNTING_COUNTS,
   countingConceptQuantityCoverage,
   getCountAloudWord,
+  getCountingQuestion,
   getCountingQuantityPhrase,
 } from './countingQuantity';
 
@@ -92,5 +93,18 @@ describe('counting quantity wording', () => {
     expect(getCountingQuantityPhrase('en', 'apple', 2)).toBe('two apples');
     expect(getCountingQuantityPhrase('en', 'banana', 1)).toBe('one banana');
     expect(getCountingQuantityPhrase('en', 'banana', 6)).toBe('six bananas');
+  });
+
+  it('builds toddler-natural concept-specific counting questions', () => {
+    expect(SUPPORTED_COUNTING_CONCEPT_IDS.map((conceptId) => getCountingQuestion('he', conceptId))).toEqual([
+      'כמה תפוחים יש כאן?',
+      'כמה כדורים יש כאן?',
+      'כמה בננות יש כאן?',
+    ]);
+    expect(SUPPORTED_COUNTING_CONCEPT_IDS.map((conceptId) => getCountingQuestion('en', conceptId))).toEqual([
+      'How many apples are here?',
+      'How many balls are here?',
+      'How many bananas are here?',
+    ]);
   });
 });

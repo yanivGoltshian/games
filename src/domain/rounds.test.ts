@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { REALISTIC_CONCEPT_IDS } from '../art/conceptAssets';
 import { learningConcepts } from '../content/concepts';
+import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
 import { createInitialDomainProgress } from './progression';
 import { generateCountingRound, generateListeningRound, generateMemoryRound, generatePuzzleRound, generateSortingRound } from './rounds';
 
@@ -50,6 +51,24 @@ describe('round generation', () => {
     expect(round.targetCount).toBeLessThanOrEqual(10);
     expect(round.targetCount).toBeGreaterThanOrEqual(1);
     expect(round.options).toContain(round.targetCount);
+  });
+
+  it('uses the selected concept question for every counting round', () => {
+    const domain = createInitialDomainProgress();
+    domain.level = 3;
+    const seenConcepts = new Set<string>();
+
+    for (let index = 0; index < 50; index += 1) {
+      const round = generateCountingRound(domain, `counting-question-${index}`);
+      const conceptId = round.countingConceptId as CountingConceptId;
+      seenConcepts.add(conceptId);
+      expect(round.promptHe).toBe(getCountingQuestion('he', conceptId));
+      expect(round.promptEn).toBe(getCountingQuestion('en', conceptId));
+      expect(round.promptHe).not.toBe('כמה יש כאן?');
+      expect(round.promptEn).not.toBe('How many do you see?');
+    }
+
+    expect([...seenConcepts].sort()).toEqual(['apple', 'ball', 'banana']);
   });
 
   it('builds sorting bins that match the requested rule', () => {

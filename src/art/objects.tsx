@@ -5,7 +5,7 @@ export interface ConceptArtProps extends ArtProps {
   conceptId: string;
 }
 
-/** Renders a locally bundled, licensed photograph for a stable content id. */
+/** Renders a locally bundled, generated studio image for a stable content id. */
 export function ConceptArt({ conceptId, label, className }: ConceptArtProps) {
   if (!hasRealisticConceptAsset(conceptId)) {
     throw new Error(`Missing realistic asset for concept: ${conceptId}`);

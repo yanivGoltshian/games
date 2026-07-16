@@ -4,7 +4,7 @@ import type { RetryLocale } from './retry';
 export const SUPPORTED_COUNTING_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 export type SupportedCountingCount = (typeof SUPPORTED_COUNTING_COUNTS)[number];
-export type CountingConceptId = 'apple' | 'ball' | 'banana';
+export type CountingConceptId = (typeof countingConceptIds)[number];
 export type HebrewGrammaticalGender = 'masculine' | 'feminine';
 
 interface CountingConceptQuantityMeta {
@@ -147,6 +147,13 @@ export const SUPPORTED_COUNTING_CONCEPT_IDS = Object.keys(
 export function getCountingQuantityPhrase(locale: RetryLocale, conceptId: CountingConceptId, count: number): string {
   const supportedCount = toSupportedCountingCount(count);
   return COUNTING_QUANTITY_FORMS[conceptId][supportedCount][locale];
+}
+
+export function getCountingQuestion(locale: RetryLocale, conceptId: CountingConceptId): string {
+  const concept = COUNTING_CONCEPT_QUANTITY_META[conceptId];
+  return locale === 'he'
+    ? `כמה ${concept.he.plural} יש כאן?`
+    : `How many ${concept.en.plural} are here?`;
 }
 
 export function getCountAloudWord(locale: RetryLocale, count: number): string {

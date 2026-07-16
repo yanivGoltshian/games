@@ -16,7 +16,7 @@ export const learningConcepts: LearningConcept[] = [
   { id: 'cat', category: 'animal', he: 'חתול', en: 'cat', audio: {} },
 ];
 
-export const countingConceptIds = ['apple', 'ball', 'banana'];
+export const countingConceptIds = ['apple', 'ball', 'banana'] as const;
 
 export const sortingItems: SortingItemDefinition[] = [
   { id: 'red-circle', colorId: 'red', shapeId: 'circle', he: 'עיגול אדום', en: 'red circle' },
