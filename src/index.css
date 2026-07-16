@@ -848,6 +848,48 @@ option {
   color: var(--color-ink-muted);
 }
 
+.success-card__recommendation {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-label);
+  color: var(--color-ink);
+}
+
+.success-card__choices {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.success-choice {
+  min-height: 76px;
+  border: 3px solid oklch(100% 0 0 / 0.9);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-label);
+  box-shadow: var(--shadow-soft);
+  touch-action: manipulation;
+}
+
+.success-choice--next {
+  background: var(--color-leaf-soft);
+}
+
+.success-choice--replay {
+  background: var(--color-ocean-soft);
+}
+
+.success-choice:focus-visible {
+  outline: 4px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+.success-choice:active {
+  transform: translateY(2px) scale(0.98);
+}
+
 .success-card--milestone {
   background: linear-gradient(180deg, var(--color-surface), var(--color-honey-soft));
 }
@@ -1233,6 +1275,7 @@ select {
   .danger-button,
   .portal-card,
   .rail-button,
+  .success-choice,
   .choice-button,
   .counting-cloud__item,
   .sort-zone.is-teaching-hint,
@@ -1258,6 +1301,7 @@ body[data-reduced-motion='true'] .repeat-button,
 body[data-reduced-motion='true'] .danger-button,
 body[data-reduced-motion='true'] .portal-card,
 body[data-reduced-motion='true'] .rail-button,
+body[data-reduced-motion='true'] .success-choice,
 body[data-reduced-motion='true'] .choice-button,
 body[data-reduced-motion='true'] .counting-cloud__item,
 body[data-reduced-motion='true'] .sort-zone.is-teaching-hint,

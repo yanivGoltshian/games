@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { CaregiverGate } from './components/CaregiverGate';
 import { CaregiverPanel } from './components/CaregiverPanel';
 import { HomeScreen } from './components/HomeScreen';
-import { applyRoundResult, createInitialProgress } from './domain/progression';
-import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
+import { applyProgressionChoice, applyRoundResult, createInitialProgress } from './domain/progression';
+import type { DomainKey, ProgressionChoice, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
 import { speechService } from './services/speech';
@@ -72,6 +72,12 @@ export default function App() {
     return result.summary;
   };
 
+  const chooseProgression = (domain: DomainKey) => (choice: ProgressionChoice) => {
+    const result = applyProgressionChoice(progress, domain, choice, Date.now());
+    setProgress(result.progress);
+    return result.domain;
+  };
+
   const resetAll = () => {
     const next = createInitialProgress(prefersReducedMotion, Date.now());
     clearProgress();
@@ -107,6 +113,7 @@ export default function App() {
       domainProgress,
       onBack: () => navigate('/'),
       onCompleteRound: completeRound(route.domain),
+      onProgressionChoice: chooseProgression(route.domain),
     };
 
     content = {

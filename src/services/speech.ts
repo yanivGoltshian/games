@@ -1,4 +1,8 @@
 import type { EnglishVoiceLocale, LearningConcept, SpeechLocale, ToddlerSettings } from '../domain/types';
+import {
+  recordedSpeechPlayer,
+  type RecordedSpeechBackend,
+} from './recordedSpeech';
 
 export interface SpeechSegment {
   text: string;
@@ -125,6 +129,9 @@ export class SpeechService {
   private activationState: SpeechActivationState = 'locked';
   private activationAttempt = 0;
   private cancelPrimerCurrent: (() => void) | null = null;
+  private primerSpeaking = false;
+  private primerGuard: number | null = null;
+  private primerTerminalMissing = false;
   private gestureActivationAvailable = false;
   private gestureActivationEpoch = 0;
   private handoffSource: QueuedSpeechRequest | null = null;
@@ -132,7 +139,7 @@ export class SpeechService {
   private nextOrder = 1;
   private activeCue: string | null = null;
 
-  constructor() {
+  constructor(private readonly recordedSpeech: RecordedSpeechBackend = recordedSpeechPlayer) {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
       window.speechSynthesis.addEventListener('voiceschanged', this.handleVoicesChanged);
@@ -163,15 +170,17 @@ export class SpeechService {
   };
 
   private isSupported(): boolean {
-    return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    return this.recordedSpeech.isEnabled()
+      || (typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window);
   }
 
   getStatus(): SpeechStatus {
     const supported = this.isSupported();
-    const voices = supported ? window.speechSynthesis.getVoices() : [];
+    const recorded = this.recordedSpeech.isEnabled();
+    const voices = supported && !recorded ? window.speechSynthesis.getVoices() : [];
     return {
       supported,
-      voiceAvailable: voices.length > 0,
+      voiceAvailable: recorded || voices.length > 0,
       speaking: this.active !== null,
       activeRequestId: this.active?.id ?? null,
       activeCue: this.activeCue,
@@ -192,10 +201,22 @@ export class SpeechService {
   }
 
   private lock(): void {
+    const cancelStartedPrimer = (this.primerSpeaking || this.primerTerminalMissing)
+      && typeof window !== 'undefined'
+      && 'speechSynthesis' in window;
     if (this.cancelPrimerCurrent) {
       this.cancelPrimerCurrent();
     } else {
       this.activationAttempt += 1;
+    }
+    if (this.primerGuard !== null) {
+      window.clearTimeout(this.primerGuard);
+      this.primerGuard = null;
+    }
+    this.primerSpeaking = false;
+    this.primerTerminalMissing = false;
+    if (cancelStartedPrimer) {
+      window.speechSynthesis.cancel();
     }
     this.gestureActivationAvailable = false;
     this.handoffSource = null;
@@ -243,14 +264,47 @@ export class SpeechService {
         return;
       }
       started = true;
+      this.primerSpeaking = true;
+      this.primerTerminalMissing = false;
       clearCancelPrimer();
       this.activationState = 'ready';
       this.notify();
-      void this.processQueue();
     };
-    utterance.onstart = markReady;
+    const clearPrimerGuard = (): void => {
+      if (this.primerGuard !== null) {
+        window.clearTimeout(this.primerGuard);
+        this.primerGuard = null;
+      }
+    };
+    utterance.onstart = () => {
+      markReady();
+      if (!started || attempt !== this.activationAttempt) {
+        return;
+      }
+
+      const guardMs = Math.max(UTTERANCE_GUARD_BASE_MS, utterance.text.length * 450);
+      this.primerGuard = window.setTimeout(() => {
+        if (attempt !== this.activationAttempt || !this.primerSpeaking) {
+          return;
+        }
+        this.primerGuard = null;
+        this.primerSpeaking = false;
+        if (synthesis.speaking || synthesis.pending) {
+          this.primerTerminalMissing = true;
+          return;
+        }
+        void this.processQueue();
+      }, guardMs);
+    };
     utterance.onend = () => {
-      if (attempt !== this.activationAttempt || started) {
+      if (attempt !== this.activationAttempt) {
+        return;
+      }
+      clearPrimerGuard();
+      this.primerSpeaking = false;
+      this.primerTerminalMissing = false;
+      if (started) {
+        void this.processQueue();
         return;
       }
       clearCancelPrimer();
@@ -258,7 +312,14 @@ export class SpeechService {
       this.notify();
     };
     utterance.onerror = () => {
-      if (attempt !== this.activationAttempt || started) {
+      if (attempt !== this.activationAttempt) {
+        return;
+      }
+      clearPrimerGuard();
+      this.primerSpeaking = false;
+      this.primerTerminalMissing = false;
+      if (started) {
+        void this.processQueue();
         return;
       }
       clearCancelPrimer();
@@ -270,6 +331,9 @@ export class SpeechService {
       synthesis.speak(utterance);
     } catch {
       if (attempt === this.activationAttempt) {
+        clearPrimerGuard();
+        this.primerSpeaking = false;
+        this.primerTerminalMissing = false;
         clearCancelPrimer();
         this.activationState = 'locked';
         this.notify();
@@ -300,12 +364,51 @@ export class SpeechService {
    * No promise, timer, effect, or microtask runs before that gesture-bound call.
    */
   unlock(settings: ToddlerSettings): void {
-    if (!this.isSupported() || settings.quietMode) {
+    if (settings.quietMode) {
+      return;
+    }
+
+    if (this.recordedSpeech.isEnabled()) {
+      if (this.activationState === 'priming') {
+        return;
+      }
+      const wasReady = this.activationState === 'ready';
+      if (!wasReady) {
+        this.activationState = 'priming';
+      }
+      void this.recordedSpeech.unlock()
+        .then(() => {
+          this.activationState = 'ready';
+          this.notify();
+          void this.processQueue();
+        })
+        .catch(() => {
+          this.activationState = 'locked';
+          this.notify();
+        });
+      return;
+    }
+
+    if (!this.isSupported()) {
       return;
     }
 
     const synthesis = window.speechSynthesis;
     synthesis.resume();
+
+    if (this.primerTerminalMissing) {
+      this.primerTerminalMissing = false;
+      this.activationAttempt += 1;
+      synthesis.cancel();
+    }
+
+    if (this.primerSpeaking) {
+      if (synthesis.speaking || synthesis.pending) {
+        this.markGestureActivation();
+        return;
+      }
+      this.primerSpeaking = false;
+    }
 
     if (this.active?.retryCurrent) {
       this.active.retryCurrent();
@@ -595,6 +698,44 @@ export class SpeechService {
     });
   }
 
+  private speakRecording(segment: SpeechSegment, request: QueuedSpeechRequest): Promise<SpeechResultStatus> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (status: SpeechResultStatus): void => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        request.cancelCurrent = null;
+        if (this.activeCue === segment.cue) {
+          this.activeCue = null;
+          this.notify();
+        }
+        resolve(status);
+      };
+
+      request.cancelCurrent = () => {
+        this.recordedSpeech.cancel();
+        finish(request.cancelledAs ?? 'cancelled');
+      };
+      void this.recordedSpeech.play({
+        text: segment.text,
+        locale: segment.locale,
+        volume: request.settings.soundLevel,
+        onStart: () => {
+          if (settled || request.cancelledAs) {
+            return;
+          }
+          this.activeCue = segment.cue ?? null;
+          this.notify();
+        },
+      }).then(
+        () => finish(request.cancelledAs ?? 'completed'),
+        () => finish(request.cancelledAs ?? 'error'),
+      );
+    });
+  }
+
   private async runRequest(
     request: QueuedSpeechRequest,
     firstUtterance?: Promise<SpeechResultStatus>,
@@ -603,11 +744,13 @@ export class SpeechService {
       if (request.cancelledAs) {
         return request.cancelledAs;
       }
-      const utteranceStatus = await (
-        index === 0 && firstUtterance
-          ? firstUtterance
-          : this.speakUtterance(segment, request)
-      );
+      const utteranceStatus = this.recordedSpeech.isEnabled()
+        ? await this.speakRecording(segment, request)
+        : await (
+          index === 0 && firstUtterance
+            ? firstUtterance
+            : this.speakUtterance(segment, request)
+        );
       if (utteranceStatus !== 'completed') {
         return utteranceStatus;
       }
@@ -687,7 +830,13 @@ export class SpeechService {
   }
 
   private processQueue(): void {
-    if (this.processing || this.activationState !== 'ready' || this.queue.length === 0) {
+    if (
+      this.processing
+      || this.primerSpeaking
+      || this.primerTerminalMissing
+      || this.activationState !== 'ready'
+      || this.queue.length === 0
+    ) {
       return;
     }
     const request = this.queue.shift()!;

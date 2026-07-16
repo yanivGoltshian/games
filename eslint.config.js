@@ -34,7 +34,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/**/*.test.ts', 'vite.config.ts', 'eslint.config.js'],
+    files: ['src/**/*.test.ts', 'scripts/**/*.ts', 'vite.config.ts', 'eslint.config.js'],
     languageOptions: {
       globals: {
         ...globals.node,

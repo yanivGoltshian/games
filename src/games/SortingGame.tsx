@@ -1,22 +1,31 @@
 import { createRef, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { ShapeArt } from '../art/shapes';
 import { GameShell } from '../components/GameShell';
-import { SuccessOverlay } from '../components/SuccessOverlay';
 import { useMeasuredSize } from '../components/useMeasuredSize';
 import { type DragItemState, useToddlerDrag } from '../components/drag/useToddlerDrag';
 import { gameMeta } from '../content/games';
+import { buildSortingMissModelLine } from '../content/feedbackSpeech';
 import { generateSortingRound } from '../domain/rounds';
 import type { ColorId, ShapeId } from '../domain/types';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
+import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
 const BASE_ITEM_SIZE = 96;
 const SPEECH_SCOPE = 'game:sorting';
 
-export function SortingGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
+export function SortingGame({
+  domainProgress,
+  settings,
+  mediaReady,
+  speechStatus,
+  onBack,
+  onCompleteRound,
+  onProgressionChoice,
+}: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [misses, setMisses] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
@@ -125,19 +134,12 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
           if (settings.quietMode || !speechStatus.supported) {
             setHintZoneId(targetBin.id);
           }
-          const modelLine = round.rule === 'color'
-            ? {
-                he: `הצבע הוא ${targetBin.labelHe}. שמים בסל ה${targetBin.labelHe}.`,
-                en: `The color is ${targetBin.labelEn}. Put it in the ${targetBin.labelEn} basket.`,
-                pauseAfterMs: 220,
-                cue: `sort-zone:${targetBin.id}`,
-              }
-            : {
-                he: `הצורה היא ${targetBin.labelHe}. שמים בסל עם ${targetBin.labelHe}.`,
-                en: `The shape is a ${targetBin.labelEn}. Put it in the basket with the ${targetBin.labelEn}.`,
-                pauseAfterMs: 220,
-                cue: `sort-zone:${targetBin.id}`,
-              };
+          const modelLine = buildSortingMissModelLine(
+            round.rule,
+            targetBin.labelHe,
+            targetBin.labelEn,
+            `sort-zone:${targetBin.id}`,
+          );
           void runRetry({
             missCount: nextMisses,
             seed: `${roundKey}:${nextMisses}:${itemId}`,
@@ -178,6 +180,7 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
           seed: `sorting-${round.rule}-${nextAttempts}`,
           targetSegments: lastItemLabel,
           tier: summary.milestone ? 'milestone' : 'standard',
+          recommendation: summary.recommendation,
         });
       }
       return true;
@@ -216,16 +219,13 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
       retryActive={retryBusy}
       successOverlay={
         celebration ? (
-          <SuccessOverlay
+          <RoundSuccessOverlay
+            celebration={celebration}
             settings={settings}
             scope={SPEECH_SCOPE}
-            seed={celebration.seed}
-            targetSegments={celebration.targetSegments}
-            tier={celebration.tier}
-            onAdvance={() => {
-              setCelebration(null);
-              startNextRound();
-            }}
+            onDismiss={() => setCelebration(null)}
+            onProgressionChoice={onProgressionChoice}
+            startNextRound={startNextRound}
           />
         ) : undefined
       }

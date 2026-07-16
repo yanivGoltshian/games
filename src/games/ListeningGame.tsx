@@ -1,20 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
-import { SuccessOverlay } from '../components/SuccessOverlay';
 import { learningConcepts } from '../content/concepts';
 import { gameMeta } from '../content/games';
 import { generateListeningRound } from '../domain/rounds';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
+import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
 const WIGGLE_MS = 520;
 const SPEECH_SCOPE = 'game:listening';
 
-export function ListeningGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
+export function ListeningGame({
+  domainProgress,
+  settings,
+  mediaReady,
+  speechStatus,
+  onBack,
+  onCompleteRound,
+  onProgressionChoice,
+}: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [wiggleId, setWiggleId] = useState<string | null>(null);
@@ -61,6 +69,7 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
         seed: `listening-${round.targetId}-${nextAttempts}`,
         targetSegments: buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
         tier: summary.milestone ? 'milestone' : 'standard',
+        recommendation: summary.recommendation,
       });
       return;
     }
@@ -90,16 +99,13 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
       retryActive={retryBusy}
       successOverlay={
         celebration ? (
-          <SuccessOverlay
+          <RoundSuccessOverlay
+            celebration={celebration}
             settings={settings}
             scope={SPEECH_SCOPE}
-            seed={celebration.seed}
-            targetSegments={celebration.targetSegments}
-            tier={celebration.tier}
-            onAdvance={() => {
-              setCelebration(null);
-              startNextRound();
-            }}
+            onDismiss={() => setCelebration(null)}
+            onProgressionChoice={onProgressionChoice}
+            startNextRound={startNextRound}
           />
         ) : undefined
       }

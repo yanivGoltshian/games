@@ -38,6 +38,7 @@ class FakeSpeechSynthesis {
   resumeCount = 0;
   paused = false;
   emitUnlockGreetingStart = true;
+  holdUnlockGreetingEnd = false;
   stallUnlockGreeting: 'none' | 'pending' | 'speaking' = 'none';
   stallRegularStart = false;
   private voices: SpeechSynthesisVoice[];
@@ -91,7 +92,7 @@ class FakeSpeechSynthesis {
   setVoices(voices: SpeechSynthesisVoice[]): void {
     this.voices = voices;
     this.listeners.get('voiceschanged')?.forEach((listener) => listener());
-  }
+  };
 
   speak = (utterance: FakeUtterance) => {
     this.speakCalls.push(utterance);
@@ -119,6 +120,10 @@ class FakeSpeechSynthesis {
       }
       if (this.emitUnlockGreetingStart) {
         utterance.onstart?.();
+      }
+      if (this.holdUnlockGreetingEnd) {
+        this.current = utterance;
+        return;
       }
       utterance.onend?.();
       return;
@@ -302,6 +307,51 @@ describe('SpeechService', () => {
     synthesis.emitUnlockGreetingStart = true;
     synthesis.runInUserActivation(() => lockedService.unlock(settings));
     expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['המשך המשחק']);
+
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('does not interrupt a natural greeting that already started', async () => {
+    synthesis.lockEngine();
+    synthesis.holdUnlockGreetingEnd = true;
+    const lockedService = new SpeechService();
+    const cancelCount = synthesis.cancelCount;
+
+    synthesis.runInUserActivation(() => lockedService.unlock(settings));
+    const done = lockedService.speakSegments([{ text: 'המשך המשחק', locale: 'he-IL' }], settings);
+    synthesis.runInUserActivation(() => lockedService.unlock(settings));
+
+    expect(synthesis.cancelCount).toBe(cancelCount);
+    expect(synthesis.spoken).toHaveLength(0);
+
+    synthesis.holdUnlockGreetingEnd = false;
+    synthesis.finishCurrent();
+    await flush();
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['המשך המשחק']);
+
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('recovers a started greeting with no terminal event on the next gesture', async () => {
+    synthesis.lockEngine();
+    synthesis.holdUnlockGreetingEnd = true;
+    const lockedService = new SpeechService();
+    const greetingCount = synthesis.unlockGreetingCount;
+    const cancelCount = synthesis.cancelCount;
+
+    synthesis.runInUserActivation(() => lockedService.unlock(settings));
+    await vi.advanceTimersByTimeAsync(8_000);
+    const done = lockedService.speakSegments([{ text: 'מצא את הכדור', locale: 'he-IL' }], settings);
+    await flush();
+    expect(synthesis.spoken).toHaveLength(0);
+
+    synthesis.holdUnlockGreetingEnd = false;
+    synthesis.runInUserActivation(() => lockedService.unlock(settings));
+    expect(synthesis.unlockGreetingCount).toBe(greetingCount + 1);
+    expect(synthesis.cancelCount).toBe(cancelCount + 1);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['מצא את הכדור']);
 
     synthesis.finishCurrent();
     await expect(done).resolves.toMatchObject({ status: 'completed' });

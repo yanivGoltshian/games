@@ -23,14 +23,30 @@ export interface ConceptStat {
   mastery: number;
 }
 
+export type ProgressionChoice = 'next' | 'replay';
+
+export interface RecentRoundResult {
+  completedAt: number;
+  level: 1 | 2 | 3;
+  success: boolean;
+  firstAttempt: boolean;
+  attempts: number;
+}
+
 export interface DomainProgress {
   attempts: number;
   successes: number;
   streak: number;
   level: 1 | 2 | 3;
+  highestLevel: 1 | 2 | 3;
+  completedRounds: number;
+  firstAttemptSuccesses: number;
+  totalAttempts: number;
   mastery: number;
   stars: number;
   lastPracticedAt: number;
+  lastProgressionChoice: ProgressionChoice | null;
+  recentResults: RecentRoundResult[];
   concepts: Record<string, ConceptStat>;
 }
 
@@ -55,8 +71,15 @@ export interface ProgressUpdateSummary {
   starsEarned: number;
   leveledUp: boolean;
   milestone: boolean;
-  level: number;
+  level: DomainProgress['level'];
   mastery: number;
+  firstAttempt: boolean;
+  recommendation: LevelRecommendation | null;
+}
+
+export interface LevelRecommendation {
+  currentLevel: DomainProgress['level'];
+  nextLevel: DomainProgress['level'];
 }
 
 export interface LearningConcept {

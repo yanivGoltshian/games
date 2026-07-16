@@ -29,14 +29,14 @@ const memoryStages: string[][] = [
   learningConcepts.map((concept) => concept.id),
 ];
 
-const colorLabels: Record<ColorId, { he: string; en: string }> = {
+export const SORTING_COLOR_LABELS: Record<ColorId, { he: string; en: string }> = {
   red: { he: 'אדום', en: 'red' },
   blue: { he: 'כחול', en: 'blue' },
   green: { he: 'ירוק', en: 'green' },
   yellow: { he: 'צהוב', en: 'yellow' },
 };
 
-const shapeLabels: Record<ShapeId, { he: string; en: string }> = {
+export const SORTING_SHAPE_LABELS: Record<ShapeId, { he: string; en: string }> = {
   circle: { he: 'עיגול', en: 'circle' },
   square: { he: 'ריבוע', en: 'square' },
   triangle: { he: 'משולש', en: 'triangle' },
@@ -129,7 +129,9 @@ export function generateSortingRound(domain: DomainProgress, seed: string | numb
   );
 
   const bins = binIds.map((id) => {
-    const labels = rule === 'color' ? colorLabels[id as ColorId] : shapeLabels[id as ShapeId];
+    const labels = rule === 'color'
+      ? SORTING_COLOR_LABELS[id as ColorId]
+      : SORTING_SHAPE_LABELS[id as ShapeId];
     return {
       id,
       labelHe: labels.he,
