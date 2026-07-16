@@ -10,8 +10,10 @@ import { buildPhraseSegments, speechService, type SpeechResult } from '../servic
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import {
   INITIAL_MEMORY_CELEBRATION_STATE,
+  memoryMismatchHoldMs,
   memoryRevealFallbackMs,
   reduceMemoryCelebration,
+  scheduleMemoryMismatchClose,
   scheduleMemoryRevealFallback,
 } from './memoryCelebration';
 import { useAdaptiveRound } from './useAdaptiveRound';
@@ -28,6 +30,8 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
   );
   const [flippedIds, setFlippedIds] = useState<string[]>([]);
   const [matchedPairIds, setMatchedPairIds] = useState<string[]>([]);
+  const [mismatch, setMismatch] = useState<{ token: number } | null>(null);
+  const mismatchTokenRef = useRef(0);
   const firstLabelPromiseRef = useRef<Promise<SpeechResult> | null>(null);
   const roundGenerationRef = useRef(0);
 
@@ -40,6 +44,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
   const systemReducedMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const revealFallbackMs = memoryRevealFallbackMs(settings.reducedMotion, systemReducedMotion);
+  const mismatchHoldMs = memoryMismatchHoldMs(settings.reducedMotion, systemReducedMotion);
 
   const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
@@ -59,6 +64,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     dispatchCelebration({ type: 'reset' });
     setFlippedIds([]);
     setMatchedPairIds([]);
+    setMismatch(null);
     firstLabelPromiseRef.current = null;
     roundGenerationRef.current += 1;
     if (mediaReady) {
@@ -83,8 +89,31 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     );
   }, [pendingCelebration, revealFallbackMs]);
 
+  // Non-matching pairs stay visible for a deliberate toddler hold, then always flip
+  // back. The close is timeout-driven so it fires even on WebKit/iPad where speech
+  // and transition callbacks are unreliable; cleanup cancels any late close.
+  useEffect(() => {
+    if (!mismatch) {
+      return;
+    }
+
+    const generation = roundGenerationRef.current;
+    const handle = scheduleMemoryMismatchClose(
+      mismatchHoldMs,
+      () => {
+        if (generation === roundGenerationRef.current) {
+          setFlippedIds([]);
+        }
+        setMismatch(null);
+      },
+      window,
+    );
+
+    return handle.cancel;
+  }, [mismatch, mismatchHoldMs]);
+
   const handleCardClick = (cardId: string) => {
-    if (retryBusy || celebration || pendingCelebration || flippedIds.includes(cardId)) {
+    if (celebration || pendingCelebration || mismatch || flippedIds.includes(cardId)) {
       return;
     }
 
@@ -149,26 +178,24 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
       return;
     }
 
-    const generation = roundGenerationRef.current;
     const nextMisses = misses + 1;
     setMisses(nextMisses);
+    setMismatch({ token: (mismatchTokenRef.current += 1) });
     const firstLabel = firstLabelPromiseRef.current;
     firstLabelPromiseRef.current = null;
     const modelLines = [
       ...(firstLabel || !firstConcept ? [] : [{ he: firstConcept.he, en: firstConcept.en, pauseAfterMs: 180 }]),
       ...(concept ? [{ he: concept.he, en: concept.en, pauseAfterMs: 220 }] : []),
     ];
+    // Fire-and-forget audio only. Card close + interaction lock are owned by the
+    // mismatch timeout above, never by this speech promise (which can hang on iPad).
     void runRetry({
       missCount: nextMisses,
       seed: `${roundKey}:${nextMisses}:${firstCard.conceptId}:${card.conceptId}`,
       modelLines,
       phraseScope: 'memory-search',
       beforeSpeech: firstLabel,
-      lockUntilComplete: true,
-    }).then(() => {
-      if (generation === roundGenerationRef.current) {
-        setFlippedIds([]);
-      }
+      lockUntilComplete: false,
     });
   };
 
@@ -220,7 +247,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
             <button
               key={card.id}
               className={`memory-card ${flipped ? 'memory-card--flipped' : ''}`}
-              disabled={retryBusy}
+              disabled={mismatch !== null}
               onClick={() => handleCardClick(card.id)}
               type="button"
               aria-label={flipped ? (englishOnly ? concept.en : concept.he) : (englishOnly ? 'Hidden card' : 'קלף סגור')}
