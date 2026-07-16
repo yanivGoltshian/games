@@ -30,13 +30,29 @@ function voice(name: string, lang: string, localService = true): SpeechSynthesis
 
 class FakeSpeechSynthesis {
   readonly spoken: FakeUtterance[] = [];
-  readonly pending: FakeUtterance[] = [];
   cancelCount = 0;
-  private readonly voices: SpeechSynthesisVoice[];
+  overlapCount = 0;
+  primerCount = 0;
+  resumeCount = 0;
+  paused = false;
+  private voices: SpeechSynthesisVoice[];
   private readonly listeners = new Map<string, Set<() => void>>();
+  private current: FakeUtterance | null = null;
+  private stalled: FakeUtterance | null = null;
+  private userActivation = false;
+  private engineUnlocked = false;
+  private blockedBehavior: 'drop' | 'pending' = 'drop';
 
   constructor(voices: SpeechSynthesisVoice[]) {
     this.voices = voices;
+  }
+
+  get speaking(): boolean {
+    return this.current !== null;
+  }
+
+  get pending(): boolean {
+    return this.stalled !== null;
   }
 
   getVoices = () => this.voices;
@@ -51,29 +67,71 @@ class FakeSpeechSynthesis {
     this.listeners.get(name)?.delete(listener);
   };
 
+  runInUserActivation(action: () => void): void {
+    this.userActivation = true;
+    try {
+      action();
+    } finally {
+      this.userActivation = false;
+    }
+  }
+
+  lockEngine(behavior: 'drop' | 'pending' = 'drop'): void {
+    this.engineUnlocked = false;
+    this.blockedBehavior = behavior;
+  }
+
+  setVoices(voices: SpeechSynthesisVoice[]): void {
+    this.voices = voices;
+    this.listeners.get('voiceschanged')?.forEach((listener) => listener());
+  }
+
   speak = (utterance: FakeUtterance) => {
-    utterance.onstart?.();
-    if (utterance.volume === 0) {
-      queueMicrotask(() => utterance.onend?.());
+    const isPrimer = utterance.text.trim().length === 0;
+    if (!this.engineUnlocked && !this.userActivation) {
+      if (!isPrimer && this.blockedBehavior === 'pending') {
+        this.stalled = utterance;
+      }
       return;
     }
+
+    if (this.userActivation) {
+      this.engineUnlocked = true;
+    }
+    if (isPrimer) {
+      this.primerCount += 1;
+      utterance.onstart?.();
+      utterance.onend?.();
+      return;
+    }
+
+    if (this.current) {
+      this.overlapCount += 1;
+    }
+    this.current = utterance;
     this.spoken.push(utterance);
-    this.pending.push(utterance);
+    utterance.onstart?.();
   };
 
   cancel = () => {
     this.cancelCount += 1;
-    const current = this.pending.shift();
+    const current = this.current ?? this.stalled;
+    this.current = null;
+    this.stalled = null;
     current?.onerror?.({ error: 'canceled' });
   };
 
-  resume = () => undefined;
+  resume = () => {
+    this.resumeCount += 1;
+    this.paused = false;
+  };
 
   finishCurrent(): void {
-    const current = this.pending.shift();
+    const current = this.current;
     if (!current) {
       throw new Error('No utterance is pending');
     }
+    this.current = null;
     current.onend?.();
   }
 }
@@ -87,7 +145,7 @@ describe('SpeechService', () => {
   let synthesis: FakeSpeechSynthesis;
   let service: SpeechService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.useFakeTimers();
     synthesis = new FakeSpeechSynthesis([
       voice('Generic Hebrew', 'he-IL'),
@@ -105,12 +163,97 @@ describe('SpeechService', () => {
     vi.stubGlobal('window', fakeWindow);
     vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance);
     service = new SpeechService();
+    synthesis.runInUserActivation(() => service.unlock());
+    await flush();
   });
 
   afterEach(() => {
+    expect(synthesis.overlapCount).toBe(0);
     service.cancelAll('navigation');
     vi.unstubAllGlobals();
     vi.useRealTimers();
+  });
+
+  it('holds queued speech until the first iPad touch unlocks the engine', async () => {
+    synthesis.lockEngine();
+    const lockedService = new SpeechService();
+    const settings = createInitialSettings();
+    const primerCount = synthesis.primerCount;
+    const done = lockedService.speakSegments([{ text: 'מצא את הכלב', locale: 'he-IL' }], settings);
+    await flush();
+
+    expect(synthesis.spoken).toHaveLength(0);
+    expect(synthesis.primerCount).toBe(primerCount);
+
+    synthesis.runInUserActivation(() => lockedService.unlock());
+    await flush();
+
+    expect(synthesis.primerCount).toBe(primerCount + 1);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['מצא את הכלב']);
+    expect(synthesis.cancelCount).toBe(0);
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('waits for asynchronously loaded iPad voices after touch activation', async () => {
+    synthesis.setVoices([]);
+    synthesis.lockEngine();
+    const lockedService = new SpeechService();
+    const settings = createInitialSettings();
+    const done = lockedService.speakSegments([{ text: 'תפוח', locale: 'he-IL' }], settings);
+
+    synthesis.runInUserActivation(() => lockedService.unlock());
+    await flush();
+    expect(synthesis.spoken).toHaveLength(0);
+
+    synthesis.setVoices([voice('Carmit Premium', 'he-IL', false)]);
+    await flush();
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['תפוח']);
+    expect(synthesis.spoken[0]?.voice?.name).toBe('Carmit Premium');
+
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('retries a silently dropped utterance on the next touch without cancelling', async () => {
+    const settings = createInitialSettings();
+    synthesis.lockEngine('drop');
+    synthesis.paused = true;
+    const resumeCount = synthesis.resumeCount;
+    const done = service.speakSegments([{ text: 'נסה שוב', locale: 'he-IL' }], settings);
+    await flush();
+
+    expect(synthesis.spoken).toHaveLength(0);
+    expect(synthesis.cancelCount).toBe(0);
+
+    synthesis.runInUserActivation(() => service.unlock());
+    await flush();
+
+    expect(synthesis.resumeCount).toBeGreaterThan(resumeCount);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['נסה שוב']);
+    expect(synthesis.cancelCount).toBe(0);
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('replaces a pre-start stalled utterance but never retries an active word', async () => {
+    const settings = createInitialSettings();
+    synthesis.lockEngine('pending');
+    const stalled = service.speakSegments([{ text: 'מילה תקועה', locale: 'he-IL' }], settings);
+    await flush();
+
+    expect(synthesis.pending).toBe(true);
+    synthesis.runInUserActivation(() => service.unlock());
+    await flush();
+    expect(synthesis.cancelCount).toBe(1);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['מילה תקועה']);
+
+    synthesis.runInUserActivation(() => service.unlock());
+    expect(synthesis.cancelCount).toBe(1);
+    expect(synthesis.spoken).toHaveLength(1);
+
+    synthesis.finishCurrent();
+    await expect(stalled).resolves.toMatchObject({ status: 'completed' });
   });
 
   it('finishes the active target before starting praise without cancellation', async () => {

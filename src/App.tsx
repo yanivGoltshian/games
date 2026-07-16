@@ -50,13 +50,10 @@ export default function App() {
   }, [progress.settings.languageMode, progress.settings.reducedMotion, route.kind]);
 
   const unlockMedia = useCallback(() => {
-    if (mediaReady) {
-      return;
-    }
-    setMediaReady(true);
     soundService.unlock();
     speechService.unlock();
-  }, [mediaReady]);
+    setMediaReady(true);
+  }, []);
 
   const updateSettings = (patch: Partial<ToddlerSettings>) => {
     setProgress((current) => ({

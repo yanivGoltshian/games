@@ -45,8 +45,11 @@ interface QueuedSpeechRequest {
   resolve: (result: SpeechResult) => void;
   cancelledAs: SpeechResultStatus | null;
   cancelCurrent: (() => void) | null;
+  retryCurrent: (() => void) | null;
   staleAfterSuccess: boolean;
 }
+
+type SpeechActivationState = 'locked' | 'priming' | 'ready';
 
 const PRIORITY_WEIGHT: Record<SpeechPriority, number> = {
   prompt: 20,
@@ -108,7 +111,8 @@ export class SpeechService {
   private queue: QueuedSpeechRequest[] = [];
   private active: QueuedSpeechRequest | null = null;
   private processing = false;
-  private isUnlocked = false;
+  private activationState: SpeechActivationState = 'locked';
+  private primerAttempt = 0;
   private nextRequestId = 1;
   private nextOrder = 1;
   private voicesReadyPromise: Promise<void> | null = null;
@@ -132,17 +136,16 @@ export class SpeechService {
   private handleVisibilityChange = (): void => {
     if (document.visibilityState === 'hidden') {
       this.cancelAll('visibility');
-      this.isUnlocked = false;
+      this.lock();
       return;
     }
-    window.speechSynthesis.resume();
-    this.isUnlocked = false;
+    this.lock();
     this.notify();
   };
 
   private handlePageHide = (): void => {
     this.cancelAll('visibility');
-    this.isUnlocked = false;
+    this.lock();
   };
 
   private isSupported(): boolean {
@@ -174,21 +177,84 @@ export class SpeechService {
     this.subscribers.forEach((subscriber) => subscriber(status));
   }
 
+  private lock(): void {
+    this.primerAttempt += 1;
+    this.activationState = 'locked';
+  }
+
+  private primeSpeechEngine(): void {
+    const synthesis = window.speechSynthesis;
+    const attempt = ++this.primerAttempt;
+    this.activationState = 'priming';
+    const utterance = new SpeechSynthesisUtterance('\u00a0');
+    utterance.volume = 1;
+    utterance.rate = 1;
+
+    const markReady = (): void => {
+      if (attempt !== this.primerAttempt || this.activationState !== 'priming') {
+        return;
+      }
+      this.activationState = 'ready';
+      this.notify();
+      void this.processQueue();
+    };
+    utterance.onstart = markReady;
+    utterance.onend = markReady;
+    utterance.onerror = () => {
+      if (attempt !== this.primerAttempt) {
+        return;
+      }
+      this.activationState = 'locked';
+      this.notify();
+    };
+
+    try {
+      synthesis.speak(utterance);
+    } catch {
+      if (attempt === this.primerAttempt) {
+        this.activationState = 'locked';
+        this.notify();
+      }
+    }
+  }
+
+  /**
+   * Must be called directly from a pointer or keyboard event. The contentless,
+   * non-muted primer is required because iPadOS can ignore muted utterances.
+   * Later activations resume the engine or retry only an utterance that never
+   * reached onstart, so a word already being spoken is never interrupted.
+   */
   unlock(): void {
-    if (this.isUnlocked || !this.isSupported()) {
+    if (!this.isSupported()) {
       return;
     }
 
-    this.isUnlocked = true;
-    try {
-      window.speechSynthesis.resume();
-      const utterance = new SpeechSynthesisUtterance('\u00a0');
-      utterance.volume = 0;
-      utterance.rate = 1;
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      this.isUnlocked = false;
+    const synthesis = window.speechSynthesis;
+    synthesis.getVoices();
+    void this.waitForVoices().then(() => this.notify());
+    synthesis.resume();
+
+    if (this.active?.retryCurrent) {
+      this.active.retryCurrent();
+      return;
     }
+
+    if (this.activationState === 'ready') {
+      void this.processQueue();
+      return;
+    }
+
+    if (this.activationState === 'priming') {
+      if (synthesis.speaking) {
+        return;
+      }
+      this.primerAttempt += 1;
+      if (synthesis.pending) {
+        synthesis.cancel();
+      }
+    }
+
+    this.primeSpeechEngine();
   }
 
   private async waitForVoices(): Promise<void> {
@@ -301,6 +367,7 @@ export class SpeechService {
         resolve,
         cancelledAs: null,
         cancelCurrent: null,
+        retryCurrent: null,
         staleAfterSuccess: options.staleAfterSuccess ?? false,
       });
       this.queue.sort((left, right) => (
@@ -309,7 +376,6 @@ export class SpeechService {
       ));
     });
 
-    this.unlock();
     void this.processQueue();
     return done;
   }
@@ -336,24 +402,25 @@ export class SpeechService {
 
   private speakUtterance(segment: SpeechSegment, request: QueuedSpeechRequest): Promise<SpeechResultStatus> {
     return new Promise((resolve) => {
-      const utterance = new SpeechSynthesisUtterance(segment.text);
-      utterance.lang = segment.locale;
-      utterance.rate = speechRateForLocale(segment.locale);
-      utterance.pitch = 1;
-      utterance.volume = Math.min(1, Math.max(0, request.settings.soundLevel));
-      const voice = selectVoiceForLocale(window.speechSynthesis.getVoices(), segment.locale);
-      if (voice) {
-        utterance.voice = voice;
-      }
-
       let settled = false;
+      let attempt = 0;
+      let started = false;
+      let guard: number | null = null;
+      const clearGuard = (): void => {
+        if (guard !== null) {
+          window.clearTimeout(guard);
+          guard = null;
+        }
+      };
       const finish = (status: SpeechResultStatus): void => {
         if (settled) {
           return;
         }
         settled = true;
-        window.clearTimeout(guard);
+        attempt += 1;
+        clearGuard();
         request.cancelCurrent = null;
+        request.retryCurrent = null;
         if (this.activeCue === segment.cue) {
           this.activeCue = null;
           this.notify();
@@ -361,31 +428,94 @@ export class SpeechService {
 
         resolve(status);
       };
-      const guardMs = Math.max(UTTERANCE_GUARD_BASE_MS, segment.text.length * 450);
-      const guard = window.setTimeout(() => {
-        window.speechSynthesis.resume();
-        finish('timed-out');
-      }, guardMs);
 
-      request.cancelCurrent = () => {
-        window.speechSynthesis.cancel();
-        finish(request.cancelledAs ?? 'cancelled');
-      };
-      utterance.onstart = () => {
-        this.activeCue = segment.cue ?? null;
-        this.notify();
-      };
-      utterance.onend = () => finish(request.cancelledAs ?? 'completed');
-      utterance.onerror = (event) => {
-        const cancelled = event.error === 'canceled' || event.error === 'interrupted';
-        finish(cancelled ? (request.cancelledAs ?? 'cancelled') : 'error');
+      const speakAttempt = (): void => {
+        if (settled || request.cancelledAs) {
+          finish(request.cancelledAs ?? 'cancelled');
+          return;
+        }
+
+        const synthesis = window.speechSynthesis;
+        const currentAttempt = ++attempt;
+        started = false;
+        clearGuard();
+
+        const utterance = new SpeechSynthesisUtterance(segment.text);
+        utterance.lang = segment.locale;
+        utterance.rate = speechRateForLocale(segment.locale);
+        utterance.pitch = 1;
+        utterance.volume = Math.min(1, Math.max(0, request.settings.soundLevel));
+        const voice = selectVoiceForLocale(synthesis.getVoices(), segment.locale);
+        if (voice) {
+          utterance.voice = voice;
+        }
+
+        const isCurrentAttempt = (): boolean => !settled && attempt === currentAttempt;
+        request.cancelCurrent = () => {
+          request.retryCurrent = null;
+          attempt += 1;
+          clearGuard();
+          synthesis.cancel();
+          finish(request.cancelledAs ?? 'cancelled');
+        };
+        request.retryCurrent = () => {
+          if (!isCurrentAttempt() || started || request.cancelledAs) {
+            return;
+          }
+
+          synthesis.resume();
+          if (synthesis.speaking) {
+            return;
+          }
+
+          attempt += 1;
+          clearGuard();
+          if (synthesis.pending) {
+            synthesis.cancel();
+          }
+          speakAttempt();
+        };
+        utterance.onstart = () => {
+          if (!isCurrentAttempt()) {
+            return;
+          }
+          started = true;
+          request.retryCurrent = null;
+          this.activeCue = segment.cue ?? null;
+          this.notify();
+        };
+        utterance.onend = () => {
+          if (isCurrentAttempt()) {
+            finish(request.cancelledAs ?? 'completed');
+          }
+        };
+        utterance.onerror = (event) => {
+          if (!isCurrentAttempt()) {
+            return;
+          }
+          const cancelled = event.error === 'canceled' || event.error === 'interrupted';
+          finish(cancelled ? (request.cancelledAs ?? 'cancelled') : 'error');
+        };
+
+        const guardMs = Math.max(UTTERANCE_GUARD_BASE_MS, segment.text.length * 450);
+        guard = window.setTimeout(() => {
+          if (!isCurrentAttempt() || !started) {
+            return;
+          }
+          attempt += 1;
+          synthesis.cancel();
+          finish('timed-out');
+        }, guardMs);
+
+        synthesis.resume();
+        try {
+          synthesis.speak(utterance);
+        } catch {
+          finish('error');
+        }
       };
 
-      try {
-        window.speechSynthesis.speak(utterance);
-      } catch {
-        finish('error');
-      }
+      speakAttempt();
     });
   }
 
@@ -415,7 +545,7 @@ export class SpeechService {
   }
 
   private async processQueue(): Promise<void> {
-    if (this.processing) {
+    if (this.processing || this.activationState !== 'ready') {
       return;
     }
     this.processing = true;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState, type TransitionEvent } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
 import { SuccessOverlay } from '../components/SuccessOverlay';
@@ -8,6 +8,11 @@ import { generateMemoryRound } from '../domain/rounds';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService, type SpeechResult } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
+import {
+  INITIAL_MEMORY_CELEBRATION_STATE,
+  memoryRevealFallbackMs,
+  reduceMemoryCelebration,
+} from './memoryCelebration';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
@@ -16,7 +21,10 @@ const SPEECH_SCOPE = 'game:memory';
 export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [misses, setMisses] = useState(0);
-  const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
+  const [celebrationState, dispatchCelebration] = useReducer(
+    reduceMemoryCelebration,
+    INITIAL_MEMORY_CELEBRATION_STATE,
+  );
   const [flippedIds, setFlippedIds] = useState<string[]>([]);
   const [matchedPairIds, setMatchedPairIds] = useState<string[]>([]);
   const firstLabelPromiseRef = useRef<Promise<SpeechResult> | null>(null);
@@ -26,6 +34,11 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
   const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
+  const celebration = celebrationState.visible;
+  const pendingCelebration = celebrationState.pending;
+  const systemReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const revealFallbackMs = memoryRevealFallbackMs(settings.reducedMotion, systemReducedMotion);
 
   const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
@@ -42,7 +55,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
   useEffect(() => {
     setAttempts(0);
     setMisses(0);
-    setCelebration(null);
+    dispatchCelebration({ type: 'reset' });
     setFlippedIds([]);
     setMatchedPairIds([]);
     firstLabelPromiseRef.current = null;
@@ -52,8 +65,22 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     }
   }, [mediaReady, roundKey]);
 
+  useEffect(() => {
+    if (!pendingCelebration || revealFallbackMs === null) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      dispatchCelebration({
+        type: 'reveal-complete',
+        cardId: pendingCelebration.finalCardId,
+      });
+    }, revealFallbackMs);
+    return () => window.clearTimeout(timer);
+  }, [pendingCelebration, revealFallbackMs]);
+
   const handleCardClick = (cardId: string) => {
-    if (retryBusy || celebration || flippedIds.includes(cardId)) {
+    if (retryBusy || celebration || pendingCelebration || flippedIds.includes(cardId)) {
       return;
     }
 
@@ -95,10 +122,17 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
           requiredActions: round.pairConceptIds.length,
           concepts: round.pairConceptIds,
         });
-        setCelebration({
+        const info: CelebrationInfo = {
           seed: `memory-${round.pairConceptIds.join('-')}-${nextAttempts}`,
-          targetSegments: concept ? buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale) : [],
+          targetSegments: concept
+            ? buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale)
+            : [],
           tier: summary.milestone ? 'milestone' : 'standard',
+        };
+        dispatchCelebration({
+          type: 'queue',
+          finalCardId: cardId,
+          info,
         });
       } else if (concept) {
         void speechService.speakSegments(
@@ -134,6 +168,16 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     });
   };
 
+  const handleFlipTransitionEnd = (
+    cardId: string,
+    event: TransitionEvent<HTMLSpanElement>,
+  ): void => {
+    if (event.target !== event.currentTarget || event.propertyName !== 'transform') {
+      return;
+    }
+    dispatchCelebration({ type: 'reveal-complete', cardId });
+  };
+
   return (
     <GameShell
       ariaLabel={gameMeta.memory.title}
@@ -157,7 +201,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
             targetSegments={celebration.targetSegments}
             tier={celebration.tier}
             onAdvance={() => {
-              setCelebration(null);
+              dispatchCelebration({ type: 'dismiss' });
               startNextRound();
             }}
           />
@@ -178,7 +222,10 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
               aria-label={flipped ? (englishOnly ? concept.en : concept.he) : (englishOnly ? 'Hidden card' : 'קלף סגור')}
               aria-pressed={flipped}
             >
-              <span className="memory-card__inner">
+              <span
+                className="memory-card__inner"
+                onTransitionEnd={(event) => handleFlipTransitionEnd(card.id, event)}
+              >
                 <span className="memory-face memory-face--front">
                   <ConceptArt conceptId={concept.id} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />
                 </span>
