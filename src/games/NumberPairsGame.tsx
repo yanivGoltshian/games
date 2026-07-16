@@ -41,7 +41,6 @@ export function NumberPairsGame({
 }: ToddlerGameProps) {
   const [state, setState] = useState<NumberPairsState>(INITIAL_NUMBER_PAIRS_STATE);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
-  const speechSequenceRef = useRef(0);
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'numberPairs',
     domainProgress,
@@ -83,12 +82,10 @@ export function NumberPairsGame({
       void speakPromptRef.current();
     }
   }, [mediaReady, roundKey]);
-
   const speakNumber = (value: number) => {
-    speechSequenceRef.current += 1;
     return speechService.speakSegments(numberSegments(value, settings), settings, {
       scope: SPEECH_SCOPE,
-      key: `number-label:${speechSequenceRef.current}`,
+      key: 'number-label',
       priority: 'label',
       staleAfterSuccess: true,
     });
@@ -112,9 +109,8 @@ export function NumberPairsGame({
       return;
     }
     const chosenValue = round.bottomRow[index]!;
-    soundService.playTap(settings);
-    const numberSpeech = speakNumber(chosenValue);
     const selectedTopIndex = state.selectedTopIndex;
+    soundService.playTap(settings);
     const nextState = reduceNumberPairs(state, { type: 'choose-bottom', index }, round);
     if (nextState === state || selectedTopIndex === null) {
       return;
@@ -123,6 +119,7 @@ export function NumberPairsGame({
 
     const selectedValue = round.topRow[selectedTopIndex]!;
     if (nextState.wrongBottomIndex !== null) {
+      const numberSpeech = speakNumber(chosenValue);
       const missCount = nextState.attempts - nextState.matchedTopIndices.length;
       void runRetry({
         missCount,
@@ -143,6 +140,7 @@ export function NumberPairsGame({
 
     soundService.playSuccess(settings);
     if (!nextState.completed) {
+      void speakNumber(chosenValue);
       return;
     }
 
@@ -161,8 +159,7 @@ export function NumberPairsGame({
       : [];
     setCelebration({
       seed: `number-pairs-${roundKey}-${round.signature}-${nextState.attempts}`,
-      targetSegments: [],
-      beforeSpeech: numberSpeech,
+      targetSegments: numberSegments(chosenValue, settings),
       tier: summary.milestone ? 'milestone' : 'standard',
       recommendation: summary.recommendation,
       celebrationVariant: 'trophy-spark',
