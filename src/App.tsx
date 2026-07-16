@@ -51,9 +51,12 @@ export default function App() {
 
   const unlockMedia = useCallback(() => {
     soundService.unlock();
-    speechService.unlock();
+    const primerLocale = progress.settings.languageMode === 'en'
+      ? progress.settings.englishVoiceLocale
+      : 'he-IL';
+    speechService.unlock(primerLocale);
     setMediaReady(true);
-  }, []);
+  }, [progress.settings.englishVoiceLocale, progress.settings.languageMode]);
 
   const updateSettings = (patch: Partial<ToddlerSettings>) => {
     setProgress((current) => ({

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v10';
+const CACHE_NAME = 'sean-learning-adventure-v11';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',

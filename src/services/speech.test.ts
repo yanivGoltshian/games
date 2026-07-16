@@ -30,11 +30,15 @@ function voice(name: string, lang: string, localService = true): SpeechSynthesis
 
 class FakeSpeechSynthesis {
   readonly spoken: FakeUtterance[] = [];
+  readonly primers: FakeUtterance[] = [];
   cancelCount = 0;
   overlapCount = 0;
   primerCount = 0;
   resumeCount = 0;
   paused = false;
+  suppressPrimerEvents = false;
+  onSpeak: ((utterance: FakeUtterance) => void) | null = null;
+  onListenerAdded: ((name: string) => void) | null = null;
   private voices: SpeechSynthesisVoice[];
   private readonly listeners = new Map<string, Set<() => void>>();
   private current: FakeUtterance | null = null;
@@ -61,6 +65,7 @@ class FakeSpeechSynthesis {
     const listeners = this.listeners.get(name) ?? new Set();
     listeners.add(listener);
     this.listeners.set(name, listeners);
+    this.onListenerAdded?.(name);
   };
 
   removeEventListener = (name: string, listener: () => void) => {
@@ -87,7 +92,8 @@ class FakeSpeechSynthesis {
   }
 
   speak = (utterance: FakeUtterance) => {
-    const isPrimer = utterance.text.trim().length === 0;
+    this.onSpeak?.(utterance);
+    const isPrimer = utterance.text === 'שון' || utterance.text === 'Sean';
     if (!this.engineUnlocked && !this.userActivation) {
       if (!isPrimer && this.blockedBehavior === 'pending') {
         this.stalled = utterance;
@@ -100,6 +106,10 @@ class FakeSpeechSynthesis {
     }
     if (isPrimer) {
       this.primerCount += 1;
+      this.primers.push(utterance);
+      if (this.suppressPrimerEvents) {
+        return;
+      }
       utterance.onstart?.();
       utterance.onend?.();
       return;
@@ -191,6 +201,59 @@ describe('SpeechService', () => {
     expect(synthesis.primerCount).toBe(primerCount + 1);
     expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['מצא את הכלב']);
     expect(synthesis.cancelCount).toBe(0);
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('submits a contentful primer before voice waiting leaves the activation event', async () => {
+    synthesis.setVoices([]);
+    synthesis.lockEngine();
+    const lockedService = new SpeechService();
+    const trace: string[] = [];
+    synthesis.onSpeak = (utterance) => trace.push(`speak:${utterance.text}`);
+    synthesis.onListenerAdded = (name) => {
+      if (name === 'voiceschanged') {
+        trace.push('wait-for-voices');
+      }
+    };
+    const done = lockedService.speakSegments(
+      [{ text: 'תפוח', locale: 'he-IL' }],
+      createInitialSettings(),
+    );
+
+    synthesis.runInUserActivation(() => {
+      lockedService.unlock('he-IL');
+      trace.push('activation-handler-end');
+    });
+
+    expect(trace.slice(0, 3)).toEqual([
+      'speak:שון',
+      'wait-for-voices',
+      'activation-handler-end',
+    ]);
+    expect(synthesis.primers.at(-1)?.text.trim()).toBe('שון');
+
+    synthesis.setVoices([voice('Carmit Premium', 'he-IL', false)]);
+    await flush();
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['תפוח']);
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('continues after a contentful primer even when WebKit emits no primer events', async () => {
+    synthesis.lockEngine();
+    synthesis.suppressPrimerEvents = true;
+    const lockedService = new SpeechService();
+    const done = lockedService.speakSegments(
+      [{ text: 'מצא את הכלב', locale: 'he-IL' }],
+      createInitialSettings(),
+    );
+
+    synthesis.runInUserActivation(() => lockedService.unlock('he-IL'));
+    await flush();
+
+    expect(synthesis.primers.at(-1)?.text).toBe('שון');
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['מצא את הכלב']);
     synthesis.finishCurrent();
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });

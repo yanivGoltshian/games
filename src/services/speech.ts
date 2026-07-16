@@ -71,6 +71,11 @@ const PREFERRED_VOICE_NAMES: Record<SpeechLocale, readonly string[]> = {
 
 const VOICE_WAIT_MS = 900;
 const UTTERANCE_GUARD_BASE_MS = 8_000;
+const UNLOCK_PROMPT: Record<SpeechLocale, string> = {
+  'he-IL': 'שון',
+  'en-US': 'Sean',
+  'en-GB': 'Sean',
+};
 
 export function speechRateForLocale(locale: SpeechLocale): number {
   return locale === 'he-IL' ? 0.72 : 0.76;
@@ -188,13 +193,18 @@ export class SpeechService {
     this.activationState = 'locked';
   }
 
-  private primeSpeechEngine(): void {
+  private primeSpeechEngine(locale: SpeechLocale): void {
     const synthesis = window.speechSynthesis;
     const attempt = ++this.primerAttempt;
     this.activationState = 'priming';
-    const utterance = new SpeechSynthesisUtterance('\u00a0');
+    const utterance = new SpeechSynthesisUtterance(UNLOCK_PROMPT[locale]);
+    utterance.lang = locale;
     utterance.volume = 1;
-    utterance.rate = 1;
+    utterance.rate = speechRateForLocale(locale);
+    const voice = selectVoiceForLocale(synthesis.getVoices(), locale);
+    if (voice) {
+      utterance.voice = voice;
+    }
 
     const markReady = (): void => {
       if (attempt !== this.primerAttempt || this.activationState !== 'priming') {
@@ -207,7 +217,7 @@ export class SpeechService {
     utterance.onstart = markReady;
     utterance.onend = markReady;
     utterance.onerror = () => {
-      if (attempt !== this.primerAttempt) {
+      if (attempt !== this.primerAttempt || this.activationState !== 'priming') {
         return;
       }
       this.activationState = 'locked';
@@ -216,6 +226,9 @@ export class SpeechService {
 
     try {
       synthesis.speak(utterance);
+      // WebKit may omit primer events. A successful synchronous, contentful
+      // speak call inside activation is itself the unlock boundary.
+      markReady();
     } catch {
       if (attempt === this.primerAttempt) {
         this.activationState = 'locked';
@@ -225,12 +238,13 @@ export class SpeechService {
   }
 
   /**
-   * Must be called directly from a pointer or keyboard event. The contentless,
-   * non-muted primer is required because iPadOS can ignore muted utterances.
+   * Must be called directly from a pointer or keyboard event. The first unlock
+   * submits audible content synchronously because iPadOS can ignore whitespace
+   * and requires speechSynthesis.speak to run during transient activation.
    * Later activations resume the engine or retry only an utterance that never
    * reached onstart, so a word already being spoken is never interrupted.
    */
-  unlock(): void {
+  unlock(primerLocale: SpeechLocale = 'he-IL'): void {
     if (this.recordedSpeech.isEnabled()) {
       if (this.activationState === 'priming') {
         return;
@@ -258,7 +272,6 @@ export class SpeechService {
 
     const synthesis = window.speechSynthesis;
     synthesis.getVoices();
-    void this.waitForVoices().then(() => this.notify());
     synthesis.resume();
 
     if (this.active?.retryCurrent) {
@@ -281,7 +294,7 @@ export class SpeechService {
       }
     }
 
-    this.primeSpeechEngine();
+    this.primeSpeechEngine(primerLocale);
   }
 
   private async waitForVoices(): Promise<void> {
