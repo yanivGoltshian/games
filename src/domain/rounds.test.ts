@@ -83,14 +83,20 @@ describe('round generation', () => {
     expect(round.bins.every((bin) => bin.rule === round.rule)).toBe(true);
   });
 
-  it('creates puzzle layouts with the expected number of pieces', () => {
+  it.each([
+    [1, 1, 2, 2],
+    [2, 2, 2, 4],
+    [3, 3, 3, 9],
+  ] as const)('creates the level %i puzzle as %ix%i with %i pieces', (level, rows, cols, count) => {
     const domain = createInitialDomainProgress();
-    domain.level = 3;
+    domain.level = level;
 
-    const round = generatePuzzleRound(domain, 'puzzle');
+    const round = generatePuzzleRound(domain, `puzzle-level-${level}`);
 
+    expect(round.rows).toBe(rows);
+    expect(round.cols).toBe(cols);
+    expect(round.pieces).toHaveLength(count);
     expect(round.pieces).toHaveLength(round.rows * round.cols);
-    expect(round.pieces.length).toBeGreaterThanOrEqual(4);
   });
 
   it('creates matching memory pairs', () => {

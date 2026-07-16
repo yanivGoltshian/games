@@ -21,12 +21,15 @@ describe('puzzle geometry', () => {
 
   it.each([
     ['portrait 2x2', 768, 1024, 2, 2, 4],
-    ['portrait 1x3', 768, 1024, 1, 3, 3],
+    ['portrait 3x3', 768, 1024, 3, 3, 9],
     ['landscape 2x2', 1024, 768, 2, 2, 4],
-    ['short landscape 2x2', 844, 390, 2, 2, 4],
+    ['landscape 3x3', 1024, 768, 3, 3, 9],
+    ['short landscape 3x3', 844, 390, 3, 3, 9],
   ] as const)('keeps every piece inside a %s viewport', (_name, width, height, rows, cols, count) => {
     const layout = computePuzzleLayout(width, height, rows, cols, count);
     expect(layout.boardSize).toBeGreaterThan(0);
+    expect(layout.pieceWidth).toBeGreaterThanOrEqual(44);
+    expect(layout.pieceHeight).toBeGreaterThanOrEqual(44);
     expect(layout.boardX).toBeGreaterThanOrEqual(0);
     expect(layout.boardY).toBeGreaterThanOrEqual(0);
     expect(layout.boardX + layout.boardSize).toBeLessThanOrEqual(width);

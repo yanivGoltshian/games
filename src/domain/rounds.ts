@@ -151,8 +151,7 @@ export function generateSortingRound(domain: DomainProgress, seed: string | numb
 
 export function generatePuzzleRound(domain: DomainProgress, seed: string | number): PuzzleRound {
   const random = createSeededRandom(seed);
-  const layouts: Array<[number, number]> = domain.level === 1 ? [[1, 2]] : domain.level === 2 ? [[1, 3]] : [[2, 2]];
-  const [rows, cols] = random.pick(layouts);
+  const [rows, cols] = domain.level === 1 ? [1, 2] : domain.level === 2 ? [2, 2] : [3, 3];
   const scene = random.pick(puzzleScenes);
   const pieces = Array.from({ length: rows * cols }, (_, index) => ({
     id: `${scene.id}-${index}`,

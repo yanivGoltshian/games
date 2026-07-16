@@ -89,7 +89,7 @@ export function computePuzzleLayout(
   const orientation = width > height ? 'landscape' : 'portrait';
   const padding = Math.min(18, Math.max(8, Math.min(width, height) * 0.025));
   const gap = Math.min(16, Math.max(8, Math.min(width, height) * 0.02));
-  const trayColumns = orientation === 'portrait' ? Math.min(cols, pieceCount) : Math.min(2, pieceCount);
+  const trayColumns = Math.min(cols, pieceCount);
   const trayRows = Math.ceil(pieceCount / Math.max(1, trayColumns));
 
   let boardSize: number;
