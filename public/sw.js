@@ -1,9 +1,8 @@
-const CACHE_NAME = 'sean-learning-adventure-v11';
+const CACHE_NAME = 'sean-learning-adventure-v12';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
-  '/favicon.svg',
-  '/icons/icon.svg',
+  '/favicon-32.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',

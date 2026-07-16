@@ -8,15 +8,9 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#fff7ef",
+  "background_color": "#f4f0ea",
   "theme_color": "#ffb86f",
   "icons": [
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
