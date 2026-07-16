@@ -12,6 +12,7 @@ import {
   INITIAL_MEMORY_CELEBRATION_STATE,
   memoryRevealFallbackMs,
   reduceMemoryCelebration,
+  scheduleMemoryRevealFallback,
 } from './memoryCelebration';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
@@ -70,13 +71,16 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      dispatchCelebration({
-        type: 'reveal-complete',
-        cardId: pendingCelebration.finalCardId,
-      });
-    }, revealFallbackMs);
-    return () => window.clearTimeout(timer);
+    return scheduleMemoryRevealFallback(
+      revealFallbackMs,
+      () => {
+        dispatchCelebration({
+          type: 'reveal-complete',
+          cardId: pendingCelebration.finalCardId,
+        });
+      },
+      window,
+    );
   }, [pendingCelebration, revealFallbackMs]);
 
   const handleCardClick = (cardId: string) => {

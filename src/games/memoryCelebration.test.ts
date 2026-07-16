@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   INITIAL_MEMORY_CELEBRATION_STATE,
   REDUCED_MOTION_REVEAL_HOLD_MS,
   memoryRevealFallbackMs,
   reduceMemoryCelebration,
+  scheduleMemoryRevealFallback,
 } from './memoryCelebration';
 import type { CelebrationInfo } from './types';
 
@@ -38,5 +39,28 @@ describe('memory final-pair reveal', () => {
     expect(memoryRevealFallbackMs(false, false)).toBeNull();
     expect(memoryRevealFallbackMs(true, false)).toBe(REDUCED_MOTION_REVEAL_HOLD_MS);
     expect(memoryRevealFallbackMs(false, true)).toBe(REDUCED_MOTION_REVEAL_HOLD_MS);
+  });
+
+  it('cancels the reduced-motion fallback without a late state update after exit', () => {
+    let runScheduled = (): void => undefined;
+    const clearTimeout = vi.fn();
+    const onComplete = vi.fn();
+    const cancel = scheduleMemoryRevealFallback(
+      REDUCED_MOTION_REVEAL_HOLD_MS,
+      onComplete,
+      {
+        setTimeout(callback) {
+          runScheduled = callback;
+          return 17;
+        },
+        clearTimeout,
+      },
+    );
+
+    cancel();
+    runScheduled();
+
+    expect(clearTimeout).toHaveBeenCalledWith(17);
+    expect(onComplete).not.toHaveBeenCalled();
   });
 });

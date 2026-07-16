@@ -2,6 +2,11 @@ import type { CelebrationInfo } from './types';
 
 export const REDUCED_MOTION_REVEAL_HOLD_MS = 450;
 
+interface MemoryRevealScheduler {
+  setTimeout(callback: () => void, delayMs: number): number;
+  clearTimeout(timerId: number): void;
+}
+
 interface PendingMemoryCelebration {
   finalCardId: string;
   info: CelebrationInfo;
@@ -52,4 +57,22 @@ export function memoryRevealFallbackMs(
   return caregiverReducedMotion || systemReducedMotion
     ? REDUCED_MOTION_REVEAL_HOLD_MS
     : null;
+}
+
+export function scheduleMemoryRevealFallback(
+  delayMs: number,
+  onComplete: () => void,
+  scheduler: MemoryRevealScheduler,
+): () => void {
+  let active = true;
+  const timer = scheduler.setTimeout(() => {
+    if (active) {
+      onComplete();
+    }
+  }, delayMs);
+
+  return () => {
+    active = false;
+    scheduler.clearTimeout(timer);
+  };
 }
