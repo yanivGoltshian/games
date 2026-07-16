@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SpeechService, selectVoiceForLocale, speechRateForLocale, type SpeechResult } from './speech';
 import { createInitialSettings } from '../domain/progression';
+import {
+  HEBREW_UNLOCK_PRIMER,
+  hasNiqqud,
+  stripNiqqud,
+} from '../content/hebrewPronunciation';
 
 class FakeUtterance {
   readonly text: string;
@@ -101,7 +106,7 @@ class FakeSpeechSynthesis {
     if (!isContentful) {
       return;
     }
-    const isUnlockGreeting = utterance.text === 'שלום שון' || utterance.text === 'Hello Sean';
+    const isUnlockGreeting = stripNiqqud(utterance.text) === 'שלום שון' || utterance.text === 'Hello Sean';
     if (!this.engineUnlocked && !this.userActivation) {
       if (this.blockedBehavior === 'pending') {
         this.stalled = utterance;
@@ -317,12 +322,14 @@ describe('SpeechService', () => {
 
     const firstCall = synthesis.speakCalls[callCount];
     expect(firstCall).toMatchObject({
-      text: 'שלום שון',
+      text: HEBREW_UNLOCK_PRIMER.spokenText,
       lang: 'he-IL',
       rate: 0.72,
       volume: settings.soundLevel,
     });
-    expect(firstCall?.text.replace(/[\s\u200B-\u200D\u2060\uFEFF]/gu, '')).toBe('שלוםשון');
+    expect(hasNiqqud(firstCall?.text ?? '')).toBe(true);
+    expect(stripNiqqud(firstCall?.text ?? '')).toBe(HEBREW_UNLOCK_PRIMER.sourceText);
+    expect(firstCall?.text.replace(/[\s\u200B-\u200D\u2060\uFEFF]/gu, '').length).toBeGreaterThan(0);
     expect(synthesis.unlockGreetingCount).toBe(greetingCount + 1);
   });
 

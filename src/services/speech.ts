@@ -1,4 +1,5 @@
 import type { EnglishVoiceLocale, LearningConcept, SpeechLocale, ToddlerSettings } from '../domain/types';
+import { HEBREW_UNLOCK_PRIMER } from '../content/hebrewPronunciation';
 import {
   recordedSpeechPlayer,
   type RecordedSpeechBackend,
@@ -82,7 +83,7 @@ function buildUnlockPrimer(settings: ToddlerSettings): SpeechSegment {
   if (settings.languageMode === 'en') {
     return { text: 'Hello Sean', locale: settings.englishVoiceLocale };
   }
-  return { text: 'שלום שון', locale: 'he-IL' };
+  return { text: HEBREW_UNLOCK_PRIMER.spokenText, locale: 'he-IL' };
 }
 
 export function speechRateForLocale(locale: SpeechLocale): number {

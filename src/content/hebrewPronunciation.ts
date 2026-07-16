@@ -27,12 +27,20 @@ export function hasNiqqud(value: string): boolean {
   return NIQQUD_PATTERN.test(value.normalize('NFC'));
 }
 
+export const HEBREW_UNLOCK_PRIMER = {
+  sourceText: 'שלום שון',
+  spokenText: 'שָׁלוֹם שׁוֹן',
+} as const;
+
 /**
  * Manually, context-aware niqqud for every unique Hebrew phrase in the catalog.
  * Keys are the exact unpointed source strings (never edit them); values are the
  * pointed forms fed to `say`.
  */
 export const HEBREW_PRONUNCIATIONS: Readonly<Record<string, string>> = {
+  // Web Speech unlock primer.
+  [HEBREW_UNLOCK_PRIMER.sourceText]: HEBREW_UNLOCK_PRIMER.spokenText,
+
   // Nouns / concept words.
   'אוטו': 'אוֹטוֹ',
   'בננה': 'בָּנָנָה',
