@@ -39,8 +39,8 @@ export interface RecordedSpeechCatalogEntry {
    */
   text: string;
   /**
-   * Pointed pronunciation used only when synthesizing the recorded clip (macOS
-   * `say`). Present for Hebrew entries so vowelization is unambiguous. Stripping
+   * Pointed pronunciation used only when synthesizing the recorded clip with
+   * Azure neural speech. Present for Hebrew entries so vowelization is unambiguous. Stripping
    * its niqqud yields `text` exactly. Absent for locales that need no pointing.
    */
   spokenText?: string;

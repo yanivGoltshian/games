@@ -1,21 +1,33 @@
+import { AzureCliCredential } from '@azure/identity';
+import type { AccessToken } from '@azure/identity';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { collectRecordedSpeechCatalog } from '../src/content/recordedSpeechCatalog';
-import type { RecordedSpeechCatalogEntry } from '../src/content/recordedSpeechCatalog';
-import type { SpeechLocale } from '../src/domain/types';
+import { collectRecordedSpeechCatalog } from '../src/content/recordedSpeechCatalog.js';
+import type { RecordedSpeechCatalogEntry } from '../src/content/recordedSpeechCatalog.js';
+import type { SpeechLocale } from '../src/domain/types.js';
+import {
+  buildSpeechSsml,
+  NEURAL_VOICES,
+  readSpeechEnvironment,
+} from './speechSsml.js';
 
 const SAMPLE_RATE = 24_000;
 const BIT_RATE = '64k';
-const GAP_SECONDS = 0.12;
+const GAP_SECONDS = 0.18;
+const PLAYBACK_TAIL_SECONDS = 0.06;
+const SYNTHESIS_CONCURRENCY = 4;
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_ATTEMPTS = 5;
+const TOKEN_SCOPE = 'https://cognitiveservices.azure.com/.default';
 const outputDirectory = resolve('public/speech');
-
-const voices: Record<SpeechLocale, { name: string; rate: number }> = {
-  'he-IL': { name: 'Carmit', rate: 135 },
-  'en-US': { name: 'Samantha', rate: 145 },
-  'en-GB': { name: 'Daniel', rate: 145 },
-};
+const transientStatuses = new Set([408, 429, 500, 502, 503, 504]);
 
 interface ManifestClip {
   src: string;
@@ -28,108 +40,306 @@ interface RecordedSpeechManifest {
   entries: Record<string, ManifestClip>;
 }
 
-function run(command: string, args: string[]): string {
-  const result = spawnSync(command, args, { encoding: 'utf8' });
+interface AudioProbe {
+  streams?: Array<{
+    codec_name?: string;
+    sample_rate?: string;
+    channels?: number;
+  }>;
+  format?: {
+    duration?: string;
+  };
+}
+
+interface GeneratedClip {
+  path: string;
+  duration: number;
+}
+
+function run(command: string, args: string[]): { stdout: string; stderr: string } {
+  const result = spawnSync(command, args, {
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+  });
   if (result.status !== 0) {
     throw new Error(`${command} failed: ${result.stderr || result.stdout}`);
   }
-  return result.stdout.trim();
+  return {
+    stdout: result.stdout.trim(),
+    stderr: result.stderr.trim(),
+  };
 }
 
-function durationOf(path: string): number {
-  return Number(run('ffprobe', [
+function probeAudio(path: string): AudioProbe {
+  return JSON.parse(run('ffprobe', [
     '-v', 'error',
-    '-show_entries', 'format=duration',
-    '-of', 'default=nw=1:nk=1',
+    '-select_streams', 'a:0',
+    '-show_entries', 'stream=codec_name,sample_rate,channels:format=duration',
+    '-of', 'json',
     path,
-  ]));
+  ]).stdout) as AudioProbe;
+}
+
+function verifyAudio(path: string, expectedCodec: string): number {
+  const probe = probeAudio(path);
+  const stream = probe.streams?.[0];
+  const duration = Number(probe.format?.duration);
+
+  if (
+    stream?.codec_name !== expectedCodec
+    || stream.sample_rate !== String(SAMPLE_RATE)
+    || stream.channels !== 1
+    || !Number.isFinite(duration)
+    || duration <= 0.1
+  ) {
+    throw new Error(`Invalid generated audio stream: ${path}`);
+  }
+
+  return duration;
+}
+
+function verifyAudible(path: string): void {
+  const analysis = run('ffmpeg', [
+    '-hide_banner',
+    '-nostats',
+    '-i', path,
+    '-af', 'volumedetect',
+    '-f', 'null',
+    '-',
+  ]).stderr;
+  const maximumVolume = analysis.match(/max_volume:\s+([-\w.]+)\s+dB/)?.[1];
+
+  if (!maximumVolume || maximumVolume === '-inf') {
+    throw new Error(`Generated clip is silent: ${path}`);
+  }
 }
 
 function manifestKey(locale: SpeechLocale, text: string): string {
   return `${locale}\u0000${text}`;
 }
 
-function generateLocale(
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
+}
+
+function retryDelay(response: Response, attempt: number): number {
+  const retryAfter = Number(response.headers.get('retry-after'));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return Math.min(retryAfter * 1_000, 15_000);
+  }
+  return Math.min(500 * (2 ** attempt), 8_000);
+}
+
+class SpeechAuthorizer {
+  private readonly credential = new AzureCliCredential();
+  private token: AccessToken | undefined;
+
+  constructor(private readonly resourceId: string) {}
+
+  async getAuthorizationHeader(): Promise<string> {
+    if (!this.token || this.token.expiresOnTimestamp < Date.now() + 5 * 60_000) {
+      const token = await this.credential.getToken(TOKEN_SCOPE);
+      if (!token) {
+        throw new Error('Azure CLI did not return a Cognitive Services access token.');
+      }
+      this.token = token;
+    }
+
+    return `Bearer aad#${this.resourceId}#${this.token.token}`;
+  }
+}
+
+async function synthesize(
+  endpoint: string,
+  authorizer: SpeechAuthorizer,
+  locale: SpeechLocale,
+  spokenText: string,
+): Promise<Uint8Array> {
+  const ssml = buildSpeechSsml(locale, spokenText);
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let response: Response;
+
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: await authorizer.getAuthorizationHeader(),
+          'Content-Type': 'application/ssml+xml',
+          'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm',
+          'User-Agent': 'sean-learning-adventure-speech-assets',
+        },
+        body: ssml,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      clearTimeout(timeout);
+      const retryable =
+        error instanceof TypeError
+        || (error instanceof Error && error.name === 'AbortError');
+      if (!retryable || attempt === MAX_ATTEMPTS - 1) {
+        throw error;
+      }
+      await delay(Math.min(500 * (2 ** attempt), 8_000));
+      continue;
+    }
+    clearTimeout(timeout);
+
+    if (response.ok) {
+      return new Uint8Array(await response.arrayBuffer());
+    }
+    if (transientStatuses.has(response.status) && attempt < MAX_ATTEMPTS - 1) {
+      await delay(retryDelay(response, attempt));
+      continue;
+    }
+
+    const requestId = response.headers.get('x-requestid') ?? 'unavailable';
+    throw new Error(
+      `Azure Speech synthesis failed with HTTP ${response.status} (${response.statusText}); request ID ${requestId}.`,
+    );
+  }
+
+  throw new Error('Azure Speech synthesis exhausted all retry attempts.');
+}
+
+async function mapWithConcurrency<T>(
+  items: readonly T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<void>,
+): Promise<void> {
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (nextIndex < items.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        await worker(items[index] as T, index);
+      }
+    },
+  );
+  await Promise.all(workers);
+}
+
+async function generateLocale(
   locale: SpeechLocale,
   entries: readonly RecordedSpeechCatalogEntry[],
   manifest: RecordedSpeechManifest,
-): void {
+  endpoint: string,
+  authorizer: SpeechAuthorizer,
+): Promise<void> {
   const tempDirectory = mkdtempSync(join(tmpdir(), `sean-speech-${locale}-`));
-  const silencePath = join(tempDirectory, 'silence.wav');
-  run('ffmpeg', [
-    '-loglevel', 'error',
-    '-y',
-    '-f', 'lavfi',
-    '-i', `anullsrc=r=${SAMPLE_RATE}:cl=mono`,
-    '-t', String(GAP_SECONDS),
-    '-c:a', 'pcm_s16le',
-    silencePath,
-  ]);
 
-  let offset = 0;
-  const concatPaths: string[] = [];
-  const voice = voices[locale];
-  entries.forEach((entry, index) => {
-    // Synthesize from the pointed pronunciation when present so `say` vowelizes
-    // Hebrew correctly, but key the manifest by the unpointed source text so the
-    // runtime lookup (which uses unpointed text) still resolves.
-    const spokenText = entry.spokenText ?? entry.text;
-    const prefix = String(index).padStart(3, '0');
-    const aiffPath = join(tempDirectory, `${prefix}.aiff`);
-    const wavPath = join(tempDirectory, `${prefix}.wav`);
-    run('say', ['-v', voice.name, '-r', String(voice.rate), '-o', aiffPath, spokenText]);
+  try {
+    const silencePath = join(tempDirectory, 'silence.wav');
     run('ffmpeg', [
       '-loglevel', 'error',
       '-y',
-      '-i', aiffPath,
-      '-ar', String(SAMPLE_RATE),
-      '-ac', '1',
+      '-f', 'lavfi',
+      '-i', `anullsrc=r=${SAMPLE_RATE}:cl=mono`,
+      '-t', String(GAP_SECONDS),
       '-c:a', 'pcm_s16le',
-      wavPath,
+      silencePath,
     ]);
 
-    const duration = durationOf(wavPath);
-    manifest.entries[manifestKey(locale, entry.text)] = {
-      src: `/speech/${locale}.mp3`,
-      offset: Number(offset.toFixed(6)),
-      duration: Number(duration.toFixed(6)),
-    };
-    offset += duration + GAP_SECONDS;
-    concatPaths.push(wavPath, silencePath);
-  });
+    const clips = new Array<GeneratedClip>(entries.length);
+    await mapWithConcurrency(
+      entries,
+      SYNTHESIS_CONCURRENCY,
+      async (entry, index) => {
+        const spokenText = entry.spokenText ?? entry.text;
+        const prefix = String(index).padStart(3, '0');
+        const responsePath = join(tempDirectory, `${prefix}-azure.wav`);
+        const normalizedPath = join(tempDirectory, `${prefix}.wav`);
+        const audio = await synthesize(endpoint, authorizer, locale, spokenText);
+        writeFileSync(responsePath, audio);
+        run('ffmpeg', [
+          '-loglevel', 'error',
+          '-y',
+          '-i', responsePath,
+          '-ar', String(SAMPLE_RATE),
+          '-ac', '1',
+          '-c:a', 'pcm_s16le',
+          normalizedPath,
+        ]);
+        const duration = verifyAudio(normalizedPath, 'pcm_s16le');
+        verifyAudible(normalizedPath);
+        clips[index] = { path: normalizedPath, duration };
+      },
+    );
 
-  const concatListPath = join(tempDirectory, 'concat.txt');
+    let offset = 0;
+    const concatPaths: string[] = [];
+    entries.forEach((entry, index) => {
+      const clip = clips[index];
+      if (!clip) {
+        throw new Error(`Missing synthesized clip ${locale} index ${index}.`);
+      }
+      manifest.entries[manifestKey(locale, entry.text)] = {
+        src: `/speech/${locale}.mp3`,
+        offset: Number(offset.toFixed(6)),
+        duration: Number((clip.duration + PLAYBACK_TAIL_SECONDS).toFixed(6)),
+      };
+      offset += clip.duration + GAP_SECONDS;
+      concatPaths.push(clip.path, silencePath);
+    });
+
+    const concatListPath = join(tempDirectory, 'concat.txt');
+    writeFileSync(
+      concatListPath,
+      concatPaths.map((path) => `file '${path.replaceAll("'", "'\\''")}'`).join('\n'),
+    );
+    const spritePath = join(outputDirectory, `${locale}.mp3`);
+    run('ffmpeg', [
+      '-loglevel', 'error',
+      '-y',
+      '-f', 'concat',
+      '-safe', '0',
+      '-i', concatListPath,
+      '-ar', String(SAMPLE_RATE),
+      '-ac', '1',
+      '-c:a', 'libmp3lame',
+      '-b:a', BIT_RATE,
+      spritePath,
+    ]);
+    const spriteDuration = verifyAudio(spritePath, 'mp3');
+    verifyAudible(spritePath);
+    if (spriteDuration < offset - 0.02) {
+      throw new Error(`Audio sprite is shorter than its manifest timeline: ${spritePath}`);
+    }
+  } finally {
+    rmSync(tempDirectory, { recursive: true, force: true });
+  }
+}
+
+async function main(): Promise<void> {
+  const { resourceId, region } = readSpeechEnvironment();
+  const endpoint = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+  const authorizer = new SpeechAuthorizer(resourceId);
+  const catalog = collectRecordedSpeechCatalog();
+  const grouped: Partial<Record<SpeechLocale, RecordedSpeechCatalogEntry[]>> = {};
+  for (const entry of catalog) {
+    (grouped[entry.locale] ??= []).push(entry);
+  }
+  const manifest: RecordedSpeechManifest = { version: 1, entries: {} };
+
+  mkdirSync(outputDirectory, { recursive: true });
+  for (const locale of Object.keys(NEURAL_VOICES) as SpeechLocale[]) {
+    const localeEntries = grouped[locale] ?? [];
+    console.log(
+      `Generating ${localeEntries.length} ${locale} clips with ${NEURAL_VOICES[locale].name}`,
+    );
+    await generateLocale(locale, localeEntries, manifest, endpoint, authorizer);
+  }
   writeFileSync(
-    concatListPath,
-    concatPaths.map((path) => `file '${path.replaceAll("'", "'\\''")}'`).join('\n'),
+    join(outputDirectory, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`,
   );
-  run('ffmpeg', [
-    '-loglevel', 'error',
-    '-y',
-    '-f', 'concat',
-    '-safe', '0',
-    '-i', concatListPath,
-    '-ar', String(SAMPLE_RATE),
-    '-ac', '1',
-    '-c:a', 'libmp3lame',
-    '-b:a', BIT_RATE,
-    join(outputDirectory, `${locale}.mp3`),
-  ]);
-  rmSync(tempDirectory, { recursive: true, force: true });
+  console.log(
+    `Generated ${catalog.length} clips across ${Object.keys(NEURAL_VOICES).length} audio sprites.`,
+  );
 }
 
-const catalog = collectRecordedSpeechCatalog();
-const grouped = Object.groupBy(catalog, (entry) => entry.locale);
-const manifest: RecordedSpeechManifest = { version: 1, entries: {} };
-
-mkdirSync(outputDirectory, { recursive: true });
-for (const locale of Object.keys(voices) as SpeechLocale[]) {
-  const localeEntries = grouped[locale] ?? [];
-  console.log(`Generating ${localeEntries.length} ${locale} clips with ${voices[locale].name}`);
-  generateLocale(locale, localeEntries, manifest);
-}
-writeFileSync(
-  join(outputDirectory, 'manifest.json'),
-  `${JSON.stringify(manifest, null, 2)}\n`,
-);
-console.log(`Generated ${catalog.length} clips across ${Object.keys(voices).length} audio sprites.`);
+await main();

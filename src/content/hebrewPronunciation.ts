@@ -3,7 +3,7 @@
  *
  * The visual UI text and the recorded-speech manifest keys stay UNPOINTED so the
  * runtime lookup keeps working exactly as before. Only the offline generator uses
- * the pointed `spokenText` below when it drives macOS `say`, guaranteeing correct
+ * the pointed `spokenText` below when it drives Azure neural speech, guaranteeing
  * pronunciation (shin/sin, gendered numbers, dagesh, definite gutturals) without
  * ever changing the base consonants of the source string.
  *
@@ -35,7 +35,7 @@ export const HEBREW_UNLOCK_PRIMER = {
 /**
  * Manually, context-aware niqqud for every unique Hebrew phrase in the catalog.
  * Keys are the exact unpointed source strings (never edit them); values are the
- * pointed forms fed to `say`.
+ * pointed forms fed to Azure neural text to speech.
  */
 export const HEBREW_PRONUNCIATIONS: Readonly<Record<string, string>> = {
   // Web Speech unlock primer.
@@ -208,11 +208,11 @@ export const HEBREW_PRONUNCIATIONS: Readonly<Record<string, string>> = {
   'ניסיון יפה, שון! בוא ננסה שוב.': 'נִיסָּיוֹן יָפֶה, שׁוֹן! בּוֹא נְנַסֶּה שׁוּב.',
   'שון, אהבתי שניסית. בוא ננסה שוב.': 'שׁוֹן, אָהַבְתִּי שֶׁנִּיסִיתָ. בּוֹא נְנַסֶּה שׁוּב.',
   'שון, אתה אלוף בלחפש. נמשיך יחד.': 'שׁוֹן, אַתָּה אַלּוּף בִּלְחַפֵּשׂ. נַמְשִׁיךְ יַחַד.',
-  'שון, אתה אלוף בלנסות. בוא ננסה שוב.': 'שׁוֹן, אַתָּה אַלּוּף בִּלְנַסּוֹת. בּוֹא נְנַסֶּה שׁוּב.',
+  'שון, אתה אלוף בלנסות. בוא ננסה שוב.': 'שׁוֹן, אַתָּה אַלּוּף בְּלְנַסּוֹת. בּוֹא נְנַסֶּה שׁוּב.',
   'שון, אתה אלוף בלנסות. ניקח רגע וננסה שוב.':
-    'שׁוֹן, אַתָּה אַלּוּף בִּלְנַסּוֹת. נִיקַּח רֶגַע וּנְנַסֶּה שׁוּב.',
+    'שׁוֹן, אַתָּה אַלּוּף בְּלְנַסּוֹת. נִיקַּח רֶגַע וּנְנַסֶּה שׁוּב.',
   'שון, אתה אלוף בלנסות. ננסה שוב ביחד.':
-    'שׁוֹן, אַתָּה אַלּוּף בִּלְנַסּוֹת. נְנַסֶּה שׁוּב בְּיַחַד.',
+    'שׁוֹן, אַתָּה אַלּוּף בְּלְנַסּוֹת. נְנַסֶּה שׁוּב בְּיַחַד.',
   'שון, אתה יכול. עוד ניסיון קטן.': 'שׁוֹן, אַתָּה יָכוֹל. עוֹד נִיסָּיוֹן קָטָן.',
   'שון, בוא נמשיך לחפש את הזוג.': 'שׁוֹן, בּוֹא נַמְשִׁיךְ לְחַפֵּשׂ אֶת הַזּוּג.',
   'שון, ביחד ובנחת, בוא ננסה שוב.': 'שׁוֹן, בְּיַחַד וּבְנַחַת, בּוֹא נְנַסֶּה שׁוּב.',
