@@ -97,6 +97,10 @@ class FakeSpeechSynthesis {
   speak = (utterance: FakeUtterance) => {
     this.speakCalls.push(utterance);
     this.events.push(`speak:${utterance.text}`);
+    const isContentful = utterance.text.replace(/[\s\u200B-\u200D\u2060\uFEFF]/gu, '').length > 0;
+    if (!isContentful) {
+      return;
+    }
     const isUnlockGreeting = utterance.text === 'שלום שון' || utterance.text === 'Hello Sean';
     if (!this.engineUnlocked && !this.userActivation) {
       if (this.blockedBehavior === 'pending') {
@@ -256,6 +260,8 @@ describe('SpeechService', () => {
     synthesis.runInUserActivation(() => {
       synthesis.events.push('unlock:start');
       lockedService.unlock(settings);
+      expect(synthesis.spoken[0]?.text).toBe('מצא את החתול');
+      expect(synthesis.spoken[0]?.text.trim().length).toBeGreaterThan(0);
       synthesis.events.push('unlock:end');
     });
 
@@ -267,6 +273,35 @@ describe('SpeechService', () => {
     expect(synthesis.events.at(0)).toBe('activation:start');
     expect(synthesis.events.at(-1)).toBe('activation:end');
 
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('models whitespace as eventless and unable to unlock WebKit speech', () => {
+    const lockedSynthesis = new FakeSpeechSynthesis([]);
+    lockedSynthesis.lockEngine();
+    const whitespace = new FakeUtterance('\u00a0');
+    const onstart = vi.fn();
+    const onend = vi.fn();
+    whitespace.onstart = onstart;
+    whitespace.onend = onend;
+
+    lockedSynthesis.runInUserActivation(() => lockedSynthesis.speak(whitespace));
+    lockedSynthesis.speak(new FakeUtterance('פרומפט מאוחר'));
+
+    expect(onstart).not.toHaveBeenCalled();
+    expect(onend).not.toHaveBeenCalled();
+    expect(lockedSynthesis.spoken).toHaveLength(0);
+  });
+
+  it('allows later speech outside the gesture after a real primer unlocks WebKit', async () => {
+    synthesis.lockEngine();
+    const lockedService = new SpeechService();
+
+    synthesis.runInUserActivation(() => lockedService.unlock(settings));
+    const done = lockedService.speakSegments([{ text: 'פרומפט מאוחר', locale: 'he-IL' }], settings);
+
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['פרומפט מאוחר']);
     synthesis.finishCurrent();
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
@@ -309,6 +344,39 @@ describe('SpeechService', () => {
     expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['המשך המשחק']);
 
     synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('uses a primer liveness fallback without marking the primer ready', async () => {
+    synthesis.lockEngine();
+    synthesis.stallUnlockGreeting = 'pending';
+    const lockedService = new SpeechService();
+
+    synthesis.runInUserActivation(() => lockedService.unlock(settings));
+    await vi.advanceTimersByTimeAsync(350);
+    const done = lockedService.speakSegments([{ text: 'המשך המשחק', locale: 'he-IL' }], settings);
+    await flush();
+
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['המשך המשחק']);
+    synthesis.finishCurrent();
+    synthesis.cancel();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('continues an already queued prompt when the primer fallback elapses', async () => {
+    synthesis.lockEngine();
+    synthesis.stallUnlockGreeting = 'pending';
+    const lockedService = new SpeechService();
+
+    synthesis.runInUserActivation(() => lockedService.unlock(settings));
+    const done = lockedService.speakSegments([{ text: 'מצא את הכלב', locale: 'he-IL' }], settings);
+    expect(synthesis.spoken).toHaveLength(0);
+
+    await vi.advanceTimersByTimeAsync(350);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['מצא את הכלב']);
+
+    synthesis.finishCurrent();
+    synthesis.cancel();
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
@@ -432,6 +500,16 @@ describe('SpeechService', () => {
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
+  it('settles a silently dropped utterance instead of freezing the queue forever', async () => {
+    synthesis.lockEngine('drop');
+    const done = service.speakSegments([{ text: 'פרומפט שנזרק', locale: 'he-IL' }], settings);
+
+    await vi.advanceTimersByTimeAsync(4_000);
+
+    await expect(done).resolves.toMatchObject({ status: 'timed-out' });
+    expect(service.getStatus().activeRequestId).toBeNull();
+  });
+
   it('skips whitespace and zero-width segments without calling speak', async () => {
     const callCount = synthesis.speakCalls.length;
     const result = await service.speakSegments(
@@ -504,6 +582,28 @@ describe('SpeechService', () => {
     expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['כלב', 'כל הכבוד, שון!']);
     expect(synthesis.cancelCount).toBe(0);
 
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('preserves bilingual segment order without overlap', async () => {
+    const done = service.speakSegments(
+      [
+        { text: 'כלב', locale: 'he-IL' },
+        { text: 'dog', locale: 'en-US' },
+      ],
+      settings,
+    );
+
+    expect(synthesis.spoken.map(({ text, lang }) => ({ text, lang }))).toEqual([
+      { text: 'כלב', lang: 'he-IL' },
+    ]);
+    synthesis.finishCurrent();
+    await flush();
+    expect(synthesis.spoken.map(({ text, lang }) => ({ text, lang }))).toEqual([
+      { text: 'כלב', lang: 'he-IL' },
+      { text: 'dog', lang: 'en-US' },
+    ]);
     synthesis.finishCurrent();
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });

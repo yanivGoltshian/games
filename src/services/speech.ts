@@ -70,6 +70,8 @@ const PREFERRED_VOICE_NAMES: Record<SpeechLocale, readonly string[]> = {
 };
 
 const UTTERANCE_GUARD_BASE_MS = 8_000;
+const UTTERANCE_PRESTART_GUARD_MS = 4_000;
+const PRIMER_PRESTART_FALLBACK_MS = 350;
 const CONTENTLESS_SPEECH_CHARACTERS = /[\s\u200B-\u200D\u2060\uFEFF]/gu;
 
 function hasSpokenContent(text: string): boolean {
@@ -129,6 +131,8 @@ export class SpeechService {
   private activationState: SpeechActivationState = 'locked';
   private activationAttempt = 0;
   private cancelPrimerCurrent: (() => void) | null = null;
+  private primerPrestartGuard: number | null = null;
+  private primerFallbackElapsed = false;
   private primerSpeaking = false;
   private primerGuard: number | null = null;
   private primerTerminalMissing = false;
@@ -213,6 +217,8 @@ export class SpeechService {
       window.clearTimeout(this.primerGuard);
       this.primerGuard = null;
     }
+    this.clearPrimerPrestartGuard();
+    this.primerFallbackElapsed = false;
     this.primerSpeaking = false;
     this.primerTerminalMissing = false;
     if (cancelStartedPrimer) {
@@ -221,6 +227,13 @@ export class SpeechService {
     this.gestureActivationAvailable = false;
     this.handoffSource = null;
     this.activationState = 'locked';
+  }
+
+  private clearPrimerPrestartGuard(): void {
+    if (this.primerPrestartGuard !== null) {
+      window.clearTimeout(this.primerPrestartGuard);
+      this.primerPrestartGuard = null;
+    }
   }
 
   private createUtterance(segment: SpeechSegment, settings: ToddlerSettings): SpeechSynthesisUtterance {
@@ -253,6 +266,8 @@ export class SpeechService {
         return;
       }
       this.activationAttempt += 1;
+      this.clearPrimerPrestartGuard();
+      this.primerFallbackElapsed = false;
       this.cancelPrimerCurrent = null;
       this.activationState = 'locked';
       synthesis.cancel();
@@ -264,6 +279,8 @@ export class SpeechService {
         return;
       }
       started = true;
+      this.clearPrimerPrestartGuard();
+      this.primerFallbackElapsed = false;
       this.primerSpeaking = true;
       this.primerTerminalMissing = false;
       clearCancelPrimer();
@@ -301,6 +318,8 @@ export class SpeechService {
         return;
       }
       clearPrimerGuard();
+      this.clearPrimerPrestartGuard();
+      this.primerFallbackElapsed = false;
       this.primerSpeaking = false;
       this.primerTerminalMissing = false;
       if (started) {
@@ -316,6 +335,8 @@ export class SpeechService {
         return;
       }
       clearPrimerGuard();
+      this.clearPrimerPrestartGuard();
+      this.primerFallbackElapsed = false;
       this.primerSpeaking = false;
       this.primerTerminalMissing = false;
       if (started) {
@@ -332,12 +353,28 @@ export class SpeechService {
     } catch {
       if (attempt === this.activationAttempt) {
         clearPrimerGuard();
+        this.clearPrimerPrestartGuard();
+        this.primerFallbackElapsed = false;
         this.primerSpeaking = false;
         this.primerTerminalMissing = false;
         clearCancelPrimer();
         this.activationState = 'locked';
         this.notify();
       }
+      return;
+    }
+
+    if (attempt === this.activationAttempt && !started && this.activationState === 'priming') {
+      // The contentful speak call already ran inside activation. This fallback
+      // advances liveness without claiming readiness; only a later onstart can.
+      this.primerPrestartGuard = window.setTimeout(() => {
+        if (attempt !== this.activationAttempt || started || this.activationState !== 'priming') {
+          return;
+        }
+        this.primerPrestartGuard = null;
+        this.primerFallbackElapsed = true;
+        void this.processQueue();
+      }, PRIMER_PRESTART_FALLBACK_MS);
     }
   }
 
@@ -396,6 +433,15 @@ export class SpeechService {
     const synthesis = window.speechSynthesis;
     synthesis.resume();
 
+    if (this.primerFallbackElapsed) {
+      if (this.startQueuedRequestAfterPrimerFallback()) {
+        this.markGestureActivation();
+        return;
+      }
+      this.markGestureActivation();
+      return;
+    }
+
     if (this.primerTerminalMissing) {
       this.primerTerminalMissing = false;
       this.activationAttempt += 1;
@@ -429,7 +475,7 @@ export class SpeechService {
       synthesis.cancel();
     }
 
-    if (this.startQueuedRequestFromGesture()) {
+    if (this.startQueuedRequestImmediately()) {
       this.markGestureActivation();
       return;
     }
@@ -585,12 +631,23 @@ export class SpeechService {
     let settled = false;
     let attempt = 0;
     let started = false;
-    let guard: number | null = null;
-    const clearGuard = (): void => {
-      if (guard !== null) {
-        window.clearTimeout(guard);
-        guard = null;
+    let prestartGuard: number | null = null;
+    let terminalGuard: number | null = null;
+    const clearPrestartGuard = (): void => {
+      if (prestartGuard !== null) {
+        window.clearTimeout(prestartGuard);
+        prestartGuard = null;
       }
+    };
+    const clearTerminalGuard = (): void => {
+      if (terminalGuard !== null) {
+        window.clearTimeout(terminalGuard);
+        terminalGuard = null;
+      }
+    };
+    const clearGuards = (): void => {
+      clearPrestartGuard();
+      clearTerminalGuard();
     };
     const finish = (status: SpeechResultStatus): void => {
       if (settled) {
@@ -598,7 +655,7 @@ export class SpeechService {
       }
       settled = true;
       attempt += 1;
-      clearGuard();
+      clearGuards();
       request.cancelCurrent = null;
       request.retryCurrent = null;
       if (this.activeCue === segment.cue) {
@@ -622,14 +679,14 @@ export class SpeechService {
       const synthesis = window.speechSynthesis;
       const currentAttempt = ++attempt;
       started = false;
-      clearGuard();
+      clearGuards();
 
       const utterance = this.createUtterance(segment, request.settings);
       const isCurrentAttempt = (): boolean => !settled && attempt === currentAttempt;
       request.cancelCurrent = () => {
         request.retryCurrent = null;
         attempt += 1;
-        clearGuard();
+        clearGuards();
         synthesis.cancel();
         finish(request.cancelledAs ?? 'cancelled');
       };
@@ -640,7 +697,7 @@ export class SpeechService {
 
         synthesis.resume();
         attempt += 1;
-        clearGuard();
+        clearGuards();
         if (synthesis.speaking || synthesis.pending) {
           synthesis.cancel();
         }
@@ -651,6 +708,7 @@ export class SpeechService {
           return;
         }
         started = true;
+        clearPrestartGuard();
         request.retryCurrent = null;
         onStart?.();
         this.activeCue = segment.cue ?? null;
@@ -677,8 +735,18 @@ export class SpeechService {
       }
 
       if (!settled) {
+        if (!started) {
+          prestartGuard = window.setTimeout(() => {
+            if (!isCurrentAttempt() || started) {
+              return;
+            }
+            // Do not cancel: WebKit may have started audible speech without
+            // delivering onstart. Settling prevents a permanently stuck queue.
+            finish('timed-out');
+          }, UTTERANCE_PRESTART_GUARD_MS);
+        }
         const guardMs = Math.max(UTTERANCE_GUARD_BASE_MS, segment.text.length * 450);
-        guard = window.setTimeout(() => {
+        terminalGuard = window.setTimeout(() => {
           if (!isCurrentAttempt() || !started) {
             return;
           }
@@ -765,7 +833,7 @@ export class SpeechService {
     return 'completed';
   }
 
-  private startQueuedRequestFromGesture(replaceActive = false): boolean {
+  private startQueuedRequestImmediately(replaceActive = false): boolean {
     if ((!replaceActive && this.processing) || this.queue.length === 0) {
       return false;
     }
@@ -789,6 +857,21 @@ export class SpeechService {
     return true;
   }
 
+  private startQueuedRequestAfterPrimerFallback(): boolean {
+    if (
+      !this.primerFallbackElapsed
+      || this.processing
+      || this.activationState !== 'priming'
+      || this.queue.length === 0
+    ) {
+      return false;
+    }
+
+    this.primerFallbackElapsed = false;
+    this.cancelPrimerCurrent = null;
+    return this.startQueuedRequestImmediately();
+  }
+
   private tryHandoffQueuedRequestFromGesture(): boolean {
     const source = this.handoffSource;
     if (
@@ -801,7 +884,7 @@ export class SpeechService {
     }
 
     this.handoffSource = null;
-    return this.startQueuedRequestFromGesture(true);
+    return this.startQueuedRequestImmediately(true);
   }
 
   private async finishRequest(
@@ -830,6 +913,9 @@ export class SpeechService {
   }
 
   private processQueue(): void {
+    if (this.startQueuedRequestAfterPrimerFallback()) {
+      return;
+    }
     if (
       this.processing
       || this.primerSpeaking
