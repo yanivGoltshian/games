@@ -4,7 +4,7 @@ import type { RetryLocale } from './retry';
 export const SUPPORTED_COUNTING_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 export type SupportedCountingCount = (typeof SUPPORTED_COUNTING_COUNTS)[number];
-export type CountingConceptId = 'apple' | 'ball' | 'banana' | 'flower' | 'sun' | 'cup';
+export type CountingConceptId = 'apple' | 'ball' | 'banana';
 export type HebrewGrammaticalGender = 'masculine' | 'feminine';
 
 interface CountingConceptQuantityMeta {
@@ -92,18 +92,6 @@ export const COUNTING_CONCEPT_QUANTITY_META: Record<CountingConceptId, CountingC
     he: { singular: 'בננה', plural: 'בננות', gender: 'feminine' },
     en: { singular: 'banana', plural: 'bananas' },
   },
-  flower: {
-    he: { singular: 'פרח', plural: 'פרחים', gender: 'masculine' },
-    en: { singular: 'flower', plural: 'flowers' },
-  },
-  sun: {
-    he: { singular: 'שמש', plural: 'שמשות', gender: 'feminine' },
-    en: { singular: 'sun', plural: 'suns' },
-  },
-  cup: {
-    he: { singular: 'כוס', plural: 'כוסות', gender: 'feminine' },
-    en: { singular: 'cup', plural: 'cups' },
-  },
 };
 
 function toSupportedCountingCount(count: number): SupportedCountingCount {
@@ -150,9 +138,6 @@ export const COUNTING_QUANTITY_FORMS: Record<CountingConceptId, CountingQuantity
   apple: createQuantityFormSet('apple'),
   ball: createQuantityFormSet('ball'),
   banana: createQuantityFormSet('banana'),
-  flower: createQuantityFormSet('flower'),
-  sun: createQuantityFormSet('sun'),
-  cup: createQuantityFormSet('cup'),
 };
 
 export const SUPPORTED_COUNTING_CONCEPT_IDS = Object.keys(

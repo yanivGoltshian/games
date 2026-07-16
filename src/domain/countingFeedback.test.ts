@@ -16,23 +16,23 @@ describe('counting miss modeling', () => {
   });
 
   it('makes the quantity explicit after subsequent misses', () => {
-    const second = buildCountingMissModel('cup', 1, 2);
+    const second = buildCountingMissModel('banana', 1, 2);
     expect(second.variant).toBe('subsequent-miss');
     expect(second.lines).toEqual([
       {
-        he: 'יש כאן כוס אחת.',
-        en: 'There is one cup.',
+        he: 'יש כאן בננה אחת.',
+        en: 'There is one banana.',
         pauseAfterMs: 220,
         cue: 'count-answer:1',
       },
     ]);
     expect(second.attemptState.band).toBe('second-miss');
 
-    const repeated = buildCountingMissModel('sun', 5, 4);
+    const repeated = buildCountingMissModel('apple', 5, 4);
     expect(repeated.attemptState.tier).toBe('repeated-effort');
     expect(repeated.lines[0]).toMatchObject({
-      he: 'יש כאן חמש שמשות.',
-      en: 'There are five suns.',
+      he: 'יש כאן חמישה תפוחים.',
+      en: 'There are five apples.',
       cue: 'count-answer:5',
     });
   });

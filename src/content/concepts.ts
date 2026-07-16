@@ -1,8 +1,8 @@
 import type { LearningConcept, PuzzleScene, SortingItemDefinition } from '../domain/types';
 
 /**
- * Stable concept ids double as art-library lookup keys (see src/art/objects.tsx)
- * so content, speech, progression, and illustration all reference the same
+ * Stable concept ids double as photo-library lookup keys (see src/art/objects.tsx)
+ * so content, speech, progression, and imagery all reference the same
  * identity. Do not rename an id without checking domain/rounds.ts, progression
  * history shape, and the art registry.
  */
@@ -11,20 +11,12 @@ export const learningConcepts: LearningConcept[] = [
   { id: 'car', category: 'object', he: 'אוטו', en: 'car', audio: {} },
   { id: 'banana', category: 'object', he: 'בננה', en: 'banana', audio: {} },
   { id: 'apple', category: 'object', he: 'תפוח', en: 'apple', audio: {} },
-  { id: 'book', category: 'object', he: 'ספר', en: 'book', audio: {} },
-  { id: 'cup', category: 'object', he: 'כוס', en: 'cup', audio: {} },
   { id: 'shoe', category: 'object', he: 'נעל', en: 'shoe', audio: {} },
-  { id: 'sun', category: 'object', he: 'שמש', en: 'sun', audio: {} },
-  { id: 'flower', category: 'object', he: 'פרח', en: 'flower', audio: {} },
   { id: 'dog', category: 'animal', he: 'כלב', en: 'dog', audio: {} },
   { id: 'cat', category: 'animal', he: 'חתול', en: 'cat', audio: {} },
-  { id: 'duck', category: 'animal', he: 'ברווז', en: 'duck', audio: {} },
-  { id: 'fish', category: 'animal', he: 'דג', en: 'fish', audio: {} },
-  { id: 'bird', category: 'animal', he: 'ציפור', en: 'bird', audio: {} },
-  { id: 'bear', category: 'animal', he: 'דובי', en: 'bear', audio: {} },
 ];
 
-export const countingConceptIds = ['apple', 'ball', 'banana', 'flower', 'sun', 'cup'];
+export const countingConceptIds = ['apple', 'ball', 'banana'];
 
 export const sortingItems: SortingItemDefinition[] = [
   { id: 'red-circle', colorId: 'red', shapeId: 'circle', he: 'עיגול אדום', en: 'red circle' },
@@ -42,8 +34,8 @@ export const sortingItems: SortingItemDefinition[] = [
 ];
 
 export const puzzleScenes: PuzzleScene[] = [
-  { id: 'fishy', titleHe: 'דג', titleEn: 'fish' },
-  { id: 'sunny', titleHe: 'שמש', titleEn: 'sun' },
-  { id: 'teddy', titleHe: 'דובי', titleEn: 'teddy' },
-  { id: 'flower', titleHe: 'פרח', titleEn: 'flower' },
+  { id: 'dog', titleHe: 'כלב', titleEn: 'dog' },
+  { id: 'cat', titleHe: 'חתול', titleEn: 'cat' },
+  { id: 'car', titleHe: 'אוטו', titleEn: 'car' },
+  { id: 'apple', titleHe: 'תפוח', titleEn: 'apple' },
 ];

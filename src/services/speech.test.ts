@@ -141,7 +141,7 @@ describe('SpeechService', () => {
     const unsubscribe = service.subscribe((status) => cues.push(status.activeCue));
     const done = service.speakRetrySequence(
       [{ text: 'אחת', locale: 'he-IL', cue: 'count-item:0' }],
-      [{ text: 'כמעט, שון. נסה שוב.', locale: 'he-IL' }],
+      [{ text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.', locale: 'he-IL' }],
       settings,
       { scope: 'game:counting', key: 'retry' },
     );
@@ -155,7 +155,7 @@ describe('SpeechService', () => {
     await flush();
     expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual([
       'אחת',
-      'כמעט, שון. נסה שוב.',
+      'שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.',
     ]);
     expect(cues.at(-1)).toBeNull();
 

@@ -10,7 +10,7 @@ import {
 
 describe('counting quantity wording', () => {
   it('covers exactly the current counting concepts', () => {
-    expect(SUPPORTED_COUNTING_CONCEPT_IDS).toEqual(['apple', 'ball', 'banana', 'flower', 'sun', 'cup']);
+    expect(SUPPORTED_COUNTING_CONCEPT_IDS).toEqual(['apple', 'ball', 'banana']);
     expect(countingConceptQuantityCoverage()).toEqual(SUPPORTED_COUNTING_CONCEPT_IDS);
   });
 
@@ -52,42 +52,6 @@ describe('counting quantity wording', () => {
         9: { he: 'תשע בננות', en: 'nine bananas' },
         10: { he: 'עשר בננות', en: 'ten bananas' },
       },
-      flower: {
-        1: { he: 'פרח אחד', en: 'one flower' },
-        2: { he: 'שני פרחים', en: 'two flowers' },
-        3: { he: 'שלושה פרחים', en: 'three flowers' },
-        4: { he: 'ארבעה פרחים', en: 'four flowers' },
-        5: { he: 'חמישה פרחים', en: 'five flowers' },
-        6: { he: 'שישה פרחים', en: 'six flowers' },
-        7: { he: 'שבעה פרחים', en: 'seven flowers' },
-        8: { he: 'שמונה פרחים', en: 'eight flowers' },
-        9: { he: 'תשעה פרחים', en: 'nine flowers' },
-        10: { he: 'עשרה פרחים', en: 'ten flowers' },
-      },
-      sun: {
-        1: { he: 'שמש אחת', en: 'one sun' },
-        2: { he: 'שתי שמשות', en: 'two suns' },
-        3: { he: 'שלוש שמשות', en: 'three suns' },
-        4: { he: 'ארבע שמשות', en: 'four suns' },
-        5: { he: 'חמש שמשות', en: 'five suns' },
-        6: { he: 'שש שמשות', en: 'six suns' },
-        7: { he: 'שבע שמשות', en: 'seven suns' },
-        8: { he: 'שמונה שמשות', en: 'eight suns' },
-        9: { he: 'תשע שמשות', en: 'nine suns' },
-        10: { he: 'עשר שמשות', en: 'ten suns' },
-      },
-      cup: {
-        1: { he: 'כוס אחת', en: 'one cup' },
-        2: { he: 'שתי כוסות', en: 'two cups' },
-        3: { he: 'שלוש כוסות', en: 'three cups' },
-        4: { he: 'ארבע כוסות', en: 'four cups' },
-        5: { he: 'חמש כוסות', en: 'five cups' },
-        6: { he: 'שש כוסות', en: 'six cups' },
-        7: { he: 'שבע כוסות', en: 'seven cups' },
-        8: { he: 'שמונה כוסות', en: 'eight cups' },
-        9: { he: 'תשע כוסות', en: 'nine cups' },
-        10: { he: 'עשר כוסות', en: 'ten cups' },
-      },
     } as const;
 
     for (const conceptId of SUPPORTED_COUNTING_CONCEPT_IDS) {
@@ -126,7 +90,7 @@ describe('counting quantity wording', () => {
     ]);
     expect(getCountingQuantityPhrase('en', 'apple', 1)).toBe('one apple');
     expect(getCountingQuantityPhrase('en', 'apple', 2)).toBe('two apples');
-    expect(getCountingQuantityPhrase('en', 'cup', 1)).toBe('one cup');
-    expect(getCountingQuantityPhrase('en', 'cup', 6)).toBe('six cups');
+    expect(getCountingQuantityPhrase('en', 'banana', 1)).toBe('one banana');
+    expect(getCountingQuantityPhrase('en', 'banana', 6)).toBe('six bananas');
   });
 });

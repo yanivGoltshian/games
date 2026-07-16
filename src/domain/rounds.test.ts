@@ -1,9 +1,27 @@
 import { describe, expect, it } from 'vitest';
+import { REALISTIC_CONCEPT_IDS } from '../art/conceptAssets';
 import { learningConcepts } from '../content/concepts';
 import { createInitialDomainProgress } from './progression';
 import { generateCountingRound, generateListeningRound, generateMemoryRound, generatePuzzleRound, generateSortingRound } from './rounds';
 
 describe('round generation', () => {
+  it('limits every generated vocabulary concept to a licensed realistic asset', () => {
+    const assetIds = new Set(REALISTIC_CONCEPT_IDS);
+    const levels = [1, 2, 3] as const;
+    expect(learningConcepts.every((concept) => assetIds.has(concept.id as (typeof REALISTIC_CONCEPT_IDS)[number]))).toBe(true);
+
+    for (let index = 0; index < 50; index += 1) {
+      const domain = createInitialDomainProgress();
+      domain.level = levels[index % levels.length]!;
+      const listening = generateListeningRound(domain, `art-listening-${index}`);
+      const counting = generateCountingRound(domain, `art-counting-${index}`);
+      const memory = generateMemoryRound(domain, `art-memory-${index}`);
+      const puzzle = generatePuzzleRound(domain, `art-puzzle-${index}`);
+      expect([listening.targetId, ...listening.optionIds, counting.countingConceptId, ...memory.pairConceptIds, puzzle.scene.id]
+        .every((conceptId) => assetIds.has(conceptId as (typeof REALISTIC_CONCEPT_IDS)[number]))).toBe(true);
+    }
+  });
+
   it('is deterministic for the same listening seed', () => {
     const domain = createInitialDomainProgress();
     const first = generateListeningRound(domain, 'same-seed');

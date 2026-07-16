@@ -265,9 +265,9 @@ option {
 
 .concept-photo {
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
-  border-radius: 28%;
+  border-radius: 22%;
   box-shadow:
     0 16px 28px oklch(32% 0.04 240 / 0.2),
     inset 0 0 0 1px oklch(100% 0 0 / 0.65);
@@ -275,7 +275,7 @@ option {
 }
 
 .counting-cloud__art.concept-photo {
-  border-radius: 50%;
+  border-radius: 22%;
 }
 
 .rail-button--replay.is-speaking {
@@ -456,7 +456,7 @@ option {
 
 .counting-cloud {
   --count-columns: 1;
-  --count-item-size: clamp(128px, 30vmin, 270px);
+  --count-item-size: clamp(128px, 32vmin, 280px);
   display: grid;
   grid-template-columns: repeat(var(--count-columns), var(--count-item-size));
   grid-auto-rows: var(--count-item-size);
@@ -470,11 +470,22 @@ option {
 }
 
 .counting-cloud--single {
-  --count-item-size: clamp(138px, 30vmin, 270px);
+  --count-item-size: min(52vmin, 48dvh, 360px);
 }
 
-.counting-cloud--early {
-  --count-item-size: clamp(92px, 24vmin, 220px);
+.counting-cloud--early[data-count="2"] {
+  --count-item-size: min(39vmin, 36dvh, 300px);
+}
+
+.counting-cloud--early[data-count="3"] {
+  --count-item-size: min(31vmin, 32dvh, 260px);
+  grid-template-columns: repeat(3, minmax(0, var(--count-item-size)));
+  grid-auto-rows: auto;
+}
+
+.counting-cloud--early[data-count="3"] .counting-cloud__item {
+  width: 100%;
+  height: auto;
 }
 
 .counting-cloud--middle {

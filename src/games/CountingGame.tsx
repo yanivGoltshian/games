@@ -121,6 +121,7 @@ export function CountingGame({ domainProgress, settings, mediaReady, speechStatu
     >
       <div
         className={`counting-cloud counting-cloud--${layout.density}`}
+        data-count={round.targetCount}
         style={{ '--count-columns': layout.columns } as CSSProperties}
         aria-label={
           englishOnly

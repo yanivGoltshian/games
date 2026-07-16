@@ -1,4 +1,5 @@
 export * from './a11y';
+export * from './conceptAssets';
 export * from './objects';
 export * from './shapes';
 export * from './portals';

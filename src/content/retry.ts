@@ -11,47 +11,60 @@ export interface RetryLine {
 
 export const RETRY_HE_STANDARD: RetryLine[] = [
   { id: 'retry-he-standard-01', text: 'כמעט, שון. נסה שוב.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-02', text: 'ניסיון יפה! בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
   { id: 'retry-he-standard-03', text: 'שון, אתה יכול. עוד ניסיון קטן.', scope: 'generic', tier: 'standard' },
   { id: 'retry-he-standard-04', text: 'יופי שניסית, חמודי. נסה שוב.', scope: 'generic', tier: 'standard' },
   { id: 'retry-he-standard-05', text: 'שון, אתה אלוף בלנסות. בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-06', text: 'נסה שוב, חמודי. אני איתך.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. ננסה שוב ביחד.', scope: 'generic', tier: 'standard' },
 ];
 
 export const RETRY_EN_STANDARD: RetryLine[] = [
   { id: 'retry-en-standard-01', text: 'Nice try, Sean. Try again.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-02', text: "Good thinking. Let's try again.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-02', text: "Good thinking, Sean. Let's try again.", scope: 'generic', tier: 'standard' },
   { id: 'retry-en-standard-03', text: 'You can do it, Sean. One more try.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-04', text: 'Almost! Try again.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-04', text: 'Almost, Sean! Try again.', scope: 'generic', tier: 'standard' },
   { id: 'retry-en-standard-05', text: "Great trying, Sean. Let's try again.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-06', text: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-07', text: "Sean, I love how you tried. Let's try again.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-08', text: "Sean, you're a champion at trying. Let's try together.", scope: 'generic', tier: 'standard' },
 ];
 
 export const RETRY_HE_REPEATED: RetryLine[] = [
   { id: 'retry-he-repeated-01', text: 'שון, אתה אלוף בלנסות. ניקח רגע וננסה שוב.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-02', text: 'יופי שניסית, חמודי. עוד ניסיון קטן.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-03', text: 'ביחד ובנחת, בוא ננסה שוב.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-02', text: 'שון, יופי שניסית, חמודי. עוד ניסיון קטן.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-03', text: 'שון, ביחד ובנחת, בוא ננסה שוב.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-04', text: 'שון, אתה אלוף בלנסות. ננסה שוב ביחד.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-05', text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.', scope: 'generic', tier: 'repeated-effort' },
 ];
 
 export const RETRY_EN_REPEATED: RetryLine[] = [
   { id: 'retry-en-repeated-01', text: "Sean, you're great at trying. Let's pause and try again.", scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-en-repeated-02', text: 'Great trying, Sean. One more small try.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-en-repeated-03', text: "Together and gently, let's try again.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-02', text: 'Sean, great trying. One more small try.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-03', text: "Sean, together and gently, let's try again.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-04', text: "Sean, you're a champion at trying. Let's try together.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-05', text: "Sean, every try helps us learn. Let's try again.", scope: 'generic', tier: 'repeated-effort' },
 ];
 
 export const RETRY_HE_MEMORY_STANDARD: RetryLine[] = [
   { id: 'retry-he-memory-standard-01', text: 'נמשיך לחפש את הזוג.', scope: 'memory-search', tier: 'standard' },
   { id: 'retry-he-memory-standard-02', text: 'בוא נחפש איפה הזוג מתחבא.', scope: 'memory-search', tier: 'standard' },
   { id: 'retry-he-memory-standard-03', text: 'נחפש יחד את הזוג.', scope: 'memory-search', tier: 'standard' },
+  { id: 'retry-he-memory-standard-04', text: 'שון, בוא נמשיך לחפש את הזוג.', scope: 'memory-search', tier: 'standard' },
 ];
 
 export const RETRY_EN_MEMORY_STANDARD: RetryLine[] = [
   { id: 'retry-en-memory-standard-01', text: "Let's keep looking for the pair.", scope: 'memory-search', tier: 'standard' },
   { id: 'retry-en-memory-standard-02', text: "Let's find where the pair is hiding.", scope: 'memory-search', tier: 'standard' },
   { id: 'retry-en-memory-standard-03', text: "Let's look for the pair together.", scope: 'memory-search', tier: 'standard' },
+  { id: 'retry-en-memory-standard-04', text: "Sean, let's keep looking for the pair.", scope: 'memory-search', tier: 'standard' },
 ];
 
 export const RETRY_HE_MEMORY_REPEATED: RetryLine[] = [
   { id: 'retry-he-memory-repeated-01', text: 'יופי שהמשכת לחפש. ננסה עוד זוג.', scope: 'memory-search', tier: 'repeated-effort' },
   { id: 'retry-he-memory-repeated-02', text: 'ביחד ובנחת, נמשיך לחפש.', scope: 'memory-search', tier: 'repeated-effort' },
+  { id: 'retry-he-memory-repeated-03', text: 'שון, אתה אלוף בלחפש. נמשיך יחד.', scope: 'memory-search', tier: 'repeated-effort' },
 ];
 
 export const RETRY_EN_MEMORY_REPEATED: RetryLine[] = [
@@ -64,6 +77,12 @@ export const RETRY_EN_MEMORY_REPEATED: RetryLine[] = [
   {
     id: 'retry-en-memory-repeated-02',
     text: "Together and gently, let's keep looking.",
+    scope: 'memory-search',
+    tier: 'repeated-effort',
+  },
+  {
+    id: 'retry-en-memory-repeated-03',
+    text: "Sean, you're great at searching. Let's keep looking together.",
     scope: 'memory-search',
     tier: 'repeated-effort',
   },

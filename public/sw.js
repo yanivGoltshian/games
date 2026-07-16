@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v6';
+const CACHE_NAME = 'sean-learning-adventure-v7';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -8,9 +8,12 @@ const APP_SHELL = [
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
   '/assets/vocabulary/apple.webp',
-  '/assets/vocabulary/duck.webp',
-  '/assets/vocabulary/bird.webp',
-  '/assets/vocabulary/sun.webp',
+  '/assets/vocabulary/ball.webp',
+  '/assets/vocabulary/banana.webp',
+  '/assets/vocabulary/car.webp',
+  '/assets/vocabulary/cat.webp',
+  '/assets/vocabulary/dog.webp',
+  '/assets/vocabulary/shoe.webp',
 ];
 
 self.addEventListener('install', (event) => {

@@ -17,14 +17,14 @@ export const NUMBER_WORDS_HE = ['אפס', 'אחת', 'שתיים', 'שלוש', '�
 export const NUMBER_WORDS_EN = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 
 const listeningStages: string[][] = [
-  ['ball', 'car', 'banana', 'dog', 'cat', 'duck'],
-  ['ball', 'car', 'banana', 'dog', 'cat', 'duck', 'fish', 'cup', 'book', 'sun'],
+  ['ball', 'car', 'banana', 'dog', 'cat', 'apple'],
+  ['ball', 'car', 'banana', 'dog', 'cat', 'apple', 'shoe'],
   learningConcepts.map((concept) => concept.id),
 ];
 
 const memoryStages: string[][] = [
-  ['ball', 'car', 'banana', 'dog', 'cat', 'duck'],
-  ['ball', 'car', 'banana', 'dog', 'cat', 'duck', 'fish', 'cup', 'book', 'sun'],
+  ['ball', 'car', 'banana', 'dog', 'cat', 'apple'],
+  ['ball', 'car', 'banana', 'dog', 'cat', 'apple', 'shoe'],
   learningConcepts.map((concept) => concept.id),
 ];
 
