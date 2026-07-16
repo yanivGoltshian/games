@@ -1,4 +1,3 @@
-import { AzureCliCredential } from '@azure/identity';
 import type { AccessToken } from '@azure/identity';
 import { spawnSync } from 'node:child_process';
 import {
@@ -17,6 +16,7 @@ import {
   NEURAL_VOICES,
   readSpeechEnvironment,
 } from './speechSsml.js';
+import { SpeechTokenProvider } from './speechAuthorization.js';
 
 const SAMPLE_RATE = 24_000;
 const BIT_RATE = '64k';
@@ -25,7 +25,6 @@ const PLAYBACK_TAIL_SECONDS = 0.06;
 const SYNTHESIS_CONCURRENCY = 4;
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 5;
-const TOKEN_SCOPE = 'https://cognitiveservices.azure.com/.default';
 const outputDirectory = resolve('public/speech');
 const transientStatuses = new Set([408, 429, 500, 502, 503, 504]);
 
@@ -131,19 +130,13 @@ function retryDelay(response: Response, attempt: number): number {
 }
 
 class SpeechAuthorizer {
-  private readonly credential = new AzureCliCredential();
+  private readonly tokenProvider = new SpeechTokenProvider();
   private token: AccessToken | undefined;
 
   constructor(private readonly resourceId: string) {}
 
   async getAuthorizationHeader(): Promise<string> {
-    if (!this.token || this.token.expiresOnTimestamp < Date.now() + 5 * 60_000) {
-      const token = await this.credential.getToken(TOKEN_SCOPE);
-      if (!token) {
-        throw new Error('Azure CLI did not return a Cognitive Services access token.');
-      }
-      this.token = token;
-    }
+    this.token = await this.tokenProvider.getAccessToken();
 
     return `Bearer aad#${this.resourceId}#${this.token.token}`;
   }

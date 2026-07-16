@@ -6,7 +6,7 @@ import type {
   ToddlerSettings,
 } from '../domain/types';
 import type { CelebrationVariant } from './celebrationVariants';
-import type { SpeechSegment, SpeechStatus } from '../services/speech';
+import type { SpeechResult, SpeechSegment, SpeechStatus } from '../services/speech';
 import type { PraiseTier } from '../content/praise';
 
 export interface ToddlerGameProps {
@@ -23,6 +23,7 @@ export interface ToddlerGameProps {
 export interface CelebrationInfo {
   seed: string;
   targetSegments: SpeechSegment[];
+  beforeSpeech?: Promise<SpeechResult>;
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;
   celebrationVariant?: CelebrationVariant;

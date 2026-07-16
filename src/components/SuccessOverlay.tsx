@@ -1,11 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { CelebrationArt } from '../art/celebrations';
+import { LEVEL_UP_SPEECH } from '../content/levelUpSpeech';
 import { REAL_WORLD_PAUSE_EN, REAL_WORLD_PAUSE_HE, type PraiseTier } from '../content/praise';
 import type { LevelRecommendation, ToddlerSettings } from '../domain/types';
 import { selectCelebrationVariant, type CelebrationVariant } from '../games/celebrationVariants';
 import { selectPraiseSegments } from '../games/praiseSpeech';
 import { soundService } from '../services/sound';
-import { buildPhraseSegments, speechService, type SpeechSegment } from '../services/speech';
+import {
+  buildPhraseSegments,
+  speechService,
+  type SpeechResult,
+  type SpeechSegment,
+} from '../services/speech';
+import { scheduleSuccessAdvance } from './successTiming';
 
 export interface SuccessOverlayProps {
   settings: ToddlerSettings;
@@ -14,6 +28,8 @@ export interface SuccessOverlayProps {
   seed: string;
   /** Spoken (and modeled) before praise: the answer/target label for this round. */
   targetSegments: SpeechSegment[];
+  /** Existing target narration that must finish before the success sequence starts. */
+  beforeSpeech?: Promise<SpeechResult>;
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;
   celebrationVariant?: CelebrationVariant;
@@ -38,6 +54,7 @@ export function SuccessOverlay({
   scope,
   seed,
   targetSegments,
+  beforeSpeech,
   tier,
   recommendation,
   celebrationVariant: celebrationVariantOverride,
@@ -46,7 +63,6 @@ export function SuccessOverlay({
 }: SuccessOverlayProps) {
   const advanceRef = useRef(onAdvance);
   const advancedRef = useRef(false);
-  const finishTimerRef = useRef<number | null>(null);
   const [celebrationVariant] = useState(() => {
     if (celebrationVariantOverride) {
       return celebrationVariantOverride;
@@ -62,12 +78,12 @@ export function SuccessOverlay({
   );
   const recommendationSegments = useMemo(
     () => recommendation
-      ? buildPhraseSegments(
-        'עברת שלב!',
-        'You moved up a level!',
-        settings.languageMode,
-        settings.englishVoiceLocale,
-      )
+      ? LEVEL_UP_SPEECH.flatMap((line) => buildPhraseSegments(
+          line.he,
+          line.en,
+          settings.languageMode,
+          settings.englishVoiceLocale,
+        ))
       : [],
     [recommendation, settings.englishVoiceLocale, settings.languageMode],
   );
@@ -84,7 +100,8 @@ export function SuccessOverlay({
   }, [scope]);
 
   useEffect(() => {
-    let active = true;
+    let cancelled = false;
+    let cancelFinishTimer: (() => void) | null = null;
     const startedAt = window.performance.now();
     const minimumDuration = tier === 'milestone' ? MILESTONE_MINIMUM_MS : STANDARD_MINIMUM_MS;
     if (tier === 'milestone') {
@@ -95,37 +112,45 @@ export function SuccessOverlay({
       soundService.vibrate(settings, 18);
     }
 
-    void speechService
-      .speakSuccessSequence(targetSegments, [
-        ...praise.segments,
-        ...recommendationSegments,
-        ...extraSegments,
-      ], settings, {
-        scope,
-        key: `success:${seed}`,
-      })
-      .then(() => {
-        if (!active) {
-          return;
-        }
-        const remaining = Math.max(0, minimumDuration - (window.performance.now() - startedAt));
-        finishTimerRef.current = window.setTimeout(() => advanceOnce(), remaining);
-      });
-
-    // This guard never cancels speech. It only keeps a broken platform voice
-    // from trapping the child on the celebration screen indefinitely.
-    const livenessGuard = window.setTimeout(() => advanceOnce(), LIVENESS_GUARD_MS);
-    return () => {
-      active = false;
-      window.clearTimeout(livenessGuard);
-      if (finishTimerRef.current !== null) {
-        window.clearTimeout(finishTimerRef.current);
+    const speakAndAdvance = async (): Promise<void> => {
+      await beforeSpeech;
+      if (cancelled) {
+        return;
       }
+      await speechService.speakSuccessSequence(
+        targetSegments,
+        recommendation
+          ? [...recommendationSegments, ...extraSegments]
+          : [...praise.segments, ...extraSegments],
+        settings,
+        {
+          scope,
+          key: `success:${seed}`,
+        },
+      );
+      if (cancelled) {
+        return;
+      }
+      const remaining = Math.max(0, minimumDuration - (window.performance.now() - startedAt));
+      cancelFinishTimer = scheduleSuccessAdvance(remaining, () => advanceOnce());
+    };
+    void speakAndAdvance();
+
+    const cancelLivenessGuard = scheduleSuccessAdvance(
+      LIVENESS_GUARD_MS,
+      () => advanceOnce(true),
+    );
+    return () => {
+      cancelled = true;
+      cancelLivenessGuard();
+      cancelFinishTimer?.();
     };
   }, [
     advanceOnce,
+    beforeSpeech,
     extraSegments,
     praise.segments,
+    recommendation,
     recommendationSegments,
     scope,
     seed,
@@ -133,20 +158,34 @@ export function SuccessOverlay({
     targetSegments,
     tier,
   ]);
+  const levelUpText = settings.languageMode === 'en'
+    ? LEVEL_UP_SPEECH[0]!.en
+    : LEVEL_UP_SPEECH[0]!.he;
+  const displayText = recommendation ? levelUpText : praise.displayText;
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    event.preventDefault();
+    advanceOnce(true);
+  };
 
   return (
     <div
       className="success-overlay"
-      role="status"
-      aria-live="polite"
+      role="button"
+      tabIndex={0}
+      aria-label={settings.languageMode === 'en' ? 'Continue' : 'המשך'}
       onPointerDown={() => advanceOnce(true)}
+      onKeyDown={handleKeyDown}
     >
+      <p className="visually-hidden" role="status" aria-live="polite">{displayText}</p>
       <div
         className={`success-card success-card--${celebrationVariant} ${tier === 'milestone' ? 'success-card--milestone' : ''}`}
         data-celebration-variant={celebrationVariant}
       >
         <CelebrationArt variant={celebrationVariant} className="success-card__celebration" />
-        <p className="success-card__praise">{praise.displayText}</p>
+        <p className="success-card__praise">{displayText}</p>
         {tier === 'milestone' ? (
           <p className="success-card__pause">{settings.languageMode === 'en' ? REAL_WORLD_PAUSE_EN : REAL_WORLD_PAUSE_HE}</p>
         ) : null}

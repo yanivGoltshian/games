@@ -27,6 +27,7 @@ import {
   RETRY_HE_REPEATED,
   RETRY_HE_STANDARD,
 } from './retry';
+import { LEVEL_UP_SPEECH, MORE_NUMBERS_SPEECH } from './levelUpSpeech';
 import { buildCountingMissModel } from '../domain/countingFeedback';
 import {
   SORTING_COLOR_LABELS,
@@ -117,9 +118,8 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   addPair('זוגות מספרים', 'Number pairs');
   addPair('מתאימים מספרים זהים בשתי שורות', 'Match identical numbers in two rows');
   addPair('לחץ על הזוגות', 'Press the pairs');
-  addPair('עברת שלב!', 'You moved up a level!');
-  addPair('עכשיו יותר מספרים', 'Now more numbers');
-  addPair('זכית בגביע!', 'You won a trophy!');
+  LEVEL_UP_SPEECH.forEach((line) => addPair(line.he, line.en));
+  addPair(MORE_NUMBERS_SPEECH.he, MORE_NUMBERS_SPEECH.en);
 
   [
     ...PRAISE_HE,

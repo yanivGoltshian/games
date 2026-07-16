@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { GameShell } from '../components/GameShell';
 import { gameMeta } from '../content/games';
+import { MORE_NUMBERS_SPEECH } from '../content/levelUpSpeech';
 import {
   NUMBER_WORDS_EN,
   NUMBER_WORDS_HE,
@@ -40,6 +41,7 @@ export function NumberPairsGame({
 }: ToddlerGameProps) {
   const [state, setState] = useState<NumberPairsState>(INITIAL_NUMBER_PAIRS_STATE);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
+  const speechSequenceRef = useRef(0);
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'numberPairs',
     domainProgress,
@@ -82,10 +84,11 @@ export function NumberPairsGame({
     }
   }, [mediaReady, roundKey]);
 
-  const speakNumber = (value: number, key: string): void => {
-    void speechService.speakSegments(numberSegments(value, settings), settings, {
+  const speakNumber = (value: number) => {
+    speechSequenceRef.current += 1;
+    return speechService.speakSegments(numberSegments(value, settings), settings, {
       scope: SPEECH_SCOPE,
-      key,
+      key: `number-label:${speechSequenceRef.current}`,
       priority: 'label',
       staleAfterSuccess: true,
     });
@@ -101,13 +104,16 @@ export function NumberPairsGame({
     }
     soundService.playTap(settings);
     setState(nextState);
-    speakNumber(round.topRow[index]!, 'selected-number');
+    void speakNumber(round.topRow[index]!);
   };
 
   const handleBottom = (index: number): void => {
     if (celebration || retryBusy) {
       return;
     }
+    const chosenValue = round.bottomRow[index]!;
+    soundService.playTap(settings);
+    const numberSpeech = speakNumber(chosenValue);
     const selectedTopIndex = state.selectedTopIndex;
     const nextState = reduceNumberPairs(state, { type: 'choose-bottom', index }, round);
     if (nextState === state || selectedTopIndex === null) {
@@ -127,6 +133,7 @@ export function NumberPairsGame({
           pauseAfterMs: 220,
         }],
         phraseScope: 'number-pairs',
+        beforeSpeech: numberSpeech,
         lockUntilComplete: true,
       }).finally(() => {
         setState((current) => reduceNumberPairs(current, { type: 'clear-wrong' }, round));
@@ -136,7 +143,6 @@ export function NumberPairsGame({
 
     soundService.playSuccess(settings);
     if (!nextState.completed) {
-      speakNumber(selectedValue, 'matched-number');
       return;
     }
 
@@ -145,25 +151,18 @@ export function NumberPairsGame({
       requiredActions: round.selectedValues.length,
       concepts: round.selectedValues.map((value) => `number-${value}`),
     });
-    const followUpSegments = [
-      ...(summary.recommendation
-        ? buildPhraseSegments(
-            'עכשיו יותר מספרים',
-            'Now more numbers',
-            settings.languageMode,
-            settings.englishVoiceLocale,
-          )
-        : []),
-      ...buildPhraseSegments(
-        'זכית בגביע!',
-        'You won a trophy!',
-        settings.languageMode,
-        settings.englishVoiceLocale,
-      ),
-    ];
+    const followUpSegments = summary.recommendation
+      ? buildPhraseSegments(
+          MORE_NUMBERS_SPEECH.he,
+          MORE_NUMBERS_SPEECH.en,
+          settings.languageMode,
+          settings.englishVoiceLocale,
+        )
+      : [];
     setCelebration({
-      seed: `number-pairs-${round.signature}-${nextState.attempts}`,
-      targetSegments: numberSegments(selectedValue, settings),
+      seed: `number-pairs-${roundKey}-${round.signature}-${nextState.attempts}`,
+      targetSegments: [],
+      beforeSpeech: numberSpeech,
       tier: summary.milestone ? 'milestone' : 'standard',
       recommendation: summary.recommendation,
       celebrationVariant: 'trophy-spark',
