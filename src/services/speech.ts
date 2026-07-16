@@ -1,4 +1,8 @@
 import type { EnglishVoiceLocale, LearningConcept, SpeechLocale, ToddlerSettings } from '../domain/types';
+import {
+  recordedSpeechPlayer,
+  type RecordedSpeechBackend,
+} from './recordedSpeech';
 
 export interface SpeechSegment {
   text: string;
@@ -118,7 +122,7 @@ export class SpeechService {
   private voicesReadyPromise: Promise<void> | null = null;
   private activeCue: string | null = null;
 
-  constructor() {
+  constructor(private readonly recordedSpeech: RecordedSpeechBackend = recordedSpeechPlayer) {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.addEventListener('voiceschanged', this.handleVoicesChanged);
       if (typeof document !== 'undefined') {
@@ -149,15 +153,17 @@ export class SpeechService {
   };
 
   private isSupported(): boolean {
-    return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    return this.recordedSpeech.isEnabled()
+      || (typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window);
   }
 
   getStatus(): SpeechStatus {
     const supported = this.isSupported();
-    const voices = supported ? window.speechSynthesis.getVoices() : [];
+    const recorded = this.recordedSpeech.isEnabled();
+    const voices = supported && !recorded ? window.speechSynthesis.getVoices() : [];
     return {
       supported,
-      voiceAvailable: voices.length > 0,
+      voiceAvailable: recorded || voices.length > 0,
       speaking: this.active !== null,
       activeRequestId: this.active?.id ?? null,
       activeCue: this.activeCue,
@@ -225,6 +231,27 @@ export class SpeechService {
    * reached onstart, so a word already being spoken is never interrupted.
    */
   unlock(): void {
+    if (this.recordedSpeech.isEnabled()) {
+      if (this.activationState === 'priming') {
+        return;
+      }
+      const wasReady = this.activationState === 'ready';
+      if (!wasReady) {
+        this.activationState = 'priming';
+      }
+      void this.recordedSpeech.unlock()
+        .then(() => {
+          this.activationState = 'ready';
+          this.notify();
+          void this.processQueue();
+        })
+        .catch(() => {
+          this.activationState = 'locked';
+          this.notify();
+        });
+      return;
+    }
+
     if (!this.isSupported()) {
       return;
     }
@@ -519,8 +546,48 @@ export class SpeechService {
     });
   }
 
+  private speakRecording(segment: SpeechSegment, request: QueuedSpeechRequest): Promise<SpeechResultStatus> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (status: SpeechResultStatus): void => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        request.cancelCurrent = null;
+        if (this.activeCue === segment.cue) {
+          this.activeCue = null;
+          this.notify();
+        }
+        resolve(status);
+      };
+
+      request.cancelCurrent = () => {
+        this.recordedSpeech.cancel();
+        finish(request.cancelledAs ?? 'cancelled');
+      };
+      void this.recordedSpeech.play({
+        text: segment.text,
+        locale: segment.locale,
+        volume: request.settings.soundLevel,
+        onStart: () => {
+          if (settled || request.cancelledAs) {
+            return;
+          }
+          this.activeCue = segment.cue ?? null;
+          this.notify();
+        },
+      }).then(
+        () => finish(request.cancelledAs ?? 'completed'),
+        () => finish(request.cancelledAs ?? 'error'),
+      );
+    });
+  }
+
   private async runRequest(request: QueuedSpeechRequest): Promise<SpeechResultStatus> {
-    await this.waitForVoices();
+    if (!this.recordedSpeech.isEnabled()) {
+      await this.waitForVoices();
+    }
     if (request.cancelledAs) {
       return request.cancelledAs;
     }
@@ -529,7 +596,9 @@ export class SpeechService {
       if (request.cancelledAs) {
         return request.cancelledAs;
       }
-      const utteranceStatus = await this.speakUtterance(segment, request);
+      const utteranceStatus = this.recordedSpeech.isEnabled()
+        ? await this.speakRecording(segment, request)
+        : await this.speakUtterance(segment, request);
       if (utteranceStatus !== 'completed') {
         return utteranceStatus;
       }

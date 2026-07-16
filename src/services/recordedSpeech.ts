@@ -1,0 +1,206 @@
+import type { SpeechLocale } from '../domain/types';
+import { getSharedAudioContext, unlockAudioContext } from './sound';
+
+interface RecordedSpeechClip {
+  src: string;
+  offset: number;
+  duration: number;
+}
+
+interface RecordedSpeechManifest {
+  version: number;
+  entries: Record<string, RecordedSpeechClip>;
+}
+
+interface RecordedPlayback {
+  source: AudioBufferSourceNode;
+  finish: () => void;
+}
+
+export interface RecordedSpeechPlayOptions {
+  text: string;
+  locale: SpeechLocale;
+  volume: number;
+  onStart: () => void;
+}
+
+export interface RecordedSpeechBackend {
+  isEnabled: () => boolean;
+  unlock: () => Promise<void>;
+  play: (options: RecordedSpeechPlayOptions) => Promise<void>;
+  cancel: () => void;
+}
+
+export interface StandaloneSpeechEnvironment {
+  userAgent: string;
+  platform: string;
+  maxTouchPoints: number;
+  navigatorStandalone?: boolean;
+  displayModeStandalone: boolean;
+}
+
+function currentEnvironment(): StandaloneSpeechEnvironment | null {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+    return null;
+  }
+  const appleNavigator = navigator as Navigator & { standalone?: boolean };
+  return {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    maxTouchPoints: navigator.maxTouchPoints,
+    ...(appleNavigator.standalone === undefined
+      ? {}
+      : { navigatorStandalone: appleNavigator.standalone }),
+    displayModeStandalone: window.matchMedia?.('(display-mode: standalone)').matches ?? false,
+  };
+}
+
+export function shouldUseRecordedSpeech(
+  environment = currentEnvironment(),
+): boolean {
+  if (!environment) {
+    return false;
+  }
+  const isAppleMobile =
+    /iPad|iPhone|iPod/i.test(environment.userAgent) ||
+    (environment.platform === 'MacIntel' && environment.maxTouchPoints > 1);
+  const isStandalone =
+    environment.navigatorStandalone === true || environment.displayModeStandalone;
+  return isAppleMobile && isStandalone;
+}
+
+function manifestKey(locale: SpeechLocale, text: string): string {
+  return `${locale}\u0000${text}`;
+}
+
+export class RecordedSpeechPlayer implements RecordedSpeechBackend {
+  private manifestPromise: Promise<RecordedSpeechManifest> | null = null;
+  private readonly bufferPromises = new Map<string, Promise<AudioBuffer>>();
+  private activePlayback: RecordedPlayback | null = null;
+  private cancellationGeneration = 0;
+
+  constructor(
+    private readonly contextProvider: () => AudioContext | null = getSharedAudioContext,
+    private readonly unlockContext: () => Promise<void> = unlockAudioContext,
+    private readonly fetcher: typeof fetch = (...args) => fetch(...args),
+    private readonly enabled: () => boolean = shouldUseRecordedSpeech,
+  ) {}
+
+  isEnabled(): boolean {
+    return this.enabled();
+  }
+
+  async unlock(): Promise<void> {
+    await this.unlockContext();
+    const manifest = await this.loadManifest();
+    const sources = new Set(Object.values(manifest.entries).map((entry) => entry.src));
+    await Promise.all([...sources].map((src) => this.loadBuffer(src)));
+  }
+
+  async play(options: RecordedSpeechPlayOptions): Promise<void> {
+    const generation = this.cancellationGeneration;
+    const context = this.contextProvider();
+    if (!context) {
+      throw new Error('AudioContext is unavailable for recorded speech.');
+    }
+    const manifest = await this.loadManifest();
+    const clip = manifest.entries[manifestKey(options.locale, options.text)];
+    if (!clip) {
+      throw new Error(`Recorded speech is missing for ${options.locale}: ${options.text}`);
+    }
+    const buffer = await this.loadBuffer(clip.src);
+    if (generation !== this.cancellationGeneration) {
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = buffer;
+      gain.gain.value = Math.min(1, Math.max(0, options.volume));
+      source.connect(gain);
+      gain.connect(context.destination);
+
+      let finished = false;
+      const finish = () => {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        if (this.activePlayback?.source === source) {
+          this.activePlayback = null;
+        }
+        resolve();
+      };
+      source.onended = finish;
+      this.activePlayback = { source, finish };
+
+      try {
+        source.start(0, clip.offset, clip.duration);
+        options.onStart();
+      } catch (error) {
+        this.activePlayback = null;
+        reject(error);
+      }
+    });
+  }
+
+  cancel(): void {
+    this.cancellationGeneration += 1;
+    const playback = this.activePlayback;
+    if (!playback) {
+      return;
+    }
+    this.activePlayback = null;
+    playback.source.onended = null;
+    try {
+      playback.source.stop();
+    } finally {
+      playback.finish();
+    }
+  }
+
+  private loadManifest(): Promise<RecordedSpeechManifest> {
+    this.manifestPromise ??= this.fetcher('/speech/manifest.json', { cache: 'force-cache' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Recorded speech manifest failed with HTTP ${response.status}.`);
+        }
+        return response.json() as Promise<RecordedSpeechManifest>;
+      })
+      .catch((error: unknown) => {
+        this.manifestPromise = null;
+        throw error;
+      });
+    return this.manifestPromise;
+  }
+
+  private loadBuffer(src: string): Promise<AudioBuffer> {
+    const existing = this.bufferPromises.get(src);
+    if (existing) {
+      return existing;
+    }
+    const pending = this.fetcher(src, { cache: 'force-cache' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Recorded speech audio failed with HTTP ${response.status}.`);
+        }
+        return response.arrayBuffer();
+      })
+      .then((encoded) => {
+        const context = this.contextProvider();
+        if (!context) {
+          throw new Error('AudioContext is unavailable while decoding recorded speech.');
+        }
+        return context.decodeAudioData(encoded);
+      })
+      .catch((error: unknown) => {
+        this.bufferPromises.delete(src);
+        throw error;
+      });
+    this.bufferPromises.set(src, pending);
+    return pending;
+  }
+}
+
+export const recordedSpeechPlayer = new RecordedSpeechPlayer();

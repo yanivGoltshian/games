@@ -29,6 +29,10 @@ class SoundService {
     this.ensureContext()?.resume().catch(() => undefined);
   }
 
+  getContext(): AudioContext | null {
+    return this.ensureContext();
+  }
+
   private playSequence(settings: ToddlerSettings, sequence: ToneStep[]): void {
     if (settings.quietMode || settings.soundLevel <= 0) {
       return;
@@ -109,3 +113,14 @@ class SoundService {
 }
 
 export const soundService = new SoundService();
+
+export function getSharedAudioContext(): AudioContext | null {
+  return soundService.getContext();
+}
+
+export async function unlockAudioContext(): Promise<void> {
+  const context = soundService.getContext();
+  if (context?.state === 'suspended') {
+    await context.resume();
+  }
+}

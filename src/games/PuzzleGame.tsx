@@ -5,6 +5,7 @@ import { SuccessOverlay } from '../components/SuccessOverlay';
 import { useMeasuredSize } from '../components/useMeasuredSize';
 import { type DragItemState, useToddlerDrag } from '../components/drag/useToddlerDrag';
 import { gameMeta } from '../content/games';
+import { buildPuzzleMissModelLine } from '../content/feedbackSpeech';
 import { generatePuzzleRound } from '../domain/rounds';
 import type { PuzzlePieceRound, PuzzleScene } from '../domain/types';
 import { soundService } from '../services/sound';
@@ -115,12 +116,7 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
         void runRetry({
           missCount: nextMisses,
           seed: `${roundKey}:${nextMisses}:${itemId}`,
-          modelLines: [{
-            he: nextMisses >= 2 ? 'החתיכה מתאימה למקום המואר. נסה שם.' : 'כמעט. נסה מקום אחר.',
-            en: nextMisses >= 2 ? 'The piece fits in the glowing spot. Try there.' : 'Almost. Try another spot.',
-            pauseAfterMs: 220,
-            ...(nextMisses >= 2 ? { cue: `puzzle-slot:${itemId}` } : {}),
-          }],
+          modelLines: [buildPuzzleMissModelLine(nextMisses, `puzzle-slot:${itemId}`)],
         }).finally(() => setHintSlotId(null));
         return false;
       }

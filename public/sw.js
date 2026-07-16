@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v9';
+const CACHE_NAME = 'sean-learning-adventure-v10';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -14,6 +14,10 @@ const APP_SHELL = [
   '/assets/vocabulary/cat.webp',
   '/assets/vocabulary/dog.webp',
   '/assets/vocabulary/shoe.webp',
+  '/speech/manifest.json',
+  '/speech/he-IL.mp3',
+  '/speech/en-US.mp3',
+  '/speech/en-GB.mp3',
 ];
 
 self.addEventListener('install', (event) => {

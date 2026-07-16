@@ -5,6 +5,7 @@ import { SuccessOverlay } from '../components/SuccessOverlay';
 import { useMeasuredSize } from '../components/useMeasuredSize';
 import { type DragItemState, useToddlerDrag } from '../components/drag/useToddlerDrag';
 import { gameMeta } from '../content/games';
+import { buildSortingMissModelLine } from '../content/feedbackSpeech';
 import { generateSortingRound } from '../domain/rounds';
 import type { ColorId, ShapeId } from '../domain/types';
 import { soundService } from '../services/sound';
@@ -125,19 +126,12 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
           if (settings.quietMode || !speechStatus.supported) {
             setHintZoneId(targetBin.id);
           }
-          const modelLine = round.rule === 'color'
-            ? {
-                he: `הצבע הוא ${targetBin.labelHe}. שמים בסל ה${targetBin.labelHe}.`,
-                en: `The color is ${targetBin.labelEn}. Put it in the ${targetBin.labelEn} basket.`,
-                pauseAfterMs: 220,
-                cue: `sort-zone:${targetBin.id}`,
-              }
-            : {
-                he: `הצורה היא ${targetBin.labelHe}. שמים בסל עם ${targetBin.labelHe}.`,
-                en: `The shape is a ${targetBin.labelEn}. Put it in the basket with the ${targetBin.labelEn}.`,
-                pauseAfterMs: 220,
-                cue: `sort-zone:${targetBin.id}`,
-              };
+          const modelLine = buildSortingMissModelLine(
+            round.rule,
+            targetBin.labelHe,
+            targetBin.labelEn,
+            `sort-zone:${targetBin.id}`,
+          );
           void runRetry({
             missCount: nextMisses,
             seed: `${roundKey}:${nextMisses}:${itemId}`,
