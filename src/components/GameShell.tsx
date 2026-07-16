@@ -9,6 +9,7 @@ interface GameShellProps {
   onHome: () => void;
   onRepeat?: () => void;
   repeatDisabled?: boolean;
+  repeatSpeaking?: boolean;
   replayLabel: string;
   homeLabel: string;
   /** Visually-hidden but screen-reader-announced current task state. */
@@ -31,6 +32,7 @@ export function GameShell({
   onHome,
   onRepeat,
   repeatDisabled,
+  repeatSpeaking,
   replayLabel,
   homeLabel,
   liveStatus,
@@ -50,7 +52,14 @@ export function GameShell({
           <HomeIconArt className="rail-button__icon" />
         </button>
         {onRepeat ? (
-          <button className="rail-button rail-button--replay" disabled={repeatDisabled} onClick={onRepeat} type="button" aria-label={replayLabel}>
+          <button
+            className={`rail-button rail-button--replay ${repeatSpeaking ? 'is-speaking' : ''}`}
+            disabled={repeatDisabled}
+            onClick={onRepeat}
+            type="button"
+            aria-label={replayLabel}
+            aria-pressed={repeatSpeaking}
+          >
             <ReplayIconArt className="rail-button__icon" />
           </button>
         ) : (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
 import { SuccessOverlay } from '../components/SuccessOverlay';
@@ -10,6 +10,7 @@ import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 
 const WIGGLE_MS = 520;
+const SPEECH_SCOPE = 'game:counting';
 
 function numberWords(value: number): { he: string; en: string } {
   return { he: NUMBER_WORDS_HE[value] ?? String(value), en: NUMBER_WORDS_EN[value] ?? String(value) };
@@ -20,24 +21,30 @@ export function CountingGame({ domainProgress, settings, mediaReady, speechStatu
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [wiggleValue, setWiggleValue] = useState<number | null>(null);
 
-  const { round, startNextRound } = useAdaptiveRound('counting', domainProgress, generateCountingRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound('counting', domainProgress, generateCountingRound);
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
 
-  const speakPrompt = useCallback(async (): Promise<void> => {
+  const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
-    await speechService.speakSegments(segments, settings);
-  }, [round.promptEn, round.promptHe, settings]);
+    await speechService.speakSegments(segments, settings, {
+      scope: SPEECH_SCOPE,
+      key: `prompt:${roundKey}`,
+      priority: interrupt ? 'replay' : 'prompt',
+      interrupt,
+    });
+  }, [round.promptEn, round.promptHe, roundKey, settings]);
+  const speakPromptRef = useRef(speakPrompt);
+  speakPromptRef.current = speakPrompt;
 
   useEffect(() => {
     setAttempts(0);
     setCelebration(null);
     setWiggleValue(null);
     if (mediaReady) {
-      void speakPrompt();
+      void speakPromptRef.current();
     }
-    return () => speechService.cancel();
-  }, [mediaReady, round, speakPrompt]);
+  }, [mediaReady, roundKey]);
 
   const handlePick = (value: number) => {
     if (celebration) {
@@ -61,13 +68,17 @@ export function CountingGame({ domainProgress, settings, mediaReady, speechStatu
 
     setWiggleValue(value);
     window.setTimeout(() => setWiggleValue((current) => (current === value ? null : current)), WIGGLE_MS);
-    void speechService
-      .speakSegments(buildPhraseSegments(words.he, words.en, settings.languageMode, settings.englishVoiceLocale), settings)
-      .then((completed) => {
-        if (completed && mediaReady) {
-          void speakPrompt();
-        }
-      });
+    const labelSegments = buildPhraseSegments(words.he, words.en, settings.languageMode, settings.englishVoiceLocale);
+    const promptSegments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
+    if (labelSegments.length > 0) {
+      labelSegments[labelSegments.length - 1] = { ...labelSegments[labelSegments.length - 1]!, pauseAfterMs: 280 };
+    }
+    void speechService.speakSegments([...labelSegments, ...promptSegments], settings, {
+      scope: SPEECH_SCOPE,
+      key: 'feedback',
+      priority: 'label',
+      staleAfterSuccess: true,
+    });
   };
 
   return (
@@ -77,8 +88,9 @@ export function CountingGame({ domainProgress, settings, mediaReady, speechStatu
       accentClass={gameMeta.counting.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={speakPrompt}
+      onRepeat={() => void speakPrompt(true)}
       repeatDisabled={settings.quietMode || !speechStatus.supported}
+      repeatSpeaking={speechStatus.speaking}
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
@@ -86,6 +98,7 @@ export function CountingGame({ domainProgress, settings, mediaReady, speechStatu
         celebration ? (
           <SuccessOverlay
             settings={settings}
+            scope={SPEECH_SCOPE}
             seed={celebration.seed}
             targetSegments={celebration.targetSegments}
             tier={celebration.tier}

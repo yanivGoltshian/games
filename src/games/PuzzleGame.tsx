@@ -12,6 +12,8 @@ import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 
+const SPEECH_SCOPE = 'game:puzzle';
+
 function pieceArtStyle(scene: PuzzleScene, rows: number, cols: number, piece: PuzzlePieceRound): CSSProperties {
   const x = cols === 1 ? '50%' : `${(piece.col / (cols - 1)) * 100}%`;
   const y = rows === 1 ? '50%' : `${(piece.row / (rows - 1)) * 100}%`;
@@ -30,7 +32,7 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
   const surfaceRef = useRef<HTMLDivElement>(null);
   const size = useMeasuredSize(surfaceRef);
 
-  const { round, startNextRound } = useAdaptiveRound('puzzle', domainProgress, generatePuzzleRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound('puzzle', domainProgress, generatePuzzleRound);
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
   const zoneRefs = useMemo(
@@ -42,10 +44,17 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
   const slotWidth = boardSize / round.cols;
   const slotHeight = boardSize / round.rows;
 
-  const speakPrompt = useCallback(async (): Promise<void> => {
+  const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
-    await speechService.speakSegments(segments, settings);
-  }, [round.promptEn, round.promptHe, settings]);
+    await speechService.speakSegments(segments, settings, {
+      scope: SPEECH_SCOPE,
+      key: `prompt:${roundKey}`,
+      priority: interrupt ? 'replay' : 'prompt',
+      interrupt,
+    });
+  }, [round.promptEn, round.promptHe, roundKey, settings]);
+  const speakPromptRef = useRef(speakPrompt);
+  speakPromptRef.current = speakPrompt;
 
   useEffect(() => {
     const columns = Math.min(2, round.pieces.length);
@@ -67,14 +76,16 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
         }),
       ),
     );
+  }, [boardSize, round, size.width, slotHeight, slotWidth]);
+
+  useEffect(() => {
     setSolvedIds([]);
     setAttempts(0);
     setCelebration(null);
     if (mediaReady) {
-      void speakPrompt();
+      void speakPromptRef.current();
     }
-    return () => speechService.cancel();
-  }, [boardSize, mediaReady, round, size.width, slotHeight, slotWidth, speakPrompt]);
+  }, [mediaReady, roundKey]);
 
   const { bindItem, bindZone, selectedId, draggingId, hoverZoneId, wigglingId } = useToddlerDrag({
     surfaceRef,
@@ -87,7 +98,11 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
       if (itemId !== zoneId) {
         soundService.playTap(settings);
         if (mediaReady) {
-          void speakPrompt();
+          void speechService.speakSegments(
+            buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale),
+            settings,
+            { scope: SPEECH_SCOPE, key: 'feedback', priority: 'label', staleAfterSuccess: true },
+          );
         }
         return false;
       }
@@ -127,8 +142,9 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
       accentClass={gameMeta.puzzle.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={speakPrompt}
+      onRepeat={() => void speakPrompt(true)}
       repeatDisabled={settings.quietMode || !speechStatus.supported}
+      repeatSpeaking={speechStatus.speaking}
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
@@ -136,6 +152,7 @@ export function PuzzleGame({ domainProgress, settings, mediaReady, speechStatus,
         celebration ? (
           <SuccessOverlay
             settings={settings}
+            scope={SPEECH_SCOPE}
             seed={celebration.seed}
             targetSegments={celebration.targetSegments}
             tier={celebration.tier}

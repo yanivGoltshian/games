@@ -9,6 +9,7 @@ import { speechService, type SpeechSegment } from '../services/speech';
 
 export interface SuccessOverlayProps {
   settings: ToddlerSettings;
+  scope: string;
   /** Unique per round so the deterministic praise selector varies naturally. */
   seed: string;
   /** Spoken (and modeled) before praise: the answer/target label for this round. */
@@ -17,34 +18,39 @@ export interface SuccessOverlayProps {
   onAdvance: () => void;
 }
 
-const STANDARD_DELAY_MS = 1600;
-const MILESTONE_DELAY_MS = 2000;
+const STANDARD_MINIMUM_MS = 1400;
+const MILESTONE_MINIMUM_MS = 1800;
+const LIVENESS_GUARD_MS = 15_000;
 
 /**
  * Inline, non-blocking success moment: puppy mascot, tasteful confetti,
  * locale-aware praise, a generated chime, and an optional light vibration.
- * Auto-advances after ~1.6-2s; tapping anywhere advances immediately.
- * Praise speech always plays after the target/answer audio and is
- * cancellation-safe if the overlay unmounts early.
+ * Auto-advances only after target and praise speech finish. Tapping advances
+ * immediately and intentionally interrupts the current success request.
  */
-export function SuccessOverlay({ settings, seed, targetSegments, tier, onAdvance }: SuccessOverlayProps) {
+export function SuccessOverlay({ settings, scope, seed, targetSegments, tier, onAdvance }: SuccessOverlayProps) {
   const advanceRef = useRef(onAdvance);
   const advancedRef = useRef(false);
+  const finishTimerRef = useRef<number | null>(null);
   advanceRef.current = onAdvance;
   const praise = useMemo(
     () => selectPraiseSegments(settings, tier, seed),
     [seed, settings, tier],
   );
-  const advanceOnce = useCallback(() => {
+  const advanceOnce = useCallback((interruptSpeech = false) => {
     if (advancedRef.current) {
       return;
     }
     advancedRef.current = true;
+    if (interruptSpeech) {
+      speechService.cancelScope(scope, 'navigation');
+    }
     advanceRef.current();
-  }, []);
+  }, [scope]);
 
   useEffect(() => {
-    const delay = tier === 'milestone' ? MILESTONE_DELAY_MS : STANDARD_DELAY_MS;
+    const startedAt = window.performance.now();
+    const minimumDuration = tier === 'milestone' ? MILESTONE_MINIMUM_MS : STANDARD_MINIMUM_MS;
     if (tier === 'milestone') {
       soundService.playMilestone(settings);
       soundService.vibrate(settings, [16, 40, 16]);
@@ -53,19 +59,29 @@ export function SuccessOverlay({ settings, seed, targetSegments, tier, onAdvance
       soundService.vibrate(settings, 18);
     }
 
-    // Praise always follows the target/answer audio, and the whole chain is
-    // cancellation-safe if the round changes before it resolves.
-    void speechService.speakSuccessSequence(targetSegments, praise.segments, settings);
+    void speechService
+      .speakSuccessSequence(targetSegments, praise.segments, settings, {
+        scope,
+        key: `success:${seed}`,
+      })
+      .then(() => {
+        const remaining = Math.max(0, minimumDuration - (window.performance.now() - startedAt));
+        finishTimerRef.current = window.setTimeout(() => advanceOnce(), remaining);
+      });
 
-    const timer = window.setTimeout(advanceOnce, delay);
+    // This guard never cancels speech. It only keeps a broken platform voice
+    // from trapping the child on the celebration screen indefinitely.
+    const livenessGuard = window.setTimeout(() => advanceOnce(), LIVENESS_GUARD_MS);
     return () => {
-      window.clearTimeout(timer);
-      speechService.cancel();
+      window.clearTimeout(livenessGuard);
+      if (finishTimerRef.current !== null) {
+        window.clearTimeout(finishTimerRef.current);
+      }
     };
-  }, [advanceOnce, seed, settings, targetSegments, tier, praise.segments]);
+  }, [advanceOnce, praise.segments, scope, seed, settings, targetSegments, tier]);
 
   return (
-    <div className="success-overlay" role="status" aria-live="polite" onPointerDown={advanceOnce}>
+    <div className="success-overlay" role="status" aria-live="polite" onPointerDown={() => advanceOnce(true)}>
       <div className={`success-card ${tier === 'milestone' ? 'success-card--milestone' : ''}`}>
         <ConfettiBurst richness={tier === 'milestone' ? 'milestone' : 'standard'} />
         <PuppyMascotArt mood={tier === 'milestone' ? 'milestone' : 'happy'} className="success-card__mascot" />

@@ -10,6 +10,8 @@ import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 
+const SPEECH_SCOPE = 'game:memory';
+
 export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
@@ -19,14 +21,21 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
   const [busy, setBusy] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
-  const { round, startNextRound } = useAdaptiveRound('memory', domainProgress, generateMemoryRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound('memory', domainProgress, generateMemoryRound);
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
 
-  const speakPrompt = useCallback(async (): Promise<void> => {
+  const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
-    await speechService.speakSegments(segments, settings);
-  }, [round.promptEn, round.promptHe, settings]);
+    await speechService.speakSegments(segments, settings, {
+      scope: SPEECH_SCOPE,
+      key: `prompt:${roundKey}`,
+      priority: interrupt ? 'replay' : 'prompt',
+      interrupt,
+    });
+  }, [round.promptEn, round.promptHe, roundKey, settings]);
+  const speakPromptRef = useRef(speakPrompt);
+  speakPromptRef.current = speakPrompt;
 
   useEffect(() => {
     setAttempts(0);
@@ -36,15 +45,14 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     setWiggleIds([]);
     setBusy(false);
     if (mediaReady) {
-      void speakPrompt();
+      void speakPromptRef.current();
     }
     return () => {
-      speechService.cancel();
       if (timeoutRef.current !== null) {
         window.clearTimeout(timeoutRef.current);
       }
     };
-  }, [mediaReady, round, speakPrompt]);
+  }, [mediaReady, roundKey]);
 
   const handleCardClick = (cardId: string) => {
     if (busy || celebration || flippedIds.includes(cardId)) {
@@ -60,7 +68,11 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
     // Labeling tap: name the object as soon as the card is revealed.
     const concept = learningConcepts.find((item) => item.id === card.conceptId);
     if (concept && mediaReady) {
-      void speechService.speakSegments(buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale), settings);
+      void speechService.speakSegments(
+        buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
+        settings,
+        { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label', staleAfterSuccess: true },
+      );
     }
 
     const nextFlipped = [...flippedIds, cardId];
@@ -114,8 +126,9 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
       accentClass={gameMeta.memory.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={speakPrompt}
+      onRepeat={() => void speakPrompt(true)}
       repeatDisabled={settings.quietMode || !speechStatus.supported}
+      repeatSpeaking={speechStatus.speaking}
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
@@ -123,6 +136,7 @@ export function MemoryGame({ domainProgress, settings, mediaReady, speechStatus,
         celebration ? (
           <SuccessOverlay
             settings={settings}
+            scope={SPEECH_SCOPE}
             seed={celebration.seed}
             targetSegments={celebration.targetSegments}
             tier={celebration.tier}

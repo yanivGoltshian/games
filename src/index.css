@@ -140,13 +140,16 @@ option {
 }
 
 /* -------------------------------------------------------------------- */
-/* Home carousel                                                         */
+/* Home portal garden                                                     */
 /* -------------------------------------------------------------------- */
 
 .home-page {
   display: flex;
   flex-direction: column;
-  padding: calc(env(safe-area-inset-top) + var(--space-3)) 0 calc(env(safe-area-inset-bottom) + var(--space-3));
+  padding:
+    calc(env(safe-area-inset-top) + var(--space-3))
+    clamp(var(--space-3), 3vw, var(--space-6))
+    calc(env(safe-area-inset-bottom) + var(--space-3));
 }
 
 .home-welcome {
@@ -171,64 +174,80 @@ option {
   height: auto;
 }
 
-.portal-carousel {
+.portal-grid {
   list-style: none;
-  margin: 0;
-  padding: 0 8vw;
-  display: flex;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   flex: 1;
   min-height: 0;
-  gap: var(--space-5);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  align-items: stretch;
-  scrollbar-width: none;
+  gap: clamp(var(--space-2), 1.8vw, var(--space-4));
 }
 
-.portal-carousel::-webkit-scrollbar {
-  display: none;
-}
-
-.portal-carousel__item {
-  flex: 0 0 auto;
-  width: min(84vw, 520px);
-  scroll-snap-align: center;
+.portal-grid__item {
+  grid-column: span 2;
+  min-width: 0;
+  min-height: 0;
   display: flex;
 }
 
-@media (min-width: 700px) {
-  .portal-carousel__item {
-    width: min(62vw, 560px);
-  }
+.portal-grid__item:nth-child(4) {
+  grid-column: 2 / span 2;
 }
 
-@media (min-width: 980px) and (orientation: landscape) {
-  .portal-carousel__item {
-    width: min(46vw, 560px);
+.portal-grid__item:nth-child(5) {
+  grid-column: 4 / span 2;
+}
+
+@media (max-width: 560px) {
+  .home-page {
+    padding-inline: var(--space-2);
+  }
+
+  .portal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .portal-grid__item,
+  .portal-grid__item:nth-child(4) {
+    grid-column: span 1;
+  }
+
+  .portal-grid__item:nth-child(5) {
+    grid-column: 1 / span 2;
+    width: calc(50% - var(--space-1));
+    justify-self: center;
   }
 }
 
 .portal-card {
   width: 100%;
   border: 0;
-  border-radius: var(--radius-xl);
-  padding: var(--space-5);
+  border: 1px solid oklch(100% 0 0 / 0.75);
+  border-radius: clamp(var(--radius-md), 3.2vw, var(--radius-xl));
+  padding: clamp(var(--space-2), 1.8vw, var(--space-4));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-4);
+  gap: clamp(var(--space-1), 1.2vw, var(--space-3));
   background: var(--card-accent, var(--color-surface-soft));
-  box-shadow: var(--shadow-soft);
-  transition: transform var(--motion-fast) var(--motion-ease);
+  box-shadow: var(--shadow-soft), var(--shadow-inset-ring);
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
   user-select: none;
   -webkit-touch-callout: none;
 }
 
 .portal-card:active {
-  transform: scale(0.97);
+  transform: translateY(3px) scale(0.965);
+  box-shadow: 0 8px 18px oklch(45% 0.05 40 / 0.14), var(--shadow-inset-ring);
 }
 
 .portal-card:focus-visible {
@@ -237,17 +256,51 @@ option {
 }
 
 .portal-card__art {
-  width: min(54vw, 320px);
+  width: min(100%, clamp(112px, 23dvh, 260px));
+  min-height: 0;
   height: auto;
   aspect-ratio: 1;
   filter: drop-shadow(0 18px 28px oklch(35% 0.05 40 / 0.18));
 }
 
+.concept-photo {
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 28%;
+  box-shadow:
+    0 16px 28px oklch(32% 0.04 240 / 0.2),
+    inset 0 0 0 1px oklch(100% 0 0 / 0.65);
+  background: var(--color-surface);
+}
+
+.counting-cloud__art.concept-photo {
+  border-radius: 50%;
+}
+
+.rail-button--replay.is-speaking {
+  box-shadow:
+    0 0 0 5px color-mix(in oklch, var(--color-ocean) 28%, transparent),
+    var(--shadow-soft);
+}
+
 .portal-card__label {
-  font-size: var(--font-size-title);
+  font-size: clamp(1rem, 2.3vw, 1.75rem);
   font-weight: var(--font-weight-label);
   color: var(--color-ink);
   text-align: center;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+@media (max-height: 720px) {
+  .portal-card__art {
+    width: min(100%, clamp(92px, 20dvh, 150px));
+  }
+
+  .portal-card__label {
+    font-size: clamp(0.95rem, 1.8vw, 1.25rem);
+  }
 }
 
 .accent-listening { --card-accent: var(--color-coral-soft); }

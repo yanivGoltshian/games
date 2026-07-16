@@ -11,12 +11,17 @@ function BackgroundBlob({ id, from, to }: { id: string; from: string; to: string
   return (
     <>
       <defs>
-        <radialGradient id={id} cx="34%" cy="28%" r="80%">
+        <radialGradient id={id} cx="34%" cy="24%" r="88%">
           <stop offset="0%" stopColor={from} />
           <stop offset="100%" stopColor={to} />
         </radialGradient>
       </defs>
       <rect x="8" y="8" width="304" height="304" rx="88" fill={`url(#${id})`} />
+      <path d="M34 228 Q160 180 286 228 V286 Q286 300 270 300 H50 Q34 300 34 284 Z" fill="#ffffff" opacity="0.15" />
+      <ellipse cx="160" cy="258" rx="102" ry="18" fill="#3b2b20" opacity="0.1" />
+      <path d="M50 76 Q100 24 164 34" fill="none" stroke="#ffffff" strokeWidth="12" strokeLinecap="round" opacity="0.18" />
+      <circle cx="272" cy="64" r="7" fill="#ffffff" opacity="0.48" />
+      <circle cx="250" cy="44" r="3.5" fill="#ffffff" opacity="0.42" />
     </>
   );
 }

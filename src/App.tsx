@@ -7,32 +7,15 @@ import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
 import { speechService } from './services/speech';
+import { parseHash, type Route } from './routes';
 import { CountingGame } from './games/CountingGame';
 import { ListeningGame } from './games/ListeningGame';
 import { MemoryGame } from './games/MemoryGame';
 import { PuzzleGame } from './games/PuzzleGame';
 import { SortingGame } from './games/SortingGame';
 
-type Route =
-  | { kind: 'home' }
-  | { kind: 'caregiver' }
-  | { kind: 'game'; domain: DomainKey };
-
-function parseHash(hash: string): Route {
-  const cleaned = hash.replace(/^#/, '') || '/';
-  if (cleaned === '/caregiver') {
-    return { kind: 'caregiver' };
-  }
-  if (cleaned.startsWith('/games/')) {
-    const domain = cleaned.replace('/games/', '') as DomainKey;
-    if (['listening', 'counting', 'sorting', 'puzzle', 'memory'].includes(domain)) {
-      return { kind: 'game', domain };
-    }
-  }
-  return { kind: 'home' };
-}
-
 function navigate(path: string) {
+  speechService.cancelAll('navigation');
   window.location.hash = path;
 }
 

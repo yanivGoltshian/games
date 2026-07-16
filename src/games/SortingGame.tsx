@@ -13,6 +13,7 @@ import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 
 const BASE_ITEM_SIZE = 96;
+const SPEECH_SCOPE = 'game:sorting';
 
 export function SortingGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
@@ -21,9 +22,10 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
   const [items, setItems] = useState<Record<string, DragItemState>>({});
   const surfaceRef = useRef<HTMLDivElement>(null);
   const zoneGridRef = useRef<HTMLDivElement>(null);
+  const lastSpokenSelection = useRef<string | null>(null);
   const size = useMeasuredSize(surfaceRef);
 
-  const { round, startNextRound } = useAdaptiveRound('sorting', domainProgress, generateSortingRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound('sorting', domainProgress, generateSortingRound);
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
   const zoneRefs = useMemo(
@@ -31,10 +33,17 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
     [round],
   );
 
-  const speakPrompt = useCallback(async (): Promise<void> => {
+  const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
-    await speechService.speakSegments(segments, settings);
-  }, [round.promptEn, round.promptHe, settings]);
+    await speechService.speakSegments(segments, settings, {
+      scope: SPEECH_SCOPE,
+      key: `prompt:${roundKey}`,
+      priority: interrupt ? 'replay' : 'prompt',
+      interrupt,
+    });
+  }, [round.promptEn, round.promptHe, roundKey, settings]);
+  const speakPromptRef = useRef(speakPrompt);
+  speakPromptRef.current = speakPrompt;
 
   useEffect(() => {
     const itemSize = Math.max(72, Math.min(140, Math.floor(Math.min(size.width, size.height) * 0.22))) || BASE_ITEM_SIZE;
@@ -61,15 +70,17 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
         }),
       ),
     );
+  }, [round, size.height, size.width]);
+
+  useEffect(() => {
     setPlacements({});
     setAttempts(0);
     setCelebration(null);
     lastSpokenSelection.current = null;
     if (mediaReady) {
-      void speakPrompt();
+      void speakPromptRef.current();
     }
-    return () => speechService.cancel();
-  }, [mediaReady, round, size.height, size.width, speakPrompt]);
+  }, [mediaReady, roundKey]);
 
   const getSnapPosition = (itemId: string, zoneId: string, placementIndex: number) => {
     const zoneRect = zoneRefs[zoneId]?.current?.getBoundingClientRect();
@@ -102,6 +113,7 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
           void speechService.speakSegments(
             buildPhraseSegments(targetBin.labelHe, targetBin.labelEn, settings.languageMode, settings.englishVoiceLocale),
             settings,
+            { scope: SPEECH_SCOPE, key: 'target-bin', priority: 'label', staleAfterSuccess: true },
           );
         }
         return false;
@@ -145,7 +157,6 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
   });
 
   // Labeling tap: naming the object as soon as it is selected/picked up.
-  const lastSpokenSelection = useRef<string | null>(null);
   useEffect(() => {
     if (!selectedId || selectedId === lastSpokenSelection.current || !mediaReady) {
       return;
@@ -153,7 +164,11 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
     lastSpokenSelection.current = selectedId;
     const definition = round.items.find((item) => item.id === selectedId);
     if (definition) {
-      void speechService.speakSegments(buildPhraseSegments(definition.he, definition.en, settings.languageMode, settings.englishVoiceLocale), settings);
+      void speechService.speakSegments(
+        buildPhraseSegments(definition.he, definition.en, settings.languageMode, settings.englishVoiceLocale),
+        settings,
+        { scope: SPEECH_SCOPE, key: 'selection-label', priority: 'label' },
+      );
     }
   }, [selectedId, round.items, settings, mediaReady]);
 
@@ -164,8 +179,9 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
       accentClass={gameMeta.sorting.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={speakPrompt}
+      onRepeat={() => void speakPrompt(true)}
       repeatDisabled={settings.quietMode || !speechStatus.supported}
+      repeatSpeaking={speechStatus.speaking}
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
@@ -173,6 +189,7 @@ export function SortingGame({ domainProgress, settings, mediaReady, speechStatus
         celebration ? (
           <SuccessOverlay
             settings={settings}
+            scope={SPEECH_SCOPE}
             seed={celebration.seed}
             targetSegments={celebration.targetSegments}
             tier={celebration.tier}

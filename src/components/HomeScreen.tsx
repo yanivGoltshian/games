@@ -9,10 +9,9 @@ interface HomeScreenProps {
 }
 
 /**
- * Child home: a horizontal CSS scroll-snap carousel of five enormous,
- * stable-identity activity portals. No instructions, install hints,
- * privacy copy, or progress dashboard live here - those are caregiver-only
- * (see CaregiverPanel).
+ * Child home: all five stable-identity activity portals are visible together.
+ * No swipe knowledge, reading, progress dashboard, or caregiver copy is
+ * required to discover and launch an activity.
  */
 export function HomeScreen({ onOpenGame }: HomeScreenProps) {
   return (
@@ -21,12 +20,12 @@ export function HomeScreen({ onOpenGame }: HomeScreenProps) {
         <PuppyMascotArt mood="idle" className="home-welcome__mascot" />
         <h1>שלום שון</h1>
       </header>
-      <ul className="portal-carousel">
+      <ul className="portal-grid">
         {DOMAIN_KEYS.map((domain) => {
           const meta = gameMeta[domain];
           const PortalArt = PORTAL_ART[domain];
           return (
-            <li key={domain} className="portal-carousel__item">
+            <li key={domain} className="portal-grid__item" data-domain={domain}>
               <button
                 className={`portal-card ${meta.accentClass}`}
                 onClick={() => onOpenGame(domain)}

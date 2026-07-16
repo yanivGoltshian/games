@@ -7,7 +7,7 @@ export function useAdaptiveRound<TRound>(
   domain: DomainKey,
   progress: DomainProgress,
   generate: RoundGenerator<TRound>,
-): { round: TRound; startNextRound: () => void } {
+): { round: TRound; roundKey: number; startNextRound: () => void } {
   const latestProgress = useRef(progress);
   const roundIndex = useRef(0);
   latestProgress.current = progress;
@@ -26,5 +26,5 @@ export function useAdaptiveRound<TRound>(
     setRound(makeRound(latestProgress.current, roundIndex.current));
   }, [makeRound]);
 
-  return { round, startNextRound };
+  return { round, roundKey: roundIndex.current, startNextRound };
 }

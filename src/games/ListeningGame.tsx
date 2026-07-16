@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
 import { SuccessOverlay } from '../components/SuccessOverlay';
@@ -11,30 +11,37 @@ import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 
 const WIGGLE_MS = 520;
+const SPEECH_SCOPE = 'game:listening';
 
 export function ListeningGame({ domainProgress, settings, mediaReady, speechStatus, onBack, onCompleteRound }: ToddlerGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [wiggleId, setWiggleId] = useState<string | null>(null);
 
-  const { round, startNextRound } = useAdaptiveRound('listening', domainProgress, generateListeningRound);
+  const { round, roundKey, startNextRound } = useAdaptiveRound('listening', domainProgress, generateListeningRound);
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
 
-  const speakPrompt = useCallback(async (): Promise<void> => {
+  const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
-    await speechService.speakSegments(segments, settings);
-  }, [round.promptEn, round.promptHe, settings]);
+    await speechService.speakSegments(segments, settings, {
+      scope: SPEECH_SCOPE,
+      key: `prompt:${roundKey}`,
+      priority: interrupt ? 'replay' : 'prompt',
+      interrupt,
+    });
+  }, [round.promptEn, round.promptHe, roundKey, settings]);
+  const speakPromptRef = useRef(speakPrompt);
+  speakPromptRef.current = speakPrompt;
 
   useEffect(() => {
     setAttempts(0);
     setCelebration(null);
     setWiggleId(null);
     if (mediaReady) {
-      void speakPrompt();
+      void speakPromptRef.current();
     }
-    return () => speechService.cancel();
-  }, [mediaReady, round, speakPrompt]);
+  }, [mediaReady, roundKey]);
 
   const handleChoice = (optionId: string) => {
     if (celebration) {
@@ -60,13 +67,17 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
     // immediately re-model the target so the child hears it again.
     setWiggleId(optionId);
     window.setTimeout(() => setWiggleId((current) => (current === optionId ? null : current)), WIGGLE_MS);
-    void speechService
-      .speakSegments(buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale), settings)
-      .then((completed) => {
-        if (completed && mediaReady) {
-          void speakPrompt();
-        }
-      });
+    const labelSegments = buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale);
+    const promptSegments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
+    if (labelSegments.length > 0) {
+      labelSegments[labelSegments.length - 1] = { ...labelSegments[labelSegments.length - 1]!, pauseAfterMs: 280 };
+    }
+    void speechService.speakSegments([...labelSegments, ...promptSegments], settings, {
+      scope: SPEECH_SCOPE,
+      key: 'feedback',
+      priority: 'label',
+      staleAfterSuccess: true,
+    });
   };
 
   return (
@@ -76,8 +87,9 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
       accentClass={gameMeta.listening.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={speakPrompt}
+      onRepeat={() => void speakPrompt(true)}
       repeatDisabled={settings.quietMode || !speechStatus.supported}
+      repeatSpeaking={speechStatus.speaking}
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
@@ -85,6 +97,7 @@ export function ListeningGame({ domainProgress, settings, mediaReady, speechStat
         celebration ? (
           <SuccessOverlay
             settings={settings}
+            scope={SPEECH_SCOPE}
             seed={celebration.seed}
             targetSegments={celebration.targetSegments}
             tier={celebration.tier}

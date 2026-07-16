@@ -364,12 +364,33 @@ const OBJECT_ART: Record<string, (props: ArtProps) => React.JSX.Element> = {
   bear: BearArt,
 };
 
+const REALISTIC_ASSETS: Record<string, string> = {
+  apple: '/assets/vocabulary/apple.webp',
+  duck: '/assets/vocabulary/duck.webp',
+  bird: '/assets/vocabulary/bird.webp',
+  sun: '/assets/vocabulary/sun.webp',
+};
+
 export interface ConceptArtProps extends ArtProps {
   conceptId: string;
 }
 
 /** Generic dispatcher used by content that only knows a stable concept id. */
 export function ConceptArt({ conceptId, label, className }: ConceptArtProps) {
+  const realisticAsset = REALISTIC_ASSETS[conceptId];
+  if (realisticAsset) {
+    return (
+      <img
+        src={realisticAsset}
+        alt={label ?? ''}
+        aria-hidden={label ? undefined : 'true'}
+        className={`concept-photo ${className ?? ''}`.trim()}
+        data-art-id={`photo-${conceptId}`}
+        draggable={false}
+        decoding="async"
+      />
+    );
+  }
   const Component = OBJECT_ART[conceptId];
   if (!Component) {
     return null;
