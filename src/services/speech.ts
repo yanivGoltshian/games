@@ -18,7 +18,6 @@ export interface SpeechSegment {
   recordedText?: string | null;
   pauseAfterMs?: number;
   cue?: string;
-  recordedText?: string;
   stretch?: RecordedSpeechStretch;
 }
 
