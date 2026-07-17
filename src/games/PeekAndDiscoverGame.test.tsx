@@ -6,11 +6,18 @@ import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialCommunicationProgress } from '../domain/communicationProgress';
+import type { CommunicationGameScope } from '../domain/communicationGame';
 import { learningConcepts } from '../content/concepts';
 import type { CommunicationAssetReadiness } from '../services/communicationAssetReadiness';
-import type { InteractionMediaOutcome, InteractionMediaRequest } from '../services/interactionMediaCoordinator';
+import type {
+  InteractionCancellationReason,
+  InteractionMediaOutcome,
+  InteractionMediaRequest,
+} from '../services/interactionMediaCoordinator';
+import type { RecordedSpeechBackend } from '../services/recordedSpeech';
 import {
   PeekAndDiscoverGame,
+  PeekAndDiscoverRecordedSpeechBackend,
   type PeekAndDiscoverAmbientCoordinator,
   type PeekAndDiscoverAssetErrorEvent,
   type PeekAndDiscoverGameCoordinator,
@@ -24,6 +31,8 @@ import {
   PEEK_AND_DISCOVER_REDUCED_MOTION_MS,
   PEEK_AND_DISCOVER_REST_MS,
   PEEK_AND_DISCOVER_REVEAL_MS,
+  PEEK_AND_DISCOVER_SILENCE_DEMO_MS,
+  PEEK_AND_DISCOVER_SILENCE_WAIT_MS,
 } from './peekAndDiscover';
 import type { ToddlerSettings } from '../domain/types';
 
@@ -81,8 +90,35 @@ class FakeGameCoordinator implements PeekAndDiscoverGameCoordinator {
     }
     return reason;
   });
+  readonly notifyInteraction = vi.fn((
+    scope: CommunicationGameScope,
+    reason: InteractionCancellationReason,
+  ) => {
+    if (!this.settleOnNotify) {
+      return;
+    }
+    for (let index = 0; index < this.outcomes.length; index += 1) {
+      const outcome = this.outcomes[index];
+      const request = this.calls[index];
+      if (
+        outcome
+        && request
+        && !outcome.settled
+        && request.scope.activityId === scope.activityId
+        && request.scope.sessionId === scope.sessionId
+      ) {
+        outcome.resolve({
+          intentId: request.intentId,
+          status: reason === 'exit' || reason === 'background' ? 'cancelled' : 'replaced',
+        });
+      }
+    }
+  });
 
-  constructor(private readonly autoStatus: InteractionMediaOutcome['status'] | null = null) {}
+  constructor(
+    private readonly autoStatus: InteractionMediaOutcome['status'] | null = null,
+    private readonly settleOnNotify = true,
+  ) {}
 
   resolve(index: number, status: InteractionMediaOutcome['status'] = 'completed'): void {
     const outcome = this.outcomes[index];
@@ -430,6 +466,45 @@ describe('PeekAndDiscoverGame', () => {
     expect(gameCoordinator.play).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps late readiness and preload settlement blocked after foreground until fresh touch', async () => {
+    const readiness = deferred<CommunicationAssetReadiness>();
+    const preload = deferred<void>();
+    await renderGame({
+      dependencies: {
+        assetReadiness: { validate: vi.fn(() => readiness.promise) },
+        preloadImage: vi.fn(() => preload.promise),
+      },
+    });
+    await settle();
+
+    setVisibility('hidden');
+    await settle();
+    expect(stage().dataset.phase).toBe('paused');
+    setVisibility('visible');
+    await settle();
+    expect(stage().dataset.phase).toBe('ready');
+
+    readiness.resolve(readyReadiness('he-IL'));
+    preload.resolve(undefined);
+    await settle();
+    expect(stage().dataset.phase).toBe('ready');
+
+    await advanceBy(
+      PEEK_AND_DISCOVER_SILENCE_WAIT_MS
+      + PEEK_AND_DISCOVER_SILENCE_DEMO_MS
+      + PEEK_AND_DISCOVER_REVEAL_MS
+      + 100,
+    );
+    expect(stage().dataset.phase).toBe('ready');
+    expect(gameCoordinator.play).not.toHaveBeenCalled();
+
+    firePointer(cover(), 'pointerdown', { pointerId: 34, pointerType: 'touch' });
+    await settle();
+    await advanceBy(PEEK_AND_DISCOVER_REVEAL_MS);
+    expect(stage().dataset.phase).toBe('mandatory-model');
+    expect(gameCoordinator.play).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps a foregrounded completed gag on the same object until the child advances it', async () => {
     await renderGame();
     await interruptTutorialAndReachMandatoryModel();
@@ -595,6 +670,66 @@ describe('PeekAndDiscoverGame', () => {
     expect(stage().dataset.phase).toBe('session-stop');
     const timeStop = onSessionStop.mock.calls[0]?.[0] as PeekAndDiscoverSessionStopEvent;
     expect(timeStop.reason).toBe('time-elapsed');
+  });
+
+  it('cancels only this activity when the deadline fires during mandatory playback', async () => {
+    gameCoordinator = new FakeGameCoordinator(null, false);
+    await renderGame({ dependencies: { gameCoordinator } });
+    await interruptTutorialAndReachMandatoryModel();
+    expect(stage().dataset.phase).toBe('mandatory-model');
+    expect(gameCoordinator.outcomes[0]?.settled).toBe(false);
+
+    await advanceBy(PEEK_AND_DISCOVER_MAX_DURATION_MS - PEEK_AND_DISCOVER_REVEAL_MS);
+    expect(stage().dataset.phase).toBe('session-stop');
+    expect(gameCoordinator.notifyInteraction).toHaveBeenCalledTimes(1);
+    expect(gameCoordinator.notifyInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activityId: 'peek-and-discover',
+        sessionId: 'test-session',
+        roundId: 'round-1',
+      }),
+      'round-replacement',
+    );
+    expect(gameCoordinator.cancelAll).not.toHaveBeenCalled();
+    expect(gameCoordinator.outcomes[0]?.settled).toBe(false);
+    expect(onSessionStop).toHaveBeenCalledTimes(1);
+    expect((onSessionStop.mock.calls[0]?.[0] as PeekAndDiscoverSessionStopEvent).reason).toBe('time-elapsed');
+    expect(onProgressChange).toHaveBeenCalledTimes(1);
+    expect(onProgressChange.mock.calls[0]?.[0]).toEqual(expect.objectContaining({
+      roundsSeen: 0,
+      sessionsCompleted: 1,
+    }));
+
+    gameCoordinator.resolve(0, 'completed');
+    await settle();
+    expect(gameCoordinator.outcomes[0]?.settled).toBe(true);
+    expect(stage().dataset.phase).toBe('session-stop');
+    expect(onSessionStop).toHaveBeenCalledTimes(1);
+    expect(onProgressChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not start recorded playback when cancellation occurs during unlock', async () => {
+    const unlock = deferred<void>();
+    const player: RecordedSpeechBackend = {
+      isEnabled: vi.fn(() => true),
+      unlock: vi.fn(() => unlock.promise),
+      play: vi.fn(async () => undefined),
+      cancel: vi.fn(),
+    };
+    const backend = new PeekAndDiscoverRecordedSpeechBackend(player);
+    const scope = 'communication:peek-and-discover:test-session:round-1:word-1';
+    const playback = backend.speakSegments(
+      [{ text: 'כדור', recordedText: 'כדור', locale: 'he-IL' }],
+      defaultSettings,
+      { scope, key: 'mandatory-word', priority: 'label' },
+    );
+
+    backend.cancelScope(scope, 'replay');
+    expect(player.cancel).toHaveBeenCalledTimes(1);
+    unlock.resolve(undefined);
+
+    await expect(playback).resolves.toEqual(expect.objectContaining({ status: 'superseded' }));
+    expect(player.play).not.toHaveBeenCalled();
   });
 
   it('never calls getUserMedia or speechSynthesis and keeps to existing image URLs only', async () => {

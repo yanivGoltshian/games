@@ -442,7 +442,10 @@ export function reducePeekAndDiscover(
           tutorialDemoActive,
           silenceDemoActive: false,
           silenceDemoShown: false,
-          autoplayBlocked: state.phase === 'tutorial' && state.tutorialInterrupted,
+          autoplayBlocked: (
+            state.autoplayBlocked
+            || (state.phase === 'tutorial' && state.tutorialInterrupted)
+          ),
           tokens: {
             ...state.tokens,
             timer: {

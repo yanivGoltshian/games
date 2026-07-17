@@ -135,6 +135,7 @@ export interface PeekAndDiscoverSessionStopEvent {
 
 export interface PeekAndDiscoverGameCoordinator {
   play(request: InteractionMediaRequest): Promise<InteractionMediaOutcome>;
+  notifyInteraction(scope: CommunicationGameScope, reason: InteractionCancellationReason): void;
   cancelAll(reason?: 'exit' | 'background'): void;
 }
 
@@ -187,6 +188,16 @@ export class PeekAndDiscoverRecordedSpeechBackend implements InteractionSpeechBa
       await this.player.unlock();
     } catch {
       // unlock is opportunistic; actual playback decides whether audio is ready
+    }
+
+    if (this.activeScope !== scope) {
+      return { requestId, status: 'superseded' };
+    }
+    if (this.forcedStatus !== null) {
+      const status = this.forcedStatus;
+      this.activeScope = null;
+      this.forcedStatus = null;
+      return { requestId, status };
     }
 
     try {
@@ -879,6 +890,8 @@ export function PeekAndDiscoverGame({
     };
   }, [resolvedSessionId, state]);
 
+  const expiryScope = state.currentRound.scope;
+
   useEffect(() => {
     if (state.phase === 'paused' || state.phase === 'asset-error' || state.phase === 'session-stop') {
       return;
@@ -889,6 +902,7 @@ export function PeekAndDiscoverGame({
     }
     expiryKeyRef.current = effectKey;
     const timer = window.setTimeout(() => {
+      gameCoordinator.notifyInteraction(expiryScope, 'round-replacement');
       dispatch({
         type: 'session-expired',
         sessionToken: state.tokens.timer.session,
@@ -901,7 +915,13 @@ export function PeekAndDiscoverGame({
         expiryKeyRef.current = null;
       }
     };
-  }, [state.phase, state.sessionDeadlineAt, state.tokens.timer.session]);
+  }, [
+    expiryScope,
+    gameCoordinator,
+    state.phase,
+    state.sessionDeadlineAt,
+    state.tokens.timer.session,
+  ]);
 
   const cancelToAssetError = (): void => {
     dispatch({

@@ -691,6 +691,33 @@ describe('peek and discover background, foreground, and expiry', () => {
     expect(resumed.tutorialDemoActive).toBe(false);
   });
 
+  it('preserves foreground autoplay blocking when late readiness settles', () => {
+    const checking = createState();
+    const paused = reducePeekAndDiscover(checking, { type: 'backgrounded' });
+    const resumed = reducePeekAndDiscover(paused, { type: 'foregrounded' });
+
+    expect(resumed.phase).toBe('ready');
+    expect(resumed.assetStatus).toBe('checking');
+    expect(resumed.autoplayBlocked).toBe(true);
+
+    const ready = reducePeekAndDiscover(resumed, {
+      type: 'asset-readiness-resolved',
+      generationToken: resumed.tokens.generation,
+      imageToken: resumed.tokens.image,
+      readiness: readyAsset(resumed.roundLocale),
+    });
+    expect(ready.assetStatus).toBe('ready');
+    expect(ready.autoplayBlocked).toBe(true);
+    expect(reducePeekAndDiscover(ready, {
+      type: 'silence-demo-started',
+      silenceToken: ready.tokens.timer.silence,
+    })).toBe(ready);
+
+    const touched = reducePeekAndDiscover(ready, { type: 'start-reveal', source: 'tap' });
+    expect(touched.phase).toBe('revealing');
+    expect(touched.autoplayBlocked).toBe(false);
+  });
+
   it('pauses reaction and rest to a reaction resume target and preserves gag state', () => {
     const reaction = createState({
       phase: 'reaction',
