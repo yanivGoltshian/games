@@ -191,10 +191,7 @@ describe('communication integration selectors', () => {
 
   it('fails an activity closed instead of throwing when its readiness map is omitted', () => {
     const release = readyRelease(['peek', 'phone']);
-    const readiness: Partial<CommunicationReleaseReadiness> = {
-      ...release.readiness,
-    };
-    delete readiness.phone;
+    const { phone: _omittedPhoneReadiness, ...readiness } = release.readiness;
     const result = evaluateCommunicationPublicAvailability({
       release: {
         ...release,
