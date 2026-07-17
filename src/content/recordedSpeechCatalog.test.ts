@@ -55,18 +55,18 @@ describe('recorded speech pronunciation layer', () => {
   const catalog = collectRecordedSpeechCatalog();
   const byLocale = (locale: string) => catalog.filter((entry) => entry.locale === locale);
 
-  it('keeps a stable count of 500 unique phrases per locale', () => {
+  it('keeps a stable count of 490 unique phrases per locale', () => {
     for (const locale of ['he-IL', 'en-US', 'en-GB']) {
       const entries = byLocale(locale);
-      expect(entries).toHaveLength(500);
+      expect(entries).toHaveLength(490);
       const keys = entries.map((entry) => entry.text);
-      expect(new Set(keys).size).toBe(500);
+      expect(new Set(keys).size).toBe(490);
     }
   });
 
   it('gives every Hebrew entry a pointed spokenText that strips back to the source', () => {
     const hebrew = byLocale('he-IL');
-    expect(hebrew).toHaveLength(500);
+    expect(hebrew).toHaveLength(490);
     for (const entry of hebrew) {
       expect(entry.spokenText, `missing spokenText for ${entry.text}`).toBeTruthy();
       const spoken = entry.spokenText as string;

@@ -28,7 +28,6 @@ import {
   RETRY_HE_STANDARD,
 } from './retry';
 import { LEVEL_UP_SPEECH, MORE_NUMBERS_SPEECH } from './levelUpSpeech';
-import { SILLY_ALIEN_WORDS, SILLY_ALIEN_INTRO, SILLY_ALIEN_PROMPT, SILLY_ALIEN_LISTENING, SILLY_ALIEN_SUCCESS, SILLY_ALIEN_RETRY } from './sillyAlien';
 import { buildCountingMissModel } from '../domain/countingFeedback';
 import {
   SORTING_COLOR_LABELS,
@@ -142,16 +141,6 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
     add('en-US', line.text);
     add('en-GB', line.text);
   });
-
-  
-  SILLY_ALIEN_WORDS.forEach((word) => {
-    addPair(word.brokenHe, word.brokenEn);
-  });
-  addPair(SILLY_ALIEN_INTRO.he, SILLY_ALIEN_INTRO.en);
-  addPair(SILLY_ALIEN_PROMPT.he, SILLY_ALIEN_PROMPT.en);
-  addPair(SILLY_ALIEN_LISTENING.he, SILLY_ALIEN_LISTENING.en);
-  addPair(SILLY_ALIEN_SUCCESS.he, SILLY_ALIEN_SUCCESS.en);
-  addPair(SILLY_ALIEN_RETRY.he, SILLY_ALIEN_RETRY.en);
 
   return [...entries.values()].sort((left, right) => (
     left.locale.localeCompare(right.locale)
