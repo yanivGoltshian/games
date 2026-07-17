@@ -1,6 +1,9 @@
 import type { SpeechLocale } from './types';
 
 export const MAX_COMMUNICATION_OPPORTUNITIES = 2;
+export const COMMUNICATION_ACTIVITY_IDS = ['peek', 'train', 'phone', 'story'] as const;
+
+export type CommunicationActivityId = (typeof COMMUNICATION_ACTIVITY_IDS)[number];
 
 export interface CommunicationGameScope {
   activityId: string;
@@ -18,6 +21,10 @@ export interface CommunicationLocaleLock {
 }
 
 export type CommunicationInputSource = 'touch' | 'voice' | 'automatic';
+
+export function isCommunicationActivityId(value: string): value is CommunicationActivityId {
+  return COMMUNICATION_ACTIVITY_IDS.some((activityId) => activityId === value);
+}
 
 export function communicationScopeKey(scope: CommunicationGameScope): string {
   return [

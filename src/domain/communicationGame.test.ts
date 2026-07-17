@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COMMUNICATION_ACTIVITY_IDS,
   MAX_COMMUNICATION_OPPORTUNITIES,
   communicationOpportunityLimit,
   communicationLocaleUnitKey,
   communicationScopeKey,
   createCommunicationLocaleLock,
+  isCommunicationActivityId,
   localeLockMatches,
   sameCommunicationScope,
   type CommunicationGameScope,
@@ -18,6 +20,12 @@ const scope: CommunicationGameScope = {
 };
 
 describe('communication game contracts', () => {
+  it('defines the four shared communication activity scope identities once', () => {
+    expect(COMMUNICATION_ACTIVITY_IDS).toEqual(['peek', 'train', 'phone', 'story']);
+    expect(isCommunicationActivityId('phone')).toBe(true);
+    expect(isCommunicationActivityId('counting')).toBe(false);
+  });
+
   it('locks one exact locale to one natural interaction scope', () => {
     const lock = createCommunicationLocaleLock(scope, 'he-IL');
 
