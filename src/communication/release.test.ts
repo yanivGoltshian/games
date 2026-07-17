@@ -41,14 +41,14 @@ describe('communication release gate', () => {
     expect(evaluateCommunicationRelease(
       DEFAULT_COMMUNICATION_RELEASE,
       { languageMode: 'he', englishVoiceLocale: 'en-US' },
-    ).available).toBe(false);
+    ).enabledAndContentReady).toBe(false);
   });
 
   it('requires explicit enablement even when every exact-locale pack is ready', () => {
     expect(evaluateCommunicationRelease(
       configuration(['he-IL'], false),
       { languageMode: 'he', englishVoiceLocale: 'en-US' },
-    ).available).toBe(false);
+    ).enabledAndContentReady).toBe(false);
   });
 
   it('requires every one of the four packs and exposes no partial release', () => {
@@ -61,7 +61,7 @@ describe('communication release gate', () => {
       { languageMode: 'he', englishVoiceLocale: 'en-US' },
     );
 
-    expect(result.available).toBe(false);
+    expect(result.enabledAndContentReady).toBe(false);
     expect(result.activities).toEqual([
       { activityId: 'peek', status: 'ready' },
       { activityId: 'train', status: 'ready' },
@@ -75,11 +75,11 @@ describe('communication release gate', () => {
     expect(evaluateCommunicationRelease(
       usOnly,
       { languageMode: 'en', englishVoiceLocale: 'en-US' },
-    ).available).toBe(true);
+    ).enabledAndContentReady).toBe(true);
     expect(evaluateCommunicationRelease(
       usOnly,
       { languageMode: 'en', englishVoiceLocale: 'en-GB' },
-    ).available).toBe(false);
+    ).enabledAndContentReady).toBe(false);
   });
 
   it('requires both exact locales in bilingual mode', () => {
@@ -90,11 +90,11 @@ describe('communication release gate', () => {
     expect(evaluateCommunicationRelease(
       configuration(['he-IL', 'en-GB']),
       { languageMode: 'bilingual', englishVoiceLocale: 'en-GB' },
-    ).available).toBe(true);
+    ).enabledAndContentReady).toBe(true);
     expect(evaluateCommunicationRelease(
       configuration(['he-IL']),
       { languageMode: 'bilingual', englishVoiceLocale: 'en-GB' },
-    ).available).toBe(false);
+    ).enabledAndContentReady).toBe(false);
   });
 
   it('rejects a readiness object whose result locale does not match its exact key', () => {
@@ -108,6 +108,6 @@ describe('communication release gate', () => {
     expect(evaluateCommunicationRelease(
       { explicitlyEnabled: true, readiness },
       { languageMode: 'en', englishVoiceLocale: 'en-US' },
-    ).available).toBe(false);
+    ).enabledAndContentReady).toBe(false);
   });
 });

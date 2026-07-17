@@ -5,6 +5,7 @@ import type { AppProgress, ToddlerSettings } from '../domain/types';
 import { COMMUNICATION_SHELF_REGISTRY } from './registry';
 import {
   DEFAULT_COMMUNICATION_RELEASE,
+  evaluateCommunicationRelease,
   type CommunicationReleaseConfiguration,
   type CommunicationReleaseEvaluation,
 } from './release';
@@ -33,6 +34,12 @@ export interface CommunicationIntegrationContract {
   games: Readonly<Partial<Record<CommunicationActivityId, CommunicationGameRegistration>>>;
 }
 
+export interface CommunicationPublicAvailability {
+  available: boolean;
+  release: CommunicationReleaseEvaluation;
+  missingGameActivityIds: readonly CommunicationActivityId[];
+}
+
 export interface CommunicationCaregiverItem extends CommunicationCaregiverMetrics {
   activityId: CommunicationActivityId;
   readiness: 'ready' | 'not-ready';
@@ -42,6 +49,22 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
   release: DEFAULT_COMMUNICATION_RELEASE,
   games: Object.freeze({}),
 });
+
+export function evaluateCommunicationPublicAvailability(
+  integration: CommunicationIntegrationContract,
+  settings: Pick<ToddlerSettings, 'languageMode' | 'englishVoiceLocale'>,
+): CommunicationPublicAvailability {
+  const release = evaluateCommunicationRelease(integration.release, settings);
+  const missingGameActivityIds = COMMUNICATION_SHELF_REGISTRY
+    .filter(({ activityId }) => integration.games[activityId]?.component === undefined)
+    .map(({ activityId }) => activityId);
+
+  return {
+    available: release.enabledAndContentReady && missingGameActivityIds.length === 0,
+    release,
+    missingGameActivityIds,
+  };
+}
 
 export function buildCommunicationCaregiverItems(
   integration: CommunicationIntegrationContract,

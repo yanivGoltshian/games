@@ -33,7 +33,6 @@ export function CommunicationShelf({
   const pointerOwner = useRef<PointerOwner | null>(null);
   const selectionCommitted = useRef(false);
   const [pressedActivity, setPressedActivity] = useState<CommunicationActivityId | null>(null);
-  const [replaySequence, setReplaySequence] = useState(0);
 
   const commitSelection = useCallback((activityId: CommunicationActivityId) => {
     if (selectionCommitted.current) {
@@ -87,11 +86,12 @@ export function CommunicationShelf({
     }
   };
 
-  const replay = () => {
-    pointerOwner.current = null;
-    selectionCommitted.current = false;
-    setPressedActivity(null);
-    setReplaySequence((current) => current + 1);
+  const handleHome = (event: MouseEvent<HTMLButtonElement>) => {
+    if (pointerOwner.current || selectionCommitted.current) {
+      event.preventDefault();
+      return;
+    }
+    onHome();
   };
 
   return (
@@ -106,23 +106,15 @@ export function CommunicationShelf({
         <button
           aria-label={english ? 'Home' : 'דף הבית'}
           className="communication-shelf__edge-control communication-shelf__edge-control--home"
-          onClick={onHome}
+          onClick={handleHome}
           type="button"
         >
           <span aria-hidden="true">⌂</span>
         </button>
         <PuppyMascotArt className="communication-shelf__mascot" />
-        <button
-          aria-label={english ? 'Replay shelf' : 'להפעיל שוב את המדף'}
-          className="communication-shelf__edge-control communication-shelf__edge-control--replay"
-          onClick={replay}
-          type="button"
-        >
-          <span aria-hidden="true">↻</span>
-        </button>
       </header>
 
-      <ul className="communication-shelf__doors" data-replay-sequence={replaySequence}>
+      <ul className="communication-shelf__doors">
         {COMMUNICATION_SHELF_REGISTRY.map((entry) => {
           const title = english ? entry.title.en : entry.title.he;
           const pressed = pressedActivity === entry.activityId;

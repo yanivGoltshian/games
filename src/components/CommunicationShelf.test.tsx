@@ -65,6 +65,9 @@ describe('CommunicationShelf', () => {
     ]);
     expect(doors.every((door) => door.type === 'button')).toBe(true);
     expect(doors.every((door) => door.querySelector('svg')?.getAttribute('aria-hidden') === 'true')).toBe(true);
+    expect(container.querySelector('.communication-shelf__edge-control--replay')).toBeNull();
+    expect(container.querySelector('[data-replay-sequence]')).toBeNull();
+    expect(container.textContent).not.toContain('↻');
     expect(container.textContent).not.toMatch(/locked|coming soon|score|stars/i);
   });
 
@@ -114,6 +117,36 @@ describe('CommunicationShelf', () => {
       firstDoor.dispatchEvent(pointerEvent('pointerup', 1));
     });
 
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('peek');
+  });
+
+  it('does not let a secondary control interaction clear first-pointer ownership', async () => {
+    const onHome = vi.fn();
+    const onSelect = vi.fn();
+    await act(async () => {
+      root.render(
+        <CommunicationShelf
+          languageMode="en"
+          onHome={onHome}
+          onSelect={onSelect}
+          reducedMotion={false}
+        />,
+      );
+    });
+    const firstDoor = container.querySelector<HTMLButtonElement>('[data-activity-id="peek"]')!;
+    const secondDoor = container.querySelector<HTMLButtonElement>('[data-activity-id="phone"]')!;
+    const home = container.querySelector<HTMLButtonElement>('[aria-label="Home"]')!;
+
+    await act(async () => {
+      firstDoor.dispatchEvent(pointerEvent('pointerdown', 1));
+      home.click();
+      secondDoor.dispatchEvent(pointerEvent('pointerdown', 2));
+      secondDoor.dispatchEvent(pointerEvent('pointerup', 2));
+      firstDoor.dispatchEvent(pointerEvent('pointerup', 1));
+    });
+
+    expect(onHome).not.toHaveBeenCalled();
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith('peek');
   });

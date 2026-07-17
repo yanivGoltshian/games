@@ -21,7 +21,7 @@ export interface CommunicationActivityReleaseStatus {
 }
 
 export interface CommunicationReleaseEvaluation {
-  available: boolean;
+  enabledAndContentReady: boolean;
   requiredLocales: readonly SpeechLocale[];
   activities: readonly CommunicationActivityReleaseStatus[];
 }
@@ -72,7 +72,7 @@ export function evaluateCommunicationRelease(
   }));
 
   return {
-    available: configuration.explicitlyEnabled
+    enabledAndContentReady: configuration.explicitlyEnabled
       && activities.every((activity) => activity.status === 'ready'),
     requiredLocales,
     activities,

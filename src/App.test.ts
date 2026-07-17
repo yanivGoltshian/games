@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { PORTAL_ART } from './art/portalRegistry';
 import { gameMeta } from './content/games';
 import { DOMAIN_KEYS } from './domain/types';
-import { parseHash, resolveRouteForCommunicationRelease } from './routes';
+import {
+  isCommunicationHash,
+  parseHash,
+  resolveRouteForCommunicationAvailability,
+} from './routes';
 
 describe('child navigation', () => {
   it('exposes exactly eight stable activity destinations with art and metadata', () => {
@@ -50,15 +54,19 @@ describe('child navigation', () => {
     const shelf = parseHash('#/communication');
     const game = parseHash('#/communication/word-train');
 
-    expect(resolveRouteForCommunicationRelease(shelf, false, () => false)).toEqual({
+    expect(resolveRouteForCommunicationAvailability(shelf, false)).toEqual({
       kind: 'home',
     });
-    expect(resolveRouteForCommunicationRelease(game, false, () => true)).toEqual({
+    expect(resolveRouteForCommunicationAvailability(game, false)).toEqual({
       kind: 'home',
     });
-    expect(resolveRouteForCommunicationRelease(game, true, () => false)).toEqual({
-      kind: 'home',
-    });
-    expect(resolveRouteForCommunicationRelease(game, true, () => true)).toEqual(game);
+    expect(resolveRouteForCommunicationAvailability(game, true)).toEqual(game);
+  });
+
+  it('recognizes complete communication hash identities for fail-closed normalization', () => {
+    expect(isCommunicationHash('#/communication')).toBe(true);
+    expect(isCommunicationHash('#/communication/toy-phone')).toBe(true);
+    expect(isCommunicationHash('#/communication/unknown?mode=child')).toBe(true);
+    expect(isCommunicationHash('#/communications')).toBe(false);
   });
 });

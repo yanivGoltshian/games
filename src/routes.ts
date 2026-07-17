@@ -35,18 +35,23 @@ export function parseHash(hash: string): Route {
   return { kind: 'home' };
 }
 
-export function resolveRouteForCommunicationRelease(
+export function resolveRouteForCommunicationAvailability(
   route: Route,
   communicationAvailable: boolean,
-  hasCommunicationGame: (activityId: CommunicationActivityId) => boolean,
 ): Route {
   if (route.kind === 'communication-shelf') {
     return communicationAvailable ? route : { kind: 'home' };
   }
   if (route.kind === 'communication-game') {
-    return communicationAvailable && hasCommunicationGame(route.activityId)
+    return communicationAvailable
       ? route
       : { kind: 'home' };
   }
+
   return route;
+}
+
+export function isCommunicationHash(hash: string): boolean {
+  const path = hash.startsWith('#') ? hash.slice(1) : hash;
+  return /^\/communication(?:$|[/?])/.test(path);
 }

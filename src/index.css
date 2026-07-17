@@ -426,9 +426,7 @@ option {
   justify-self: start;
 }
 
-.communication-shelf__edge-control--replay {
-  justify-self: end;
-}
+
 
 .communication-shelf__edge-control:active {
   transform: scale(0.94);
