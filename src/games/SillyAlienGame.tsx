@@ -21,6 +21,7 @@ import {
 import { soundService } from '../services/sound';
 import {
   buildLocalizedSegments,
+  buildPersonalizedPhraseSegments,
   buildPhraseSegments,
   speechService,
   type SpeechResult,
@@ -36,6 +37,7 @@ import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useMicEffort } from './useMicEffort';
+import { personalizeChildName } from '../domain/childName';
 
 const SPEECH_SCOPE = 'game:silly-alien';
 
@@ -218,14 +220,14 @@ export function SillyAlienGame({
   const handleRepeat = useCallback((): void => {
     const { round: current, settings: currentSettings, roundKey: rk } = dataRef.current;
     void speechService.speakSegments(
-      buildLocalizedSegments(
-        [
-          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 },
-          SILLY_ALIEN_PROMPT,
-        ],
-        currentSettings.languageMode,
-        currentSettings.englishVoiceLocale,
-      ),
+      [
+        ...buildLocalizedSegments(
+          [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
+          currentSettings.languageMode,
+          currentSettings.englishVoiceLocale,
+        ),
+        ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, currentSettings),
+      ],
       currentSettings,
       { scope: SPEECH_SCOPE, key: `repeat:${rk}`, priority: 'replay', interrupt: true },
     );
@@ -271,14 +273,14 @@ export function SillyAlienGame({
       dispatch({ type: 'present-done' });
     };
     const speech = speechService.speakSegments(
-      buildLocalizedSegments(
-        [
-          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 },
-          SILLY_ALIEN_PROMPT,
-        ],
-        current2.languageMode,
-        current2.englishVoiceLocale,
-      ),
+      [
+        ...buildLocalizedSegments(
+          [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
+          current2.languageMode,
+          current2.englishVoiceLocale,
+        ),
+        ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, current2),
+      ],
       current2,
       { scope: SPEECH_SCOPE, key: `present:${rk}`, priority: 'prompt' },
     );
@@ -422,14 +424,14 @@ export function SillyAlienGame({
     const { round: current, settings: current2, roundKey: rk, micStop } = dataRef.current;
     micStop();
     void speechService.speakSegments(
-      buildLocalizedSegments(
-        [
-          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 380 },
-          SILLY_ALIEN_PROMPT,
-        ],
-        current2.languageMode,
-        current2.englishVoiceLocale,
-      ),
+      [
+        ...buildLocalizedSegments(
+          [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 380 }],
+          current2.languageMode,
+          current2.englishVoiceLocale,
+        ),
+        ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, current2),
+      ],
       current2,
       { scope: SPEECH_SCOPE, key: `fallback:${rk}`, priority: 'prompt' },
     );
@@ -485,7 +487,9 @@ export function SillyAlienGame({
             ? (englishOnly
               ? 'No microphone — a grown-up can tap the alien.'
               : 'אין מיקרופון — מבוגר יכול להקיש על החייזר.')
-            : (englishOnly ? round.promptEn : round.promptHe);
+            : (englishOnly
+              ? personalizeChildName(round.promptEn, settings.childName, 'en')
+              : personalizeChildName(round.promptHe, settings.childName, 'he'));
 
   const surfaceStyle = {
     '--level': state.currentLevel,

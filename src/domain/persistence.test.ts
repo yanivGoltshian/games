@@ -6,7 +6,8 @@ describe('persistence migration', () => {
   it('returns defaults for invalid data', () => {
     const progress = migrateStoredProgress('nope', { prefersReducedMotion: true, now: 55 });
 
-    expect(progress.version).toBe(4);
+    expect(progress.version).toBe(5);
+    expect(progress.settings.childName).toBe('שון');
     expect(progress.settings.reducedMotion).toBe(true);
     expect(progress.totalStars).toBe(0);
   });
@@ -47,7 +48,7 @@ describe('persistence migration', () => {
     const progress = migrateStoredProgress(null, { now: 88 });
     const raw = serializeProgress(progress);
 
-    expect(JSON.parse(raw).version).toBe(4);
+    expect(JSON.parse(raw).version).toBe(5);
     expect(JSON.parse(raw).updatedAt).toBe(88);
   });
 
@@ -118,7 +119,7 @@ describe('persistence migration', () => {
       },
     }, { now: 99 });
 
-    expect(progress.version).toBe(4);
+    expect(progress.version).toBe(5);
     expect(progress.totalStars).toBe(7);
     expect(progress.settings.quietMode).toBe(true);
     expect(progress.domains.puzzle).toMatchObject({
@@ -200,10 +201,11 @@ describe('persistence migration', () => {
       domains: existingDomains,
     }, { now: 999 });
 
-    expect(progress.version).toBe(4);
+    expect(progress.version).toBe(5);
     expect(progress.updatedAt).toBe(250);
     expect(progress.totalStars).toBe(99);
     expect(progress.settings).toEqual({
+      childName: 'שון',
       languageMode: 'bilingual',
       englishVoiceLocale: 'en-GB',
       soundLevel: 0.4,
@@ -229,7 +231,6 @@ describe('persistence migration', () => {
       recentResults: [],
       concepts: {},
     });
-    expect(progress.domains.wordStretch).toEqual(progress.domains.numberPairs);
   });
 
   it('continues from the chosen level after serialization and reload', () => {
@@ -263,7 +264,7 @@ describe('persistence migration', () => {
 
     const reloaded = migrateStoredProgress(JSON.parse(serializeProgress(progress)), { now: 2000 });
 
-    expect(reloaded.version).toBe(4);
+    expect(reloaded.version).toBe(5);
     expect(reloaded.totalStars).toBe(3);
     expect(reloaded.domains.numberPairs).toEqual(progress.domains.numberPairs);
     expect(reloaded.domains.numberPairs).toMatchObject({
@@ -276,5 +277,22 @@ describe('persistence migration', () => {
       lastProgressionChoice: 'next',
     });
     expect(reloaded.domains.numberPairs.recentResults).toHaveLength(3);
+  });
+
+  it('normalizes and preserves a Unicode child name in current settings', () => {
+    const progress = migrateStoredProgress({
+      version: 5,
+      settings: {
+        childName: '  נוֹעָה   לִי  ',
+        languageMode: 'en',
+        englishVoiceLocale: 'en-GB',
+        soundLevel: 0.4,
+        reducedMotion: false,
+        quietMode: false,
+      },
+    }, { now: 20 });
+
+    expect(progress.settings.childName).toBe('נוֹעָה לִי');
+    expect(progress.settings.languageMode).toBe('en');
   });
 });

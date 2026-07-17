@@ -5,66 +5,67 @@ export type RetryTier = 'standard' | 'repeated-effort';
 export interface RetryLine {
   id: string;
   text: string;
+  recordedFallbackText?: string;
   scope: RetryScope;
   tier: RetryTier;
 }
 
 export const RETRY_HE_STANDARD: RetryLine[] = [
-  { id: 'retry-he-standard-01', text: 'כמעט, שון. בוא נמשיך.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! נמשיך לנסות.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-03', text: 'שון, אתה יכול. עוד ניסיון קטן.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-01', text: 'כמעט, שון. בוא נמשיך.', recordedFallbackText: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! נמשיך לנסות.', recordedFallbackText: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-03', text: 'שון, אתה יכול. עוד ניסיון קטן.', recordedFallbackText: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'standard' },
   { id: 'retry-he-standard-04', text: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-05', text: 'שון, אתה אלוף בלנסות. בוא נמשיך.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-05', text: 'שון, אתה אלוף בלנסות. בוא נמשיך.', recordedFallbackText: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'standard' },
   { id: 'retry-he-standard-06', text: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. נמשיך לנסות.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. נמשיך לנסות.', recordedFallbackText: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', recordedFallbackText: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'standard' },
 ];
 
 export const RETRY_EN_STANDARD: RetryLine[] = [
-  { id: 'retry-en-standard-01', text: 'Nice try, Sean. Try again.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-02', text: "Good thinking, Sean. Let's try again.", scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-03', text: 'You can do it, Sean. One more try.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-04', text: 'Almost, Sean! Try again.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-05', text: "Great trying, Sean. Let's try again.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-01', text: 'Nice try, Sean. Try again.', recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-02', text: "Good thinking, Sean. Let's try again.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-03', text: 'You can do it, Sean. One more try.', recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-04', text: 'Almost, Sean! Try again.', recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-05', text: "Great trying, Sean. Let's try again.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
   { id: 'retry-en-standard-06', text: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-07', text: "Sean, I love how you tried. Let's try again.", scope: 'generic', tier: 'standard' },
-  { id: 'retry-en-standard-08', text: "Sean, you're a champion at trying. Let's try together.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-07', text: "Sean, I love how you tried. Let's try again.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
+  { id: 'retry-en-standard-08', text: "Sean, you're a champion at trying. Let's try together.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'standard' },
 ];
 
 export const RETRY_HE_REPEATED: RetryLine[] = [
-  { id: 'retry-he-repeated-01', text: 'שון, אתה אלוף בלנסות. ניקח רגע ונמשיך.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-02', text: 'שון, יופי שניסית, חמודי. עוד ניסיון קטן.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-03', text: 'שון, ביחד ובנחת, בוא נמשיך לנסות.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-04', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-05', text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא נמשיך.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-01', text: 'שון, אתה אלוף בלנסות. ניקח רגע ונמשיך.', recordedFallbackText: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-02', text: 'שון, יופי שניסית, חמודי. עוד ניסיון קטן.', recordedFallbackText: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-03', text: 'שון, ביחד ובנחת, בוא נמשיך לנסות.', recordedFallbackText: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-04', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', recordedFallbackText: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-05', text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא נמשיך.', recordedFallbackText: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'repeated-effort' },
 ];
 
 export const RETRY_EN_REPEATED: RetryLine[] = [
-  { id: 'retry-en-repeated-01', text: "Sean, you're great at trying. Let's pause and try again.", scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-en-repeated-02', text: 'Sean, great trying. One more small try.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-en-repeated-03', text: "Sean, together and gently, let's try again.", scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-en-repeated-04', text: "Sean, you're a champion at trying. Let's try together.", scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-en-repeated-05', text: "Sean, every try helps us learn. Let's try again.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-01', text: "Sean, you're great at trying. Let's pause and try again.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-02', text: 'Sean, great trying. One more small try.', recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-03', text: "Sean, together and gently, let's try again.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-04', text: "Sean, you're a champion at trying. Let's try together.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-en-repeated-05', text: "Sean, every try helps us learn. Let's try again.", recordedFallbackText: "Try again, sweetie. I'm with you.", scope: 'generic', tier: 'repeated-effort' },
 ];
 
 export const RETRY_HE_MEMORY_STANDARD: RetryLine[] = [
   { id: 'retry-he-memory-standard-01', text: 'נמשיך לחפש את הזוג.', scope: 'memory-search', tier: 'standard' },
   { id: 'retry-he-memory-standard-02', text: 'בוא נחפש איפה הזוג מתחבא.', scope: 'memory-search', tier: 'standard' },
   { id: 'retry-he-memory-standard-03', text: 'נחפש יחד את הזוג.', scope: 'memory-search', tier: 'standard' },
-  { id: 'retry-he-memory-standard-04', text: 'שון, בוא נמשיך לחפש את הזוג.', scope: 'memory-search', tier: 'standard' },
+  { id: 'retry-he-memory-standard-04', text: 'שון, בוא נמשיך לחפש את הזוג.', recordedFallbackText: 'נמשיך לחפש את הזוג.', scope: 'memory-search', tier: 'standard' },
 ];
 
 export const RETRY_EN_MEMORY_STANDARD: RetryLine[] = [
   { id: 'retry-en-memory-standard-01', text: "Let's keep looking for the pair.", scope: 'memory-search', tier: 'standard' },
   { id: 'retry-en-memory-standard-02', text: "Let's find where the pair is hiding.", scope: 'memory-search', tier: 'standard' },
   { id: 'retry-en-memory-standard-03', text: "Let's look for the pair together.", scope: 'memory-search', tier: 'standard' },
-  { id: 'retry-en-memory-standard-04', text: "Sean, let's keep looking for the pair.", scope: 'memory-search', tier: 'standard' },
+  { id: 'retry-en-memory-standard-04', text: "Sean, let's keep looking for the pair.", recordedFallbackText: "Let's keep looking for the pair.", scope: 'memory-search', tier: 'standard' },
 ];
 
 export const RETRY_HE_MEMORY_REPEATED: RetryLine[] = [
   { id: 'retry-he-memory-repeated-01', text: 'יופי שהמשכת לחפש. ננסה עוד זוג.', scope: 'memory-search', tier: 'repeated-effort' },
   { id: 'retry-he-memory-repeated-02', text: 'ביחד ובנחת, נמשיך לחפש.', scope: 'memory-search', tier: 'repeated-effort' },
-  { id: 'retry-he-memory-repeated-03', text: 'שון, אתה אלוף בלחפש. נמשיך יחד.', scope: 'memory-search', tier: 'repeated-effort' },
+  { id: 'retry-he-memory-repeated-03', text: 'שון, אתה אלוף בלחפש. נמשיך יחד.', recordedFallbackText: 'ביחד ובנחת, נמשיך לחפש.', scope: 'memory-search', tier: 'repeated-effort' },
 ];
 
 export const RETRY_EN_MEMORY_REPEATED: RetryLine[] = [
@@ -83,6 +84,7 @@ export const RETRY_EN_MEMORY_REPEATED: RetryLine[] = [
   {
     id: 'retry-en-memory-repeated-03',
     text: "Sean, you're great at searching. Let's keep looking together.",
+    recordedFallbackText: "Together and gently, let's keep looking.",
     scope: 'memory-search',
     tier: 'repeated-effort',
   },

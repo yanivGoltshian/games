@@ -14,7 +14,7 @@ import { selectCelebrationVariant, type CelebrationVariant } from '../games/cele
 import { selectPraiseSegments } from '../games/praiseSpeech';
 import { soundService } from '../services/sound';
 import {
-  buildPhraseSegments,
+  buildPersonalizedPhraseSegments,
   speechService,
   type SpeechResult,
   type SpeechSegment,
@@ -78,14 +78,9 @@ export function SuccessOverlay({
   );
   const recommendationSegments = useMemo(
     () => recommendation
-      ? LEVEL_UP_SPEECH.flatMap((line) => buildPhraseSegments(
-          line.he,
-          line.en,
-          settings.languageMode,
-          settings.englishVoiceLocale,
-        ))
+      ? LEVEL_UP_SPEECH.flatMap((line) => buildPersonalizedPhraseSegments(line, settings))
       : [],
-    [recommendation, settings.englishVoiceLocale, settings.languageMode],
+    [recommendation, settings],
   );
   const extraSegments = followUpSegments ?? EMPTY_FOLLOW_UP_SEGMENTS;
   const advanceOnce = useCallback((interruptSpeech = false) => {

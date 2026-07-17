@@ -1,4 +1,4 @@
-export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'wordStretch'] as const;
+export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'syllableTrain'] as const;
 
 export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';
@@ -20,6 +20,7 @@ export type ConceptCategory =
 export type HebrewGrammaticalGender = 'masculine' | 'feminine';
 
 export interface ToddlerSettings {
+  childName: string;
   languageMode: LanguageMode;
   englishVoiceLocale: EnglishVoiceLocale;
   soundLevel: number;
@@ -231,7 +232,34 @@ export interface SillyAlienRound {
   signature: string;
 }
 
-export interface WordStretchRound {
+/**
+ * A "Syllable Train" round. Sean couples two cars to physically assemble a
+ * word from its syllables.
+ *
+ * Speech contract (offline / recorded only): the ONLY string ever narrated is
+ * the whole word `plainHe` / `fullEn`, both of which come straight from the
+ * learning concept and therefore always exist in the recorded manifest. The
+ * pointed syllable splits (`firstHe` / `restHe`) and the English splits
+ * (`firstEn` / `restEn`) are display-only and are never spoken, because
+ * isolated syllables are not part of the recorded manifest.
+ */
+export interface SyllableTrainRound {
   conceptId: string;
+  /** Unpointed whole word. Narrated and used for concept lookup. In manifest. */
+  plainHe: string;
+  /** Pointed whole word for display only. */
+  fullHe: string;
+  /** English whole word. Narrated. In manifest. */
+  fullEn: string;
+  /** Pointed first syllable (locomotive car). Display only, never spoken. */
+  firstHe: string;
+  /** Pointed remaining syllable(s) (loose car). Display only, never spoken. */
+  restHe: string;
+  /** English first chunk (display only). */
+  firstEn: string;
+  /** English remaining chunk (display only). */
+  restEn: string;
+  promptHe: string;
+  promptEn: string;
   signature: string;
 }

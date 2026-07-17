@@ -4,6 +4,7 @@ import { CaregiverPanel } from './components/CaregiverPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomeScreen } from './components/HomeScreen';
 import { applyRoundResult, createInitialProgress } from './domain/progression';
+import { childGreeting, normalizeChildName } from './domain/childName';
 import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
@@ -16,7 +17,7 @@ import { NumberPairsGame } from './games/NumberPairsGame';
 import { PuzzleGame } from './games/PuzzleGame';
 import { SillyAlienGame } from './games/SillyAlienGame';
 import { SortingGame } from './games/SortingGame';
-import { WordStretchGame } from './games/WordStretchGame';
+import { SyllableTrainGame } from './games/SyllableTrainGame';
 
 function navigate(path: string) {
   speechService.cancelAll('navigation');
@@ -53,6 +54,11 @@ export default function App() {
     document.body.dataset.reducedMotion = progress.settings.reducedMotion ? 'true' : 'false';
   }, [progress.settings.languageMode, progress.settings.reducedMotion, route.kind]);
 
+  useEffect(() => {
+    const title = childGreeting(progress.settings.childName, progress.settings.languageMode);
+    document.title = title;
+  }, [progress.settings.childName, progress.settings.languageMode]);
+
   const unlockMedia = useCallback(() => {
     speechService.unlock(progress.settings);
     soundService.unlock();
@@ -60,12 +66,15 @@ export default function App() {
   }, [progress.settings]);
 
   const updateSettings = (patch: Partial<ToddlerSettings>) => {
+    const normalizedPatch = patch.childName === undefined
+      ? patch
+      : { ...patch, childName: normalizeChildName(patch.childName) };
     setProgress((current) => ({
       ...current,
       updatedAt: Date.now(),
       settings: {
         ...current.settings,
-        ...patch,
+        ...normalizedPatch,
       },
     }));
   };
@@ -121,10 +130,15 @@ export default function App() {
       memory: <MemoryGame {...gameProps} />,
       numberPairs: <NumberPairsGame {...gameProps} />,
       sillyAlien: <SillyAlienGame {...gameProps} />,
-      wordStretch: <WordStretchGame {...gameProps} />,
+      syllableTrain: <SyllableTrainGame {...gameProps} />,
     }[route.domain];
   } else {
-    content = <HomeScreen onOpenGame={(domain) => navigate(`/games/${domain}`)} />;
+    content = (
+      <HomeScreen
+        onOpenGame={(domain) => navigate(`/games/${domain}`)}
+        settings={progress.settings}
+      />
+    );
   }
 
   const routeKey = route.kind === 'game' ? `game:${route.domain}` : route.kind;

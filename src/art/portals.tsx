@@ -268,49 +268,50 @@ export function SillyAlienPortalArt({ label, className }: ArtProps) {
   );
 }
 
-export function WordStretchPortalArt({ label, className }: ArtProps) {
-  const ids = useArtIds('bg', 'card', 'spring');
+export function SyllableTrainPortalArt({ label, className }: ArtProps) {
+  const ids = useArtIds('bg', 'engine', 'car');
   return (
-    <svg viewBox="0 0 320 320" className={className} {...artA11yProps('portal-word-stretch', label)}>
-      <BackgroundBlob id={ids.bg} from="#d8f8ff" to="#65cfe2" />
+    <svg viewBox="0 0 320 320" className={className} {...artA11yProps('portal-syllable-train', label)}>
+      <BackgroundBlob id={ids.bg} from="#d5ecff" to="#5aa9e6" />
       <defs>
-        <linearGradient id={ids.card} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#f2fbff" />
+        <linearGradient id={ids.engine} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ff9a6b" />
+          <stop offset="100%" stopColor="#e8632f" />
         </linearGradient>
-        <linearGradient id={ids.spring} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#ff9e8f" />
-          <stop offset="100%" stopColor="#ffcf65" />
+        <linearGradient id={ids.car} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ffe08a" />
+          <stop offset="100%" stopColor="#f4c23c" />
         </linearGradient>
       </defs>
-      <path
-        d="M42 160 H78 L92 130 L112 190 L132 130 L152 190 L172 130 L192 190 L212 130 L228 160 H278"
-        fill="none"
-        stroke={`url(#${ids.spring})`}
-        strokeWidth="13"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <rect
-        x="104"
-        y="78"
-        width="112"
-        height="164"
-        rx="38"
-        fill={`url(#${ids.card})`}
-        stroke="#ffffff"
-        strokeWidth="6"
-        filter="drop-shadow(0 14px 18px rgba(40, 110, 130, 0.2))"
-      />
-      <circle cx="160" cy="142" r="42" fill="#f0c58f" />
-      <ellipse cx="125" cy="125" rx="22" ry="34" fill="#bc8550" transform="rotate(-25 125 125)" />
-      <ellipse cx="195" cy="125" rx="22" ry="34" fill="#bc8550" transform="rotate(25 195 125)" />
-      <circle cx="145" cy="140" r="6" fill="#33291f" />
-      <circle cx="175" cy="140" r="6" fill="#33291f" />
-      <ellipse cx="160" cy="158" rx="10" ry="8" fill="#33291f" />
-      <path d="M146 174 Q160 186 174 174" fill="none" stroke="#7f4d36" strokeWidth="5" strokeLinecap="round" />
-      <path d="M66 104 Q48 122 42 146" fill="none" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" opacity="0.8" />
-      <path d="M254 104 Q272 122 278 146" fill="none" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" opacity="0.8" />
+      {/* rail + sleepers */}
+      <rect x="40" y="238" width="240" height="10" rx="5" fill="#4a6b86" />
+      <rect x="66" y="248" width="14" height="16" rx="4" fill="#37536a" />
+      <rect x="150" y="248" width="14" height="16" rx="4" fill="#37536a" />
+      <rect x="234" y="248" width="14" height="16" rx="4" fill="#37536a" />
+      {/* loose car behind */}
+      <rect x="60" y="176" width="70" height="56" rx="12" fill={`url(#${ids.car})`} stroke="#c9922a" strokeWidth="4" />
+      <rect x="74" y="190" width="42" height="26" rx="6" fill="#fff4d2" opacity="0.85" />
+      {/* coupler link */}
+      <rect x="128" y="204" width="24" height="8" rx="4" fill="#37536a" />
+      {/* locomotive body */}
+      <rect x="150" y="150" width="104" height="82" rx="16" fill={`url(#${ids.engine})`} stroke="#b7481d" strokeWidth="4" />
+      <rect x="196" y="120" width="30" height="34" rx="8" fill="#e8632f" stroke="#b7481d" strokeWidth="4" />
+      {/* cabin window */}
+      <rect x="166" y="166" width="34" height="30" rx="7" fill="#dff1ff" stroke="#b7481d" strokeWidth="3" />
+      {/* chimney + puff */}
+      <rect x="228" y="120" width="18" height="34" rx="6" fill="#c9531f" />
+      <circle cx="237" cy="104" r="14" fill="#ffffff" opacity="0.9" />
+      <circle cx="256" cy="88" r="9" fill="#ffffff" opacity="0.7" />
+      <circle cx="270" cy="76" r="6" fill="#ffffff" opacity="0.5" />
+      {/* wheels */}
+      <circle cx="92" cy="236" r="16" fill="#37536a" stroke="#22384a" strokeWidth="4" />
+      <circle cx="92" cy="236" r="5" fill="#dff1ff" />
+      <circle cx="176" cy="236" r="18" fill="#37536a" stroke="#22384a" strokeWidth="4" />
+      <circle cx="176" cy="236" r="6" fill="#dff1ff" />
+      <circle cx="228" cy="236" r="18" fill="#37536a" stroke="#22384a" strokeWidth="4" />
+      <circle cx="228" cy="236" r="6" fill="#dff1ff" />
+      {/* friendly headlight */}
+      <circle cx="248" cy="200" r="9" fill="#fff3b0" stroke="#b7481d" strokeWidth="3" />
     </svg>
   );
 }

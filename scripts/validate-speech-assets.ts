@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { collectRecordedSpeechCatalog } from '../src/content/recordedSpeechCatalog.js';
 import type { SpeechLocale } from '../src/domain/types.js';
+import { RECORDED_NARRATION_VOICE_NAMES } from '../src/domain/narrationVoice.js';
 
 const SAMPLE_RATE = 24_000;
 const BYTES_PER_SAMPLE = 2;
@@ -19,6 +20,7 @@ interface ManifestClip {
 
 interface RecordedSpeechManifest {
   version: number;
+  voices: Record<SpeechLocale, string>;
   entries: Record<string, ManifestClip>;
 }
 
@@ -139,6 +141,15 @@ const manifest = JSON.parse(
   readFileSync(resolve(speechDirectory, 'manifest.json'), 'utf8'),
 ) as RecordedSpeechManifest;
 const catalog = collectRecordedSpeechCatalog();
+const locales = ['he-IL', 'en-US', 'en-GB'] as const satisfies readonly SpeechLocale[];
+if (
+  manifest.version !== 2
+  || locales.some((locale) => (
+    manifest.voices?.[locale] !== RECORDED_NARRATION_VOICE_NAMES[locale]
+  ))
+) {
+  throw new Error('Speech manifest does not identify the approved narration voices.');
+}
 const expectedKeys = catalog.map(({ locale, text }) => `${locale}\u0000${text}`).sort();
 const actualKeys = Object.keys(manifest.entries).sort();
 
@@ -149,7 +160,7 @@ if (
   throw new Error('Speech manifest keys do not exactly match the recorded speech catalog.');
 }
 
-for (const locale of ['he-IL', 'en-US', 'en-GB'] as const satisfies readonly SpeechLocale[]) {
+for (const locale of locales) {
   const spritePath = resolve(speechDirectory, `${locale}.mp3`);
   const spriteDuration = probeSprite(spritePath);
   const pcm = decodeSprite(spritePath);

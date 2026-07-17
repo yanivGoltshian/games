@@ -5,6 +5,7 @@ import { SuccessOverlay } from './SuccessOverlay';
 import { scheduleSuccessAdvance } from './successTiming';
 
 const settings = {
+  childName: 'שון',
   languageMode: 'he' as const,
   englishVoiceLocale: 'en-US' as const,
   soundLevel: 0.7,

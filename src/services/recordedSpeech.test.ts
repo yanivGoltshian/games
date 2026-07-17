@@ -16,7 +16,6 @@ const installedIPadEnvironment: RecordedSpeechEnvironment = {
 class FakeBufferSource {
   buffer: AudioBuffer | null = null;
   onended: (() => void) | null = null;
-  playbackRate = { value: 1 };
   readonly connect = vi.fn();
   readonly start = vi.fn();
   readonly stop = vi.fn();
@@ -25,22 +24,20 @@ class FakeBufferSource {
 function createContext() {
   const sources: FakeBufferSource[] = [];
   const decodeAudioData = vi.fn(async () => ({ duration: 10 }) as AudioBuffer);
-  const createBufferSource = vi.fn(() => {
-    const source = new FakeBufferSource();
-    sources.push(source);
-    return source;
-  });
   const context = {
-    currentTime: 12,
     destination: {},
-    createBufferSource,
+    createBufferSource: () => {
+      const source = new FakeBufferSource();
+      sources.push(source);
+      return source;
+    },
     createGain: () => ({
       gain: { value: 1 },
       connect: vi.fn(),
     }),
     decodeAudioData,
   } as unknown as AudioContext;
-  return { context, sources, createBufferSource, decodeAudioData };
+  return { context, sources, decodeAudioData };
 }
 
 const flush = async () => {
@@ -212,144 +209,6 @@ describe('recorded iPad speech', () => {
     expect(sources).toHaveLength(2);
     sources.forEach((source) => source.onended?.());
     await expect(Promise.all([car, dog])).resolves.toEqual([undefined, undefined]);
-  });
-
-  it('stretches only the recorded opening before continuing at normal speed', async () => {
-    const { context, sources } = createContext();
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
-        return new Response(JSON.stringify({
-          version: 1,
-          entries: {
-            'he-IL\u0000כלב': { src: '/speech/he-IL.mp3', offset: 8, duration: 0.7 },
-          },
-        }));
-      }
-      return new Response(new Uint8Array([1, 2, 3]));
-    });
-    const player = new RecordedSpeechPlayer(
-      () => context,
-      async () => undefined,
-      fetcher,
-      () => true,
-    );
-    const onStart = vi.fn();
-
-    const playback = player.play({
-      text: 'כלב',
-      locale: 'he-IL',
-      volume: 1,
-      onStart,
-      stretch: { leadSeconds: 0.18, playbackRate: 0.34 },
-    });
-    await vi.waitFor(() => {
-      expect(sources).toHaveLength(2);
-    });
-
-    expect(sources[0]?.playbackRate.value).toBe(0.34);
-    expect(sources[0]?.start).toHaveBeenCalledWith(12, 8, 0.18);
-    expect(sources[1]?.playbackRate.value).toBe(1);
-    expect(sources[1]?.start.mock.calls[0]?.[0]).toBeCloseTo(12 + 0.18 / 0.34);
-    expect(sources[1]?.start).toHaveBeenCalledWith(
-      expect.any(Number),
-      8.18,
-      0.52,
-    );
-    expect(onStart).toHaveBeenCalledOnce();
-
-    sources[0]?.onended?.();
-    let settled = false;
-    void playback.then(() => {
-      settled = true;
-    });
-    await flush();
-    expect(settled).toBe(false);
-
-    sources[1]?.onended?.();
-    await expect(playback).resolves.toBeUndefined();
-  });
-
-  it('stops both scheduled sources when stretched playback is cancelled', async () => {
-    const { context, sources } = createContext();
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
-        return new Response(JSON.stringify({
-          version: 1,
-          entries: {
-            'en-US\u0000dog': { src: '/speech/en-US.mp3', offset: 3, duration: 0.6 },
-          },
-        }));
-      }
-      return new Response(new Uint8Array([1, 2, 3]));
-    });
-    const player = new RecordedSpeechPlayer(
-      () => context,
-      async () => undefined,
-      fetcher,
-      () => true,
-    );
-
-    const playback = player.play({
-      text: 'dog',
-      locale: 'en-US',
-      volume: 1,
-      onStart: vi.fn(),
-      stretch: { leadSeconds: 0.16, playbackRate: 0.4 },
-    });
-    await vi.waitFor(() => {
-      expect(sources).toHaveLength(2);
-    });
-
-    player.cancel();
-    expect(sources[0]?.stop).toHaveBeenCalledOnce();
-    expect(sources[1]?.stop).toHaveBeenCalledOnce();
-    await expect(playback).resolves.toBeUndefined();
-  });
-
-  it('only stops sources that started when stretched scheduling fails', async () => {
-    const { context, sources, createBufferSource } = createContext();
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
-        return new Response(JSON.stringify({
-          version: 1,
-          entries: {
-            'en-US\u0000dog': { src: '/speech/en-US.mp3', offset: 3, duration: 0.6 },
-          },
-        }));
-      }
-      return new Response(new Uint8Array([1, 2, 3]));
-    });
-    const player = new RecordedSpeechPlayer(
-      () => context,
-      async () => undefined,
-      fetcher,
-      () => true,
-    );
-    const schedulingError = new Error('Unable to schedule trailing audio.');
-    createBufferSource
-      .mockImplementationOnce(() => {
-        const source = new FakeBufferSource();
-        sources.push(source);
-        return source;
-      })
-      .mockImplementationOnce(() => {
-        const source = new FakeBufferSource();
-        source.start.mockImplementationOnce(() => {
-          throw schedulingError;
-        });
-        sources.push(source);
-        return source;
-      });
-    const playback = player.play({
-      text: 'dog',
-      locale: 'en-US',
-      volume: 1,
-      onStart: vi.fn(),
-      stretch: { leadSeconds: 0.16, playbackRate: 0.4 },
-    });
-    await expect(playback).rejects.toBe(schedulingError);
-    expect(sources[0]?.stop).toHaveBeenCalledOnce();
-    expect(sources[1]?.stop).not.toHaveBeenCalled();
   });
 
   it('reuses an active same-locale decode after its original caller is cancelled', async () => {

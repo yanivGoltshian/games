@@ -43,6 +43,7 @@ describe('progress storage', () => {
       ).progress;
     }
     progress = applyProgressionChoice(progress, 'puzzle', 'next', 1010).progress;
+    progress.settings.childName = '李 小龙';
 
     saveProgress(progress, storage);
     const reloaded = loadProgress(false, storage);
@@ -52,5 +53,6 @@ describe('progress storage', () => {
     expect(reloaded.domains.puzzle.completedRounds).toBe(3);
     expect(reloaded.domains.puzzle.firstAttemptSuccesses).toBe(3);
     expect(reloaded.domains.puzzle.totalAttempts).toBe(6);
+    expect(reloaded.settings.childName).toBe('李 小龙');
   });
 });

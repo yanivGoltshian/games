@@ -17,7 +17,7 @@ import {
 
 describe('retry content banks', () => {
   it('keeps stable generic ids and text for Hebrew and English', () => {
-    expect(RETRY_HE_STANDARD).toEqual([
+    expect(RETRY_HE_STANDARD.map(({ id, text, scope, tier }) => ({ id, text, scope, tier }))).toEqual([
       { id: 'retry-he-standard-01', text: 'כמעט, שון. בוא נמשיך.', scope: 'generic', tier: 'standard' },
       { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! נמשיך לנסות.', scope: 'generic', tier: 'standard' },
       { id: 'retry-he-standard-03', text: 'שון, אתה יכול. עוד ניסיון קטן.', scope: 'generic', tier: 'standard' },
@@ -27,7 +27,7 @@ describe('retry content banks', () => {
       { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. נמשיך לנסות.', scope: 'generic', tier: 'standard' },
       { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', scope: 'generic', tier: 'standard' },
     ]);
-    expect(RETRY_EN_STANDARD).toEqual([
+    expect(RETRY_EN_STANDARD.map(({ id, text, scope, tier }) => ({ id, text, scope, tier }))).toEqual([
       { id: 'retry-en-standard-01', text: 'Nice try, Sean. Try again.', scope: 'generic', tier: 'standard' },
       { id: 'retry-en-standard-02', text: "Good thinking, Sean. Let's try again.", scope: 'generic', tier: 'standard' },
       { id: 'retry-en-standard-03', text: 'You can do it, Sean. One more try.', scope: 'generic', tier: 'standard' },

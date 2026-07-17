@@ -106,7 +106,8 @@ class FakeSpeechSynthesis {
     if (!isContentful) {
       return;
     }
-    const isUnlockGreeting = stripNiqqud(utterance.text) === 'שלום שון' || utterance.text === 'Hello Sean';
+    const isUnlockGreeting = stripNiqqud(utterance.text).startsWith('שלום ')
+      || utterance.text.startsWith('Hello ');
     if (!this.engineUnlocked && !this.userActivation) {
       if (this.blockedBehavior === 'pending') {
         this.stalled = utterance;
@@ -191,8 +192,11 @@ describe('SpeechService', () => {
     synthesis = new FakeSpeechSynthesis([
       voice('Generic Hebrew', 'he-IL'),
       voice('Carmit Premium', 'he-IL', false),
+      voice('Microsoft Hila', 'he-IL'),
       voice('Samantha', 'en-US'),
+      voice('Microsoft Ana', 'en-US'),
       voice('Daniel', 'en-GB'),
+      voice('Microsoft Maisie', 'en-GB'),
     ]);
     const fakeWindow = {
       speechSynthesis: synthesis,
@@ -875,7 +879,7 @@ describe('SpeechService', () => {
     await flush();
     expect(synthesis.spoken[0]).toMatchObject({
       rate: 0.72,
-      voice: expect.objectContaining({ name: 'Carmit Premium' }),
+      voice: expect.objectContaining({ name: 'Microsoft Hila' }),
     });
     synthesis.finishCurrent();
     await hebrew;
@@ -884,13 +888,13 @@ describe('SpeechService', () => {
     await flush();
     expect(synthesis.spoken[1]).toMatchObject({
       rate: 0.76,
-      voice: expect.objectContaining({ name: 'Samantha' }),
+      voice: expect.objectContaining({ name: 'Microsoft Ana' }),
     });
     synthesis.finishCurrent();
     await english;
 
     expect(speechRateForLocale('he-IL')).toBe(0.72);
-    expect(selectVoiceForLocale(synthesis.getVoices(), 'en-GB')?.name).toBe('Daniel');
+    expect(selectVoiceForLocale(synthesis.getVoices(), 'en-GB')?.name).toBe('Microsoft Maisie');
   });
 
   it('cancels stale route prompts before the next route can speak', async () => {

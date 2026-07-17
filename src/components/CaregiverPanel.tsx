@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import { PORTAL_ART } from '../art/portalRegistry';
 import { gameMeta } from '../content/games';
 import type { AppProgress, ToddlerSettings } from '../domain/types';
 import { DOMAIN_KEYS } from '../domain/types';
+import { CHILD_NAME_MAX_LENGTH, normalizeChildName, personalizeChildName } from '../domain/childName';
+import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import { InstallHint } from './InstallHint';
 import { ProgressStars } from './ProgressStars';
 
@@ -20,6 +22,25 @@ interface CaregiverPanelProps {
  */
 export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: CaregiverPanelProps) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [childNameDraft, setChildNameDraft] = useState(progress.settings.childName);
+
+  useEffect(() => {
+    setChildNameDraft(progress.settings.childName);
+  }, [progress.settings.childName]);
+
+  const commitChildName = () => {
+    const childName = normalizeChildName(childNameDraft);
+    setChildNameDraft(childName);
+    if (childName !== progress.settings.childName) {
+      onUpdateSettings({ childName });
+    }
+  };
+
+  const handleChildNameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.currentTarget.blur();
+    }
+  };
 
   return (
     <main className="page caregiver-page">
@@ -37,6 +58,22 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
         <h2>מצב השמעה</h2>
         <div className="settings-grid">
           <label>
+            <span>שם הילד או הילדה / Child&apos;s name</span>
+            <input
+              aria-describedby="child-name-privacy"
+              autoComplete="off"
+              dir="auto"
+              maxLength={CHILD_NAME_MAX_LENGTH}
+              onBlur={commitChildName}
+              onChange={(event) => setChildNameDraft(event.target.value)}
+              onKeyDown={handleChildNameKeyDown}
+              type="text"
+              value={childNameDraft}
+            />
+            <small id="child-name-privacy">השם נשמר רק במכשיר הזה ומשמש לברכות ולחיזוקים.</small>
+          </label>
+
+          <label>
             <span>שפה ראשית</span>
             <select value={progress.settings.languageMode} onChange={(event) => onUpdateSettings({ languageMode: event.target.value as ToddlerSettings['languageMode'] })}>
               <option value="he">עברית</option>
@@ -46,14 +83,18 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
           </label>
 
           <label>
-            <span>מבטא באנגלית</span>
+            <span>קול הקראה באנגלית / English narration voice</span>
             <select
               value={progress.settings.englishVoiceLocale}
               onChange={(event) => onUpdateSettings({ englishVoiceLocale: event.target.value as ToddlerSettings['englishVoiceLocale'] })}
             >
-              <option value="en-US">English (US)</option>
-              <option value="en-GB">English (UK)</option>
+              <option value="en-US">{NARRATION_VOICE_PROFILES['en-US'].parentLabel}</option>
+              <option value="en-GB">{NARRATION_VOICE_PROFILES['en-GB'].parentLabel}</option>
             </select>
+            <small>
+              באייפד שני הקולות באנגלית הם קולות ילדה מוקלטים. בעברית נעשה שימוש בקול Hila
+              המאושר; Azure אינו מסווג קול ילד עברי במערך הקולות הזמין.
+            </small>
           </label>
 
           <label className="range-control">
@@ -111,7 +152,7 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
                     <PortalArt className="domain-progress-item__icon" />
                     <div>
                       <p>{meta.title}</p>
-                      <small>{meta.subtitle}</small>
+                      <small>{personalizeChildName(meta.subtitle, progress.settings.childName, 'he')}</small>
                     </div>
                   </div>
                   <ProgressStars count={item.stars} />

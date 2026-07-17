@@ -9,9 +9,11 @@ import type {
   RecordedRound,
   ToddlerSettings,
 } from './types';
+import { DEFAULT_CHILD_NAME } from './childName';
+import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
 import { DOMAIN_KEYS } from './types';
 
-export const STORAGE_SCHEMA_VERSION = 4;
+export const STORAGE_SCHEMA_VERSION = 5;
 export const RECENT_RESULT_LIMIT = 5;
 const LEVEL_THRESHOLDS = [0, 0.42, 0.62, 1] as const;
 
@@ -21,8 +23,9 @@ export function clamp(value: number, min = 0, max = 1): number {
 
 export function createInitialSettings(prefersReducedMotion = false): ToddlerSettings {
   return {
+    childName: DEFAULT_CHILD_NAME,
     languageMode: 'he',
-    englishVoiceLocale: 'en-US',
+    englishVoiceLocale: DEFAULT_ENGLISH_VOICE_LOCALE,
     soundLevel: 0.7,
     reducedMotion: prefersReducedMotion,
     quietMode: false,

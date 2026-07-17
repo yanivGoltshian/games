@@ -4,6 +4,8 @@ import {
   RECENT_RESULT_LIMIT,
   STORAGE_SCHEMA_VERSION,
 } from './progression';
+import { normalizeChildName } from './childName';
+import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
 import type {
   AppProgress,
   ConceptStat,
@@ -59,12 +61,15 @@ function sanitizeSettings(input: unknown, prefersReducedMotion: boolean): Toddle
   }
 
   const languageMode = input.languageMode === 'en' || input.languageMode === 'bilingual' ? input.languageMode : 'he';
-  const englishVoiceLocale = input.englishVoiceLocale === 'en-GB' ? 'en-GB' : 'en-US';
+  const englishVoiceLocale = input.englishVoiceLocale === 'en-GB'
+    ? 'en-GB'
+    : DEFAULT_ENGLISH_VOICE_LOCALE;
   const soundLevel = Math.min(1, Math.max(0, asNumber(input.soundLevel, defaults.soundLevel)));
   const reducedMotion = typeof input.reducedMotion === 'boolean' ? input.reducedMotion : defaults.reducedMotion;
   const quietMode = typeof input.quietMode === 'boolean' ? input.quietMode : defaults.quietMode;
 
   return {
+    childName: normalizeChildName(input.childName),
     languageMode,
     englishVoiceLocale,
     soundLevel,
@@ -143,6 +148,7 @@ function readLegacySettings(raw: Record<string, unknown>, prefersReducedMotion: 
       soundLevel: preferences.sound ?? preferences.soundLevel,
       reducedMotion: preferences.motionReduced ?? preferences.reducedMotion,
       quietMode: preferences.quiet ?? preferences.quietMode,
+      childName: preferences.childName,
     },
     prefersReducedMotion,
   );
@@ -173,7 +179,12 @@ export function migrateStoredProgress(
     return base;
   }
 
-  if (raw.version === STORAGE_SCHEMA_VERSION || raw.version === 3 || raw.version === 2) {
+  if (
+    raw.version === STORAGE_SCHEMA_VERSION
+    || raw.version === 4
+    || raw.version === 3
+    || raw.version === 2
+  ) {
     const settings = sanitizeSettings(raw.settings, prefersReducedMotion);
     const domains = sanitizeDomains(raw.domains, base.domains);
     const domainStars = Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0);

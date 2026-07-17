@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialSettings } from '../domain/progression';
+import { SILLY_ALIEN_PROMPT } from '../content/sillyAlien';
 import type {
   RecordedSpeechBackend,
   RecordedSpeechPlayOptions,
 } from './recordedSpeech';
-import { SpeechService } from './speech';
+import { buildPersonalizedPhraseSegments, SpeechService } from './speech';
 
 class FakeRecordedSpeech implements RecordedSpeechBackend {
   readonly played: RecordedSpeechPlayOptions[] = [];
@@ -149,6 +150,67 @@ describe('SpeechService recorded fallback', () => {
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
+  it('uses generic recorded clips for a custom name without speaking the old name', async () => {
+    const settings = {
+      ...createInitialSettings(),
+      childName: 'נוֹעָה',
+      languageMode: 'bilingual' as const,
+    };
+    const segments = buildPersonalizedPhraseSegments({
+      he: 'כל הכבוד, שון!',
+      en: 'Great job, Sean!',
+      recordedFallbackHe: 'יופי!',
+      recordedFallbackEn: 'Great!',
+    }, settings);
+
+    expect(segments.map((segment) => segment.text)).toEqual([
+      'כל הכבוד, נוֹעָה!',
+      'Great job, נוֹעָה!',
+    ]);
+    expect(segments.map((segment) => segment.recordedText)).toEqual(['יופי!', 'Great!']);
+
+    service.unlock(settings);
+    await flush();
+    const done = service.speakSegments(segments, settings);
+    await flush();
+    expect(backend.played.map((item) => item.text)).toEqual(['יופי!']);
+
+    backend.complete();
+    await vi.advanceTimersByTimeAsync(220);
+    await flush();
+    expect(backend.played.map((item) => item.text)).toEqual(['יופי!', 'Great!']);
+    expect(backend.played.some((item) => /שון|Sean/u.test(item.text))).toBe(false);
+
+    backend.complete();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
+  it('skips unrecorded Silly Alien fragments and plays one safe generic prompt', async () => {
+    const settings = {
+      ...createInitialSettings(),
+      childName: 'נוֹעָה',
+    };
+    const segments = [
+      { text: 'אוי, התבלבלתי!', locale: 'he-IL' as const, recordedText: null },
+      { text: 'פוח', locale: 'he-IL' as const, recordedText: null },
+      ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, settings),
+    ];
+
+    service.unlock(settings);
+    await flush();
+    const done = service.speakSegments(segments, settings);
+    await flush();
+
+    expect(segments.at(-1)).toMatchObject({
+      text: 'נוֹעָה, תגיד לו איך אומרים:',
+      recordedText: 'בוא נמשיך.',
+    });
+    expect(backend.played.map((item) => item.text)).toEqual(['בוא נמשיך.']);
+
+    backend.complete();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
   it('surfaces recorded playback failures through the existing error result', async () => {
     service.unlock(createInitialSettings());
     await flush();
@@ -183,33 +245,6 @@ describe('SpeechService recorded fallback', () => {
 
     backend.complete();
     await expect(queued).resolves.toMatchObject({ status: 'completed' });
-  });
-
-  it('uses the base manifest key while preserving stretched playback options', async () => {
-    service.unlock(createInitialSettings());
-    await flush();
-    const done = service.speakSegments(
-      [{
-        text: 'dooooog',
-        recordedText: 'dog',
-        locale: 'en-US',
-        cue: 'word-stretch:dog',
-        stretch: { leadSeconds: 0.18, playbackRate: 0.34 },
-      }],
-      createInitialSettings(),
-    );
-    await flush();
-
-    expect(backend.played).toEqual([
-      expect.objectContaining({
-        text: 'dog',
-        locale: 'en-US',
-        stretch: { leadSeconds: 0.18, playbackRate: 0.34 },
-      }),
-    ]);
-
-    backend.complete();
-    await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
   it('lets an active retry word finish before coalescing the newer retry', async () => {

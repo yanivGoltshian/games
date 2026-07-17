@@ -58,6 +58,7 @@ vi.mock('../services/sound', () => ({
 
 vi.mock('../services/speech', () => ({
   buildLocalizedSegments: (lines: unknown[]) => lines,
+  buildPersonalizedPhraseSegments: (line: unknown) => [line],
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
     speakSegments: speech.speakSegments,
@@ -146,9 +147,11 @@ describe('SillyAlienGame (hands-free)', () => {
     }));
   }
 
-  async function renderGame(onCompleteRound = createCompleteRound()) {
+  async function renderGame(onCompleteRound = createCompleteRound(), childName?: string) {
     const progress = createInitialProgress(false, 0);
-    const settings = createInitialSettings();
+    const settings = childName
+      ? { ...createInitialSettings(), childName }
+      : createInitialSettings();
     await act(async () => {
       root.render(
         <SillyAlienGame
@@ -235,6 +238,22 @@ describe('SillyAlienGame (hands-free)', () => {
     const meter = container.querySelector('[role="progressbar"]');
     expect(meter).not.toBeNull();
     expect(meter!.classList.contains('silly-alien-reactor')).toBe(true);
+  });
+
+  it('personalizes the modeled prompt with the configured child name', async () => {
+    // Hold the model open on the presenting phase so the personalized prompt
+    // stays visible instead of racing into listening.
+    speech.speakSegments.mockReturnValue(new Promise<never>(() => undefined));
+    await renderGame(createCompleteRound(), 'נוֹעָה');
+
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+
+    expect(phase()).toBe('presenting');
+    expect(container.textContent).toContain('נוֹעָה');
+    expect(container.textContent).not.toContain('שון');
   });
 
   it('completes a round from vocal effort alone and reveals the full word', async () => {
