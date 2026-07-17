@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSettings } from '../domain/progression';
 import { requireLearningConcept } from './concepts';
+import { hasNiqqud } from './hebrewPronunciation';
+import { collectRecordedSpeechCatalog } from './recordedSpeechCatalog';
 import {
   SYLLABLE_TRAIN_WORDS,
   WORD_TRAIN_CONCEPT_IDS,
@@ -44,6 +46,27 @@ describe('whole-word Train V2 content', () => {
         'image',
         'recordings',
       ]);
+    }
+  });
+
+  it('keeps each Hebrew runtime key mapped to its approved pointed production source', () => {
+    const catalog = collectRecordedSpeechCatalog();
+
+    for (const word of SYLLABLE_TRAIN_WORDS) {
+      const concept = requireLearningConcept(word.conceptId);
+      const runtimeKey = word.recordings['he-IL'];
+      const productionEntry = catalog.find(
+        (entry) => entry.locale === 'he-IL' && entry.text === runtimeKey,
+      );
+
+      expect(runtimeKey).toBe(concept.he);
+      expect(hasNiqqud(runtimeKey)).toBe(false);
+      expect(productionEntry).toEqual({
+        locale: 'he-IL',
+        text: concept.he,
+        spokenText: concept.spokenHe,
+      });
+      expect(hasNiqqud(productionEntry!.spokenText!)).toBe(true);
     }
   });
 
