@@ -46,7 +46,11 @@ import { useMicEffort } from './useMicEffort';
 import type { MicStartOutcome } from './useMicEffort';
 import { personalizeChildName } from '../domain/childName';
 import { DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS } from '../services/microphonePlaybackGuard';
-import { GenerationTokenController, useGenerationToken } from './useGenerationToken';
+import {
+  GenerationTokenController,
+  useGenerationToken,
+  type GenerationToken,
+} from './useGenerationToken';
 
 const SPEECH_SCOPE = 'game:silly-alien';
 
@@ -63,6 +67,12 @@ function micOutcomeUsesFallback(outcome: MicStartOutcome): boolean {
 }
 
 type AlienMood = 'asleep' | 'confused' | 'listening' | 'happy';
+type ReplayGate =
+  | { status: 'clear' }
+  | { status: 'active'; token: GenerationToken }
+  | { status: 'blocked'; token: GenerationToken };
+
+const CLEAR_REPLAY_GATE: ReplayGate = { status: 'clear' };
 
 interface AlienFaceProps {
   level: number;
@@ -143,7 +153,7 @@ export function SillyAlienGame({
   const [state, dispatch] = useReducer(reduceSillyAlien, INITIAL_SILLY_ALIEN_STATE);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [replaying, setReplaying] = useState(false);
-  const [modelReplayActive, setModelReplayActive] = useState(false);
+  const [replayGate, setReplayGateState] = useState<ReplayGate>(CLEAR_REPLAY_GATE);
   const [pageVisible, setPageVisible] = useState(() =>
     typeof document === 'undefined' ? true : document.visibilityState !== 'hidden',
   );
@@ -166,6 +176,11 @@ export function SillyAlienGame({
   const replayGenerationRef = useRef<GenerationTokenController | null>(null);
   replayGenerationRef.current ??= new GenerationTokenController();
   const replayGeneration = replayGenerationRef.current;
+  const replayGateRef = useRef<ReplayGate>(CLEAR_REPLAY_GATE);
+  const setReplayGate = useCallback((next: ReplayGate): void => {
+    replayGateRef.current = next;
+    setReplayGateState(next);
+  }, []);
   // The mic only samples while it is open (listening); the reducer ignores
   // `register-effort` outside the listening phase, so stray frames are no-ops.
   const mic = useMicEffort((level, deltaMs) => {
@@ -264,13 +279,13 @@ export function SillyAlienGame({
     } = snapshot;
     micStop();
     interactionMediaCoordinator.notifyInteraction(scope, 'touch');
-    if (phase === 'presenting' || phase === 'listening' || phase === 'nudge') {
-      setModelReplayActive(true);
-    }
     const replayToken = replayGeneration.issue({
       ...scope,
       stepId: `${scope.stepId}:repeat`,
     });
+    if (phase === 'presenting' || phase === 'listening' || phase === 'nudge') {
+      setReplayGate({ status: 'active', token: replayToken });
+    }
     const segments = [
       ...buildLocalizedSegments(
         [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
@@ -287,23 +302,30 @@ export function SillyAlienGame({
       settings: currentSettings,
       units: createInteractionMediaUnits(scope, segments),
     }).then((outcome) => {
-      if (!replayGeneration.isCurrent(replayToken)) {
+      if (
+        !replayGeneration.isCurrent(replayToken)
+        || replayGateRef.current.status !== 'active'
+        || replayGateRef.current.token !== replayToken
+      ) {
         return;
       }
       const currentPhase = dataRef.current.phase;
+      setReplayGate(
+        mediaOutcomeAdvances(outcome) || outcome.status === 'errored'
+          ? CLEAR_REPLAY_GATE
+          : { status: 'blocked', token: replayToken },
+      );
       if (mediaOutcomeAdvances(outcome)) {
         if (currentPhase === 'presenting') {
           dispatch({ type: 'present-done' });
         } else if (currentPhase === 'nudge') {
           dispatch({ type: 'nudge-done' });
-        } else if (currentPhase === 'listening') {
-          setModelReplayActive(false);
         }
       } else if (outcome.status === 'errored') {
         dispatch({ type: 'mic-denied' });
       }
     });
-  }, [replayGeneration, sessionId]);
+  }, [replayGeneration, sessionId, setReplayGate]);
 
   const handleBack = useCallback((): void => {
     const snapshot = dataRef.current;
@@ -337,14 +359,14 @@ export function SillyAlienGame({
   useEffect(() => {
     successHandledRef.current = false;
     replayGenerationRef.current?.invalidate();
+    setReplayGate(CLEAR_REPLAY_GATE);
     setCelebration(null);
     setReplaying(false);
-    setModelReplayActive(false);
     dataRef.current.micStop();
     if (dataRef.current.unlocked) {
       dispatch({ type: 'begin-round' });
     }
-  }, [roundKey]);
+  }, [roundKey, setReplayGate]);
 
   // ── Presenting: comic gag + spoken model, mic strictly OFF ──────────────────
   useEffect(() => {
@@ -398,13 +420,15 @@ export function SillyAlienGame({
     });
     return () => {
       cancelled = true;
-      interactionMediaCoordinator.notifyInteraction(scope, 'state-transition');
+      if (replayGateRef.current.status !== 'active') {
+        interactionMediaCoordinator.notifyInteraction(scope, 'state-transition');
+      }
     };
   }, [state.phase, roundKey, sessionId]);
 
   // ── Listening: open mic after the model, generous window, pause when hidden ─
   useEffect(() => {
-    if (state.phase !== 'listening' || !pageVisible || modelReplayActive) {
+    if (state.phase !== 'listening' || !pageVisible || replayGate.status !== 'clear') {
       return undefined;
     }
     const {
@@ -457,7 +481,7 @@ export function SillyAlienGame({
       window.clearTimeout(retryTimer);
       micStop();
     };
-  }, [state.phase, roundKey, pageVisible, modelReplayActive]);
+  }, [state.phase, roundKey, pageVisible, replayGate]);
 
   // ── Nudge: supportive replay (never framed as failure), then listen again ───
   useEffect(() => {

@@ -27,6 +27,7 @@ export type InteractionCancellationReason =
   | 'voice'
   | 'automatic'
   | 'state-transition'
+  | 'round-replacement'
   | 'exit'
   | 'background'
   | 'activity-replacement';
@@ -219,6 +220,7 @@ export class InteractionMediaCoordinator {
       reason === 'exit'
       || reason === 'background'
       || reason === 'activity-replacement'
+      || reason === 'round-replacement'
       || !this.active.started
     );
     if (

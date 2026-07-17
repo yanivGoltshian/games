@@ -166,6 +166,36 @@ describe('interaction media coordinator', () => {
     coordinator.dispose();
   });
 
+  it('limits round replacement to the matching activity', async () => {
+    const speech = new FakeSpeechBackend();
+    const coordinator = new InteractionMediaCoordinator(
+      speech,
+      new MicrophonePlaybackGuard(),
+      lifecycle,
+    );
+    const unrelatedScope = {
+      ...scope,
+      activityId: 'phone',
+      sessionId: 'session-2',
+    };
+    const unrelated = coordinator.play(request('unrelated', 'mandatory', 'automatic', unrelatedScope));
+    speech.start(0);
+
+    coordinator.notifyInteraction(scope, 'round-replacement');
+
+    expect(speech.cancelScope).not.toHaveBeenCalled();
+    speech.finish(0);
+    await expect(unrelated).resolves.toMatchObject({ status: 'completed' });
+
+    const matching = coordinator.play(request('matching', 'mandatory'));
+    speech.start(1);
+    coordinator.notifyInteraction(scope, 'round-replacement');
+
+    await expect(matching).resolves.toMatchObject({ status: 'replaced' });
+    expect(speech.cancelScope).toHaveBeenCalledOnce();
+    coordinator.dispose();
+  });
+
   it('replaces an active conditional invitation with only the latest intent', async () => {
     const speech = new FakeSpeechBackend();
     const coordinator = new InteractionMediaCoordinator(speech, new MicrophonePlaybackGuard(), lifecycle);
