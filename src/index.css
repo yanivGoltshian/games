@@ -304,6 +304,80 @@ option {
 .accent-silly-alien { --card-accent: oklch(93% 0.06 300); }
 
 /* -------------------------------------------------------------------- */
+/* Home delight: staggered entrance, gentle float, tap sparkles, mascot  */
+/* -------------------------------------------------------------------- */
+
+.home-welcome__mascot {
+  transform-origin: center bottom;
+  animation: home-mascot-bob 3.8s var(--motion-ease) infinite;
+}
+
+.portal-card {
+  position: relative;
+  animation: portal-card-enter 460ms var(--motion-ease) backwards;
+  animation-delay: calc(var(--enter-index, 0) * 80ms);
+}
+
+@media (hover: hover) {
+  .portal-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-lift), var(--shadow-inset-ring);
+  }
+}
+
+.portal-card__art {
+  animation: portal-idle-float 4.6s ease-in-out infinite;
+  animation-delay: calc(var(--enter-index, 0) * -0.7s);
+}
+
+.portal-card__sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.portal-card__sparkles i {
+  position: absolute;
+  width: clamp(6px, 1.4vw, 12px);
+  height: clamp(6px, 1.4vw, 12px);
+  border-radius: 50%;
+  background: radial-gradient(circle at center, oklch(100% 0 0 / 0.95), oklch(100% 0 0 / 0) 70%);
+  opacity: 0.2;
+  animation: portal-sparkle-twinkle 2.6s ease-in-out infinite;
+}
+
+.portal-card__sparkles i:nth-child(1) { top: 14%; inset-inline-start: 16%; animation-delay: 0s; }
+.portal-card__sparkles i:nth-child(2) { top: 22%; inset-inline-end: 18%; animation-delay: 0.9s; }
+.portal-card__sparkles i:nth-child(3) { bottom: 18%; inset-inline-start: 30%; animation-delay: 1.6s; }
+
+.portal-card:active .portal-card__sparkles i {
+  opacity: 0.95;
+  transform: scale(1.25);
+}
+
+@keyframes portal-card-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes portal-idle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes portal-sparkle-twinkle {
+  0%, 100% { opacity: 0.18; transform: scale(0.6); }
+  50% { opacity: 0.85; transform: scale(1); }
+}
+
+@keyframes home-mascot-bob {
+  0%, 100% { transform: translateY(0) rotate(-2.5deg); }
+  50% { transform: translateY(-6px) rotate(2.5deg); }
+}
+
+/* -------------------------------------------------------------------- */
 /* Game shell: minimal top rail + full-height stage                     */
 /* -------------------------------------------------------------------- */
 
@@ -524,6 +598,74 @@ option {
   box-shadow: 0 0 0 5px color-mix(in oklch, var(--color-honey) 18%, transparent);
   animation: silent-count-pulse 300ms var(--motion-ease) both;
   animation-delay: calc(var(--count-index) * 40ms);
+}
+
+.counting-cloud[data-voice='on'] .counting-cloud__item {
+  transform: translateY(calc(var(--voice, 0) * -10px)) scale(calc(1 + var(--voice, 0) * 0.14));
+  filter: drop-shadow(
+    0 0 calc(6px + var(--voice, 0) * 22px)
+      color-mix(in oklch, var(--color-honey) calc(30% + var(--voice, 0) * 45%), transparent)
+  );
+}
+
+.counting-voice {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(0.6rem, 2vw, 1.1rem);
+}
+
+.counting-voice__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border: 2px solid color-mix(in oklch, var(--color-sky) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-sky) 14%, white);
+  color: oklch(34% 0.05 250);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    background var(--motion-fast) var(--motion-ease);
+}
+
+.counting-voice__toggle:hover {
+  transform: translateY(-1px);
+}
+
+.counting-voice__icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  fill: currentColor;
+  stroke: currentColor;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.counting-voice__toggle.is-live {
+  border-color: color-mix(in oklch, var(--color-honey) 70%, transparent);
+  background: color-mix(in oklch, var(--color-honey) 22%, white);
+  box-shadow:
+    0 0 0 calc(3px + var(--voice, 0) * 8px)
+      color-mix(in oklch, var(--color-honey) calc(22% + var(--voice, 0) * 40%), transparent),
+    0 10px 22px oklch(32% 0.04 240 / 0.16);
+  animation: counting-voice-pulse 1.6s var(--motion-ease) infinite;
+}
+
+.counting-voice__toggle.is-live .counting-voice__icon {
+  transform: scale(calc(1 + var(--voice, 0) * 0.25));
+}
+
+@keyframes counting-voice-pulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.03);
+  }
 }
 
 @keyframes silent-count-pulse {
@@ -1173,6 +1315,7 @@ option {
 
 .caregiver-card,
 .lock-card,
+.error-card,
 .install-card {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
@@ -1387,6 +1530,33 @@ select {
 .lock-card {
   max-width: 520px;
   text-align: center;
+}
+
+.error-page {
+  display: grid;
+  place-items: center;
+}
+
+.error-card {
+  max-width: 480px;
+  text-align: center;
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+}
+
+.error-card__mascot {
+  width: 140px;
+  height: 140px;
+}
+
+.error-card h1 {
+  margin: 0;
+}
+
+.error-card p {
+  margin: 0;
+  color: var(--color-ink-muted);
 }
 
 /* -------------------------------------------------------------------- */
@@ -1754,7 +1924,7 @@ select {
   100% { transform: scaleY(1) scaleX(1); }
 }
 
-
+@media (prefers-reduced-motion: reduce) {
   .memory-card__inner,
   .draggable-chip,
   .puzzle-piece,
@@ -1763,10 +1933,14 @@ select {
   .repeat-button,
   .danger-button,
   .portal-card,
+  .portal-card__art,
+  .portal-card__sparkles i,
+  .home-welcome__mascot,
   .rail-button,
   .choice-button,
   .number-pair-tile,
   .counting-cloud__item,
+  .counting-voice__toggle.is-live,
   .sort-zone.is-teaching-hint,
   .puzzle-slot.is-teaching-hint,
   .choice-button.is-teaching-hint,
@@ -1793,10 +1967,14 @@ body[data-reduced-motion='true'] .secondary-button,
 body[data-reduced-motion='true'] .repeat-button,
 body[data-reduced-motion='true'] .danger-button,
 body[data-reduced-motion='true'] .portal-card,
+body[data-reduced-motion='true'] .portal-card__art,
+body[data-reduced-motion='true'] .portal-card__sparkles i,
+body[data-reduced-motion='true'] .home-welcome__mascot,
 body[data-reduced-motion='true'] .rail-button,
 body[data-reduced-motion='true'] .choice-button,
 body[data-reduced-motion='true'] .number-pair-tile,
 body[data-reduced-motion='true'] .counting-cloud__item,
+body[data-reduced-motion='true'] .counting-voice__toggle.is-live,
 body[data-reduced-motion='true'] .sort-zone.is-teaching-hint,
 body[data-reduced-motion='true'] .puzzle-slot.is-teaching-hint,
 body[data-reduced-motion='true'] .choice-button.is-teaching-hint,

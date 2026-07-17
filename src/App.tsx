@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CaregiverGate } from './components/CaregiverGate';
 import { CaregiverPanel } from './components/CaregiverPanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomeScreen } from './components/HomeScreen';
 import { applyRoundResult, createInitialProgress } from './domain/progression';
 import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
@@ -124,6 +125,8 @@ export default function App() {
     content = <HomeScreen onOpenGame={(domain) => navigate(`/games/${domain}`)} />;
   }
 
+  const routeKey = route.kind === 'game' ? `game:${route.domain}` : route.kind;
+
   return (
     <div
       className="app-shell"
@@ -134,7 +137,9 @@ export default function App() {
       <div className="background-orb background-orb--one" aria-hidden="true" />
       <div className="background-orb background-orb--two" aria-hidden="true" />
       <div className="background-orb background-orb--three" aria-hidden="true" />
-      {content}
+      <ErrorBoundary resetKey={routeKey} onReset={() => navigate('/')}>
+        {content}
+      </ErrorBoundary>
       {route.kind === 'home' ? <CaregiverGate onUnlock={() => { setCaregiverUnlocked(true); navigate('/caregiver'); }} /> : null}
     </div>
   );

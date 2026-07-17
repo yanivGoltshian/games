@@ -15,6 +15,7 @@ import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
+import { useMicEffort } from './useMicEffort';
 import { useRetryFeedback } from './useRetryFeedback';
 
 const WIGGLE_MS = 520;
@@ -36,6 +37,8 @@ export function CountingGame({
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [wiggleValue, setWiggleValue] = useState<number | null>(null);
   const [hintedValue, setHintedValue] = useState<number | null>(null);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceLevel, setVoiceLevel] = useState(0);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'counting',
@@ -49,6 +52,23 @@ export function CountingGame({
   const countingConceptId = round.countingConceptId as CountingConceptId;
   const layout = useMemo(() => getCountingLayout(round.targetCount), [round.targetCount]);
   const visualOnlyFeedback = settings.quietMode || !speechStatus.supported;
+
+  const mic = useMicEffort((level) => setVoiceLevel(level));
+  const { start: startMic, stop: stopMic, supported: micSupported } = mic;
+  const toggleVoice = useCallback(() => {
+    if (voiceOn) {
+      stopMic();
+      setVoiceOn(false);
+      setVoiceLevel(0);
+      return;
+    }
+    void startMic().then((granted) => {
+      setVoiceOn(granted);
+      if (!granted) {
+        setVoiceLevel(0);
+      }
+    });
+  }, [startMic, stopMic, voiceOn]);
 
   const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
@@ -67,10 +87,13 @@ export function CountingGame({
     setCelebration(null);
     setWiggleValue(null);
     setHintedValue(null);
+    stopMic();
+    setVoiceOn(false);
+    setVoiceLevel(0);
     if (mediaReady) {
       void speakPromptRef.current();
     }
-  }, [mediaReady, roundKey]);
+  }, [mediaReady, roundKey, stopMic]);
 
   const handlePick = (value: number) => {
     if (celebration || retryBusy) {
@@ -136,7 +159,8 @@ export function CountingGame({
       <div
         className={`counting-cloud counting-cloud--${layout.density}`}
         data-count={round.targetCount}
-        style={{ '--count-columns': layout.columns } as CSSProperties}
+        data-voice={voiceOn ? 'on' : 'off'}
+        style={{ '--count-columns': layout.columns, '--voice': voiceLevel } as CSSProperties}
         aria-label={
           englishOnly
             ? getCountingQuantityPhrase('en', countingConceptId, round.targetCount)
@@ -184,6 +208,43 @@ export function CountingGame({
           );
         })}
       </div>
+
+      {micSupported ? (
+        <div className="counting-voice" data-live={voiceOn ? 'on' : 'off'}>
+          <button
+            type="button"
+            className={`counting-voice__toggle ${voiceOn ? 'is-live' : ''}`}
+            onClick={toggleVoice}
+            aria-pressed={voiceOn}
+            style={{ '--voice': voiceLevel } as CSSProperties}
+            aria-label={
+              englishOnly
+                ? voiceOn
+                  ? 'Stop counting out loud'
+                  : 'Count out loud'
+                : voiceOn
+                  ? 'להפסיק לספור בקול'
+                  : 'לספור בקול'
+            }
+          >
+            <CountingMicIcon />
+            <span className="counting-voice__label">
+              {englishOnly ? (voiceOn ? 'Listening…' : 'Count out loud') : voiceOn ? 'אני מקשיב…' : 'לספור בקול'}
+            </span>
+          </button>
+        </div>
+      ) : null}
     </GameShell>
+  );
+}
+
+function CountingMicIcon() {
+  return (
+    <svg className="counting-voice__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="9" y="2.5" width="6" height="12" rx="3" />
+      <path d="M5.5 11a6.5 6.5 0 0 0 13 0" fill="none" strokeWidth="2" strokeLinecap="round" />
+      <line x1="12" y1="17.5" x2="12" y2="21" strokeWidth="2" strokeLinecap="round" />
+      <line x1="8.5" y1="21" x2="15.5" y2="21" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }
