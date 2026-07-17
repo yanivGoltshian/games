@@ -6,7 +6,7 @@ describe('persistence migration', () => {
   it('returns defaults for invalid data', () => {
     const progress = migrateStoredProgress('nope', { prefersReducedMotion: true, now: 55 });
 
-    expect(progress.version).toBe(5);
+    expect(progress.version).toBe(6);
     expect(progress.settings.childName).toBe('שון');
     expect(progress.settings.reducedMotion).toBe(true);
     expect(progress.totalStars).toBe(0);
@@ -48,7 +48,7 @@ describe('persistence migration', () => {
     const progress = migrateStoredProgress(null, { now: 88 });
     const raw = serializeProgress(progress);
 
-    expect(JSON.parse(raw).version).toBe(5);
+    expect(JSON.parse(raw).version).toBe(6);
     expect(JSON.parse(raw).updatedAt).toBe(88);
   });
 
@@ -119,7 +119,7 @@ describe('persistence migration', () => {
       },
     }, { now: 99 });
 
-    expect(progress.version).toBe(5);
+    expect(progress.version).toBe(6);
     expect(progress.totalStars).toBe(7);
     expect(progress.settings.quietMode).toBe(true);
     expect(progress.domains.puzzle).toMatchObject({
@@ -201,7 +201,7 @@ describe('persistence migration', () => {
       domains: existingDomains,
     }, { now: 999 });
 
-    expect(progress.version).toBe(5);
+    expect(progress.version).toBe(6);
     expect(progress.updatedAt).toBe(250);
     expect(progress.totalStars).toBe(99);
     expect(progress.settings).toEqual({
@@ -264,7 +264,7 @@ describe('persistence migration', () => {
 
     const reloaded = migrateStoredProgress(JSON.parse(serializeProgress(progress)), { now: 2000 });
 
-    expect(reloaded.version).toBe(5);
+    expect(reloaded.version).toBe(6);
     expect(reloaded.totalStars).toBe(3);
     expect(reloaded.domains.numberPairs).toEqual(progress.domains.numberPairs);
     expect(reloaded.domains.numberPairs).toMatchObject({
@@ -294,5 +294,78 @@ describe('persistence migration', () => {
 
     expect(progress.settings.childName).toBe('נוֹעָה לִי');
     expect(progress.settings.languageMode).toBe('en');
+  });
+
+  it('migrates version five without changing current Train history', () => {
+    const trainHistory = {
+      attempts: 4,
+      successes: 3,
+      streak: 2,
+      level: 2,
+      highestLevel: 2,
+      completedRounds: 3,
+      firstAttemptSuccesses: 2,
+      totalAttempts: 5,
+      mastery: 0.75,
+      stars: 3,
+      lastPracticedAt: 400,
+      lastProgressionChoice: 'next',
+      recentResults: [{
+        completedAt: 400,
+        level: 2,
+        success: true,
+        firstAttempt: true,
+        attempts: 1,
+      }],
+      concepts: {
+        train: { attempts: 3, successes: 3, streak: 2, mastery: 0.9 },
+      },
+    };
+    const progress = migrateStoredProgress({
+      version: 5,
+      updatedAt: 450,
+      totalStars: 3,
+      domains: {
+        syllableTrain: trainHistory,
+      },
+    }, { now: 999 });
+
+    expect(progress.version).toBe(6);
+    expect(progress.domains.syllableTrain).toEqual(trainHistory);
+    expect(progress.communication).toEqual({
+      version: 1,
+      contentVersion: null,
+      sessionsCompleted: 0,
+      roundsSeen: 0,
+      recentContentIds: [],
+      lastPlayedAt: 0,
+    });
+  });
+
+  it('sanitizes communication progress without admitting extra fields', () => {
+    const progress = migrateStoredProgress({
+      version: 6,
+      communication: {
+        version: 99,
+        contentVersion: ' pack-2 ',
+        sessionsCompleted: 2.4,
+        roundsSeen: 4,
+        recentContentIds: ['a', '', 'a', 'b'],
+        lastPlayedAt: 120,
+        accuracy: 1,
+        transcript: 'stored text',
+        completionMethod: 'voice',
+      },
+    }, { now: 200 });
+
+    expect(progress.communication).toEqual({
+      version: 1,
+      contentVersion: 'pack-2',
+      sessionsCompleted: 2,
+      roundsSeen: 4,
+      recentContentIds: ['a', 'b'],
+      lastPlayedAt: 120,
+    });
+    expect(Object.keys(progress.communication)).toHaveLength(6);
   });
 });

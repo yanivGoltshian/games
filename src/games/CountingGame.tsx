@@ -12,6 +12,7 @@ import {
 } from '../domain/rounds';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
+import { useAppLifecycle } from '../platform/useAppLifecycle';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
@@ -39,6 +40,7 @@ export function CountingGame({
   const [hintedValue, setHintedValue] = useState<number | null>(null);
   const [voiceOn, setVoiceOn] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
+  const lifecycle = useAppLifecycle();
 
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'counting',
@@ -62,13 +64,22 @@ export function CountingGame({
       setVoiceLevel(0);
       return;
     }
-    void startMic().then((granted) => {
-      setVoiceOn(granted);
-      if (!granted) {
+    void startMic().then((outcome) => {
+      const started = outcome.status === 'started';
+      setVoiceOn(started);
+      if (!started) {
         setVoiceLevel(0);
       }
     });
   }, [startMic, stopMic, voiceOn]);
+
+  useEffect(() => {
+    if (lifecycle === 'background') {
+      stopMic();
+      setVoiceOn(false);
+      setVoiceLevel(0);
+    }
+  }, [lifecycle, stopMic]);
 
   const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);

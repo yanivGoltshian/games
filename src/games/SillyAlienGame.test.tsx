@@ -119,7 +119,7 @@ describe('SillyAlienGame (hands-free)', () => {
     }
 
     mic.start.mockReset();
-    mic.start.mockResolvedValue(true);
+    mic.start.mockResolvedValue({ status: 'started' });
     mic.stop.mockReset();
     mic.supported = true;
     mic.onSample = null;
@@ -321,7 +321,7 @@ describe('SillyAlienGame (hands-free)', () => {
   });
 
   it('falls back to a single-tap grown-up control when the mic is denied at unlock', async () => {
-    mic.start.mockResolvedValue(false);
+    mic.start.mockResolvedValue({ status: 'permission-denied' });
     const onCompleteRound = await renderGame();
 
     await act(async () => {
@@ -345,10 +345,25 @@ describe('SillyAlienGame (hands-free)', () => {
     expect(phase()).toBe('success');
   });
 
+  it('keeps a transient unlock cancellation retryable', async () => {
+    mic.start.mockResolvedValue({ status: 'background' });
+    await renderGame();
+
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+
+    expect(phase()).toBe('locked');
+    expect(container.querySelector('.silly-alien-fallback__button')).toBeNull();
+  });
+
   it('routes to the parent fallback when the mic fails as listening begins', async () => {
     // Permission granted on the unlock probe, but the real capture fails.
     mic.start.mockReset();
-    mic.start.mockResolvedValueOnce(true).mockResolvedValue(false);
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValue({ status: 'permission-denied' });
     await renderGame();
 
     await act(async () => {
@@ -358,6 +373,28 @@ describe('SillyAlienGame (hands-free)', () => {
 
     expect(phase()).toBe('parentFallback');
     expect(container.querySelector('.silly-alien-fallback__button')).not.toBeNull();
+  });
+
+  it('retries a transient playback guard without routing to fallback', async () => {
+    mic.start.mockReset();
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+    await renderGame();
+
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(container.querySelector('.silly-alien-fallback__button')).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+    expect(container.querySelector('.silly-alien-fallback__button')).toBeNull();
   });
 
   it('stops microphone capture while modeling and again when it celebrates', async () => {

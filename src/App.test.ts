@@ -16,6 +16,7 @@ describe('child navigation', () => {
       'sillyAlien',
       'syllableTrain',
     ]);
+    expect(Object.keys(gameMeta)).toEqual(DOMAIN_KEYS);
     for (const domain of DOMAIN_KEYS) {
       expect(gameMeta[domain].title).toBeTruthy();
       expect(PORTAL_ART[domain]).toBeTypeOf('function');
@@ -25,6 +26,8 @@ describe('child navigation', () => {
 
   it('falls back safely for unknown or malformed routes', () => {
     expect(parseHash('#/games/unknown')).toEqual({ kind: 'home' });
+    expect(parseHash('#/games/word-stretch')).toEqual({ kind: 'home' });
+    expect(parseHash('#/games/first-sound-factory')).toEqual({ kind: 'home' });
     expect(parseHash('')).toEqual({ kind: 'home' });
   });
 });

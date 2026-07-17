@@ -37,7 +37,9 @@ import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useMicEffort } from './useMicEffort';
+import type { MicStartOutcome } from './useMicEffort';
 import { personalizeChildName } from '../domain/childName';
+import { DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS } from '../services/microphonePlaybackGuard';
 
 const SPEECH_SCOPE = 'game:silly-alien';
 
@@ -49,6 +51,14 @@ const SPEECH_SCOPE = 'game:silly-alien';
  */
 function settledShouldAdvance(status: SpeechResult['status']): boolean {
   return status !== 'cancelled' && status !== 'superseded';
+}
+
+function micOutcomeUsesFallback(outcome: MicStartOutcome): boolean {
+  return (
+    outcome.status === 'unsupported'
+    || outcome.status === 'permission-denied'
+    || outcome.status === 'error'
+  );
 }
 
 type AlienMood = 'asleep' | 'confused' | 'listening' | 'happy';
@@ -191,14 +201,13 @@ export function SillyAlienGame({
     const { settings: current, micStart, micStop } = dataRef.current;
     soundService.unlock();
     soundService.playTap(current);
-    let granted = false;
-    try {
-      granted = await micStart();
-    } catch {
-      granted = false;
-    }
+    const outcome = await micStart();
     micStop();
-    dispatch({ type: 'unlock', micGranted: granted });
+    if (outcome.status === 'started') {
+      dispatch({ type: 'unlock', micGranted: true });
+    } else if (micOutcomeUsesFallback(outcome)) {
+      dispatch({ type: 'unlock', micGranted: false });
+    }
   }, []);
 
   // Tapping the alien: wakes it when locked; otherwise it is an optional,
@@ -304,24 +313,37 @@ export function SillyAlienGame({
     }
     const { micStart, micStop } = dataRef.current;
     let cancelled = false;
-    let timer = 0;
-    void micStart().then((ok) => {
+    let listenTimer = 0;
+    let retryTimer = 0;
+    const startListening = async (): Promise<void> => {
+      const outcome = await micStart();
       if (cancelled) {
         micStop();
         return;
       }
-      if (!ok) {
+      if (outcome.status === 'started') {
+        listenTimer = window.setTimeout(() => {
+          micStop();
+          dispatch({ type: 'listen-timeout' });
+        }, SILLY_ALIEN_LISTEN_WINDOW_MS);
+        return;
+      }
+      if (micOutcomeUsesFallback(outcome)) {
         dispatch({ type: 'mic-denied' });
         return;
       }
-      timer = window.setTimeout(() => {
-        micStop();
-        dispatch({ type: 'listen-timeout' });
-      }, SILLY_ALIEN_LISTEN_WINDOW_MS);
-    });
+      if (outcome.status !== 'background') {
+        retryTimer = window.setTimeout(
+          () => void startListening(),
+          DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS,
+        );
+      }
+    };
+    void startListening();
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
+      window.clearTimeout(listenTimer);
+      window.clearTimeout(retryTimer);
       micStop();
     };
   }, [state.phase, roundKey, pageVisible]);

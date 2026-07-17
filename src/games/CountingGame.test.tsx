@@ -106,7 +106,7 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     vi.useFakeTimers();
     micDouble.supported = true;
     micDouble.start.mockReset();
-    micDouble.start.mockResolvedValue(true);
+    micDouble.start.mockResolvedValue({ status: 'started' });
     micDouble.stop.mockReset();
     doubles.speakSegments.mockReset();
     doubles.startNextRound.mockReset();
@@ -218,6 +218,21 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     expect(micDouble.stop).toHaveBeenCalledTimes(1);
     const idleToggle = container.querySelector('.counting-voice__toggle');
     expect(idleToggle!.classList.contains('is-live')).toBe(false);
+  });
+
+  it('stops listening and clears the live UI when the app backgrounds', async () => {
+    await renderGame();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+
+    expect(micDouble.stop).toHaveBeenCalled();
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('.counting-cloud')!.getAttribute('data-voice')).toBe('off');
   });
 
   it('never blocks progression: a correct pick still completes the round while listening', async () => {

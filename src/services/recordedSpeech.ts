@@ -1,13 +1,13 @@
 import type { SpeechLocale } from '../domain/types';
 import { getSharedAudioContext, unlockAudioContext } from './sound';
 
-interface RecordedSpeechClip {
+export interface RecordedSpeechClip {
   src: string;
   offset: number;
   duration: number;
 }
 
-interface RecordedSpeechManifest {
+export interface RecordedSpeechManifest {
   version: number;
   entries: Record<string, RecordedSpeechClip>;
 }
@@ -76,7 +76,7 @@ export function shouldUseRecordedSpeech(
   return isAppleMobile;
 }
 
-function manifestKey(locale: SpeechLocale, text: string): string {
+export function recordedSpeechManifestKey(locale: SpeechLocale, text: string): string {
   return `${locale}\u0000${text}`;
 }
 
@@ -108,8 +108,8 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     if (!context) {
       throw new Error('AudioContext is unavailable for recorded speech.');
     }
-    const manifest = await this.loadManifest();
-    const clip = manifest.entries[manifestKey(options.locale, options.text)];
+    const manifest = await this.getManifest();
+    const clip = manifest.entries[recordedSpeechManifestKey(options.locale, options.text)];
     if (!clip) {
       throw new Error(`Recorded speech is missing for ${options.locale}: ${options.text}`);
     }
@@ -163,6 +163,10 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     } finally {
       playback.finish();
     }
+  }
+
+  getManifest(): Promise<RecordedSpeechManifest> {
+    return this.loadManifest();
   }
 
   private loadManifest(): Promise<RecordedSpeechManifest> {
