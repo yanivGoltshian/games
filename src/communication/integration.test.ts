@@ -6,8 +6,10 @@ import {
 import { createInitialProgress } from '../domain/progression';
 import type { SpeechLocale } from '../domain/types';
 import type { CommunicationAssetReadiness } from '../services/communicationAssetReadiness';
+import { PEEK_AND_DISCOVER_INSTALLED_CONTENT } from '../games/peekAndDiscover';
 import {
   buildCommunicationCaregiverItems,
+  communicationIntegration,
   evaluateCommunicationPublicAvailability,
   type CommunicationIntegrationContract,
 } from './integration';
@@ -68,6 +70,67 @@ function integration(
 }
 
 describe('communication integration selectors', () => {
+  it('publishes only the production Peek door with exact installed locale readiness', () => {
+    const result = evaluateCommunicationPublicAvailability(communicationIntegration);
+
+    expect(communicationIntegration.release.explicitlyEnabled).toEqual({
+      peek: true,
+      train: false,
+      phone: false,
+      story: false,
+    });
+    expect(Object.keys(communicationIntegration.games)).toEqual(['peek']);
+    expect(communicationIntegration.release.readiness.peek).toEqual({
+      'he-IL': {
+        status: 'ready',
+        contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+        locale: 'he-IL',
+      },
+      'en-US': {
+        status: 'ready',
+        contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+        locale: 'en-US',
+      },
+      'en-GB': {
+        status: 'ready',
+        contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+        locale: 'en-GB',
+      },
+    });
+    expect(result.available).toBe(true);
+    expect(result.publicActivityIds).toEqual(['peek']);
+    expect(result.activities).toEqual([
+      {
+        activityId: 'peek',
+        publiclyAvailable: true,
+        explicitlyEnabled: true,
+        componentRegistered: true,
+        contentReady: true,
+      },
+      {
+        activityId: 'train',
+        publiclyAvailable: false,
+        explicitlyEnabled: false,
+        componentRegistered: false,
+        contentReady: false,
+      },
+      {
+        activityId: 'phone',
+        publiclyAvailable: false,
+        explicitlyEnabled: false,
+        componentRegistered: false,
+        contentReady: false,
+      },
+      {
+        activityId: 'story',
+        publiclyAvailable: false,
+        explicitlyEnabled: false,
+        componentRegistered: false,
+        contentReady: false,
+      },
+    ]);
+  });
+
   it.each([
     [['story'], ['story']],
     [['phone', 'peek'], ['peek', 'phone']],

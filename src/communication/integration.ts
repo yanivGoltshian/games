@@ -1,11 +1,15 @@
-import type { ComponentType } from 'react';
+import { createElement, type ComponentType } from 'react';
+import {
+  PeekAndDiscoverGame,
+  PEEK_AND_DISCOVER_INSTALLED_CONTENT,
+} from '../games/peekAndDiscover';
 import type { CommunicationActivityId } from '../domain/communicationGame';
 import type { CommunicationProgress } from '../domain/communicationProgress';
 import type { AppProgress, ToddlerSettings } from '../domain/types';
 import { COMMUNICATION_SHELF_REGISTRY } from './registry';
 import {
-  DEFAULT_COMMUNICATION_RELEASE,
   evaluateCommunicationRelease,
+  type CommunicationLocaleReadiness,
   type CommunicationReleaseConfiguration,
   type CommunicationReleaseEvaluation,
 } from './release';
@@ -54,9 +58,66 @@ export interface CommunicationCaregiverItem extends CommunicationCaregiverMetric
   readiness: 'ready' | 'not-ready';
 }
 
+const PEEK_RELEASE_READINESS = Object.freeze({
+  'he-IL': Object.freeze({
+    status: 'ready',
+    contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+    locale: 'he-IL',
+  }),
+  'en-US': Object.freeze({
+    status: 'ready',
+    contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+    locale: 'en-US',
+  }),
+  'en-GB': Object.freeze({
+    status: 'ready',
+    contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+    locale: 'en-GB',
+  }),
+} satisfies CommunicationLocaleReadiness);
+
+const PROGRESSIVE_COMMUNICATION_RELEASE: CommunicationReleaseConfiguration = Object.freeze({
+  explicitlyEnabled: Object.freeze({
+    peek: true,
+    train: false,
+    phone: false,
+    story: false,
+  }),
+  readiness: Object.freeze({
+    peek: PEEK_RELEASE_READINESS,
+    train: Object.freeze({}),
+    phone: Object.freeze({}),
+    story: Object.freeze({}),
+  }),
+});
+
+function PeekCommunicationGame({
+  settings,
+  progress,
+  onProgressChange,
+  onBackToShelf,
+}: CommunicationGameHostProps) {
+  return createElement(PeekAndDiscoverGame, {
+    settings,
+    communicationProgress: progress,
+    onProgressChange,
+    onAssetError: () => undefined,
+    onSessionStop: () => undefined,
+    onBack: onBackToShelf,
+  });
+}
+
 export const communicationIntegration: CommunicationIntegrationContract = Object.freeze({
-  release: DEFAULT_COMMUNICATION_RELEASE,
-  games: Object.freeze({}),
+  release: PROGRESSIVE_COMMUNICATION_RELEASE,
+  games: Object.freeze({
+    peek: Object.freeze({
+      component: PeekCommunicationGame,
+      selectCaregiverMetrics: (progress: AppProgress) => ({
+        lastPlayedAt: progress.communication.lastPlayedAt,
+        sessionsCompleted: progress.communication.sessionsCompleted,
+      }),
+    }),
+  }),
 });
 
 export function evaluateCommunicationPublicAvailability(

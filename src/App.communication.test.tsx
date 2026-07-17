@@ -150,7 +150,7 @@ describe('App progressive communication release routing', () => {
     vi.restoreAllMocks();
   });
 
-  it('keeps the production home at the current exact eight tiles by default', async () => {
+  it('exposes the production Peek shelf while preserving exactly eight home tiles by default', async () => {
     await act(async () => root?.render(<App />));
 
     expect(homeDomains(container)).toEqual([
@@ -161,7 +161,7 @@ describe('App progressive communication release routing', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
-      'syllableTrain',
+      'communication',
     ]);
   });
 
@@ -194,6 +194,15 @@ describe('App progressive communication release routing', () => {
     ));
 
     expect(shelfDoorIds(container)).toEqual(['story']);
+    expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
+      .toBe('1');
+  });
+
+  it('renders exactly one production Peek door on the default shelf', async () => {
+    window.history.replaceState(null, '', '#/communication');
+    await act(async () => root?.render(<App />));
+
+    expect(shelfDoorIds(container)).toEqual(['peek']);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
       .toBe('1');
   });
@@ -326,9 +335,35 @@ describe('App progressive communication release routing', () => {
         window.history.replaceState(null, '', hash);
         window.dispatchEvent(new Event('hashchange'));
       });
+
       expect(window.location.hash).toBe('#/');
       expect(container.querySelector('[data-domain="communication"]')).not.toBeNull();
     }
+  });
+
+  it('fails production disabled and malformed communication routes closed without media side effects', async () => {
+    const cancelAll = vi.spyOn(speechService, 'cancelAll');
+    const unlock = vi.spyOn(speechService, 'unlock');
+    await act(async () => root?.render(<App />));
+
+    for (const hash of [
+      '#/communication/word-train',
+      '#/communication/toy-phone',
+      '#/communication/story-that-waits',
+      '#/communication/unknown-one',
+      '#/communication/peek-and-discover?mode=child',
+    ]) {
+      await act(async () => {
+        window.history.replaceState(null, '', hash);
+        window.dispatchEvent(new Event('hashchange'));
+      });
+      expect(window.location.hash).toBe('#/');
+      expect(container.querySelector('[data-domain="communication"]')).not.toBeNull();
+      expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
+    }
+    expect(cancelAll).not.toHaveBeenCalled();
+    expect(unlock).not.toHaveBeenCalled();
+    expect(getUserMedia).not.toHaveBeenCalled();
   });
 
   it('allows valid shelf navigation after an unavailable route was normalized', async () => {
