@@ -295,6 +295,40 @@ describe('App progressive communication release routing', () => {
     expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
   });
 
+  it('keeps Home, shelf, and routes correct when one activity readiness entry is malformed', async () => {
+    window.history.replaceState(null, '', '#/communication/toy-phone');
+    const contract = readyIntegration({ enabledActivityIds: ['peek', 'phone'] });
+    const malformed = {
+      ...contract,
+      release: {
+        ...contract.release,
+        readiness: {
+          peek: contract.release.readiness.peek,
+          train: contract.release.readiness.train,
+          phone: undefined,
+          story: contract.release.readiness.story,
+        },
+      },
+    } as unknown as CommunicationIntegrationContract;
+
+    await act(async () => root?.render(<App communication={malformed} />));
+
+    expect(window.location.hash).toBe('#/');
+    expect(homeDomains(container)).toHaveLength(8);
+    expect(homeDomains(container).at(-1)).toBe('communication');
+    expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
+
+    const shelfPortal = container.querySelector<HTMLButtonElement>(
+      '[data-domain="communication"] .portal-card',
+    )!;
+    await act(async () => {
+      shelfPortal.click();
+      window.dispatchEvent(new Event('hashchange'));
+    });
+    expect(window.location.hash).toBe('#/communication');
+    expect(shelfDoorIds(container)).toEqual(['peek']);
+  });
+
   it('opens a direct activity route when that activity alone is public', async () => {
     window.history.replaceState(null, '', '#/communication/toy-phone');
     await act(async () => root?.render(

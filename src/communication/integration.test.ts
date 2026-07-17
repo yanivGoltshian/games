@@ -215,6 +215,33 @@ describe('communication integration selectors', () => {
     });
   });
 
+  it('keeps a valid activity public when another enabled activity has malformed readiness', () => {
+    const contract = integration(['peek', 'phone'], ['peek', 'phone']);
+    const malformed = {
+      ...contract,
+      release: {
+        ...contract.release,
+        readiness: {
+          peek: contract.release.readiness.peek,
+          train: contract.release.readiness.train,
+          phone: undefined,
+          story: contract.release.readiness.story,
+        },
+      },
+    } as unknown as CommunicationIntegrationContract;
+
+    expect(() => evaluateCommunicationPublicAvailability(malformed)).not.toThrow();
+    const result = evaluateCommunicationPublicAvailability(malformed);
+    expect(result.available).toBe(true);
+    expect(result.publicActivityIds).toEqual(['peek']);
+    expect(result.activities.find(({ activityId }) => activityId === 'phone')).toMatchObject({
+      publiclyAvailable: false,
+      explicitlyEnabled: true,
+      componentRegistered: true,
+      contentReady: false,
+    });
+  });
+
   it('returns only fixed-order caregiver-safe readiness and permitted metrics', () => {
     const contract = integration(['phone'], ['phone']);
     contract.games.phone!.selectCaregiverMetrics = () => ({

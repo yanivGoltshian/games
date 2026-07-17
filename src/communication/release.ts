@@ -36,6 +36,23 @@ export const REQUIRED_COMMUNICATION_RELEASE_LOCALES = [
   'en-GB',
 ] as const satisfies readonly SpeechLocale[];
 
+type UnknownRecord = Readonly<Record<PropertyKey, unknown>>;
+
+const EMPTY_RUNTIME_RECORD: UnknownRecord = Object.freeze({});
+
+function isRuntimeRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function runtimeRecord(value: unknown): UnknownRecord {
+  return isRuntimeRecord(value) ? value : EMPTY_RUNTIME_RECORD;
+}
+
+function ownRuntimeValue(record: UnknownRecord, key: PropertyKey): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(record, key);
+  return descriptor && 'value' in descriptor ? descriptor.value : undefined;
+}
+
 function emptyReadiness(): CommunicationReleaseReadiness {
   return Object.fromEntries(
     COMMUNICATION_ACTIVITY_IDS.map((activityId) => [activityId, Object.freeze({})]),
@@ -54,22 +71,31 @@ export const DEFAULT_COMMUNICATION_RELEASE: CommunicationReleaseConfiguration = 
 });
 
 function exactLocaleIsReady(
-  readiness: CommunicationLocaleReadiness,
+  readiness: UnknownRecord,
   locale: SpeechLocale,
 ): boolean {
-  const result = readiness[locale];
-  return result?.status === 'ready' && result.locale === locale;
+  const result = runtimeRecord(ownRuntimeValue(readiness, locale));
+  return ownRuntimeValue(result, 'status') === 'ready'
+    && ownRuntimeValue(result, 'locale') === locale;
 }
 
 export function evaluateCommunicationRelease(
   configuration: CommunicationReleaseConfiguration,
 ): CommunicationReleaseEvaluation {
   const requiredLocales = REQUIRED_COMMUNICATION_RELEASE_LOCALES;
+  const runtimeConfiguration = runtimeRecord(configuration);
+  const explicitlyEnabledByActivity = runtimeRecord(
+    ownRuntimeValue(runtimeConfiguration, 'explicitlyEnabled'),
+  );
+  const readinessByActivity = runtimeRecord(ownRuntimeValue(runtimeConfiguration, 'readiness'));
   const activities = COMMUNICATION_ACTIVITY_IDS.map((activityId) => ({
     activityId,
-    explicitlyEnabled: configuration.explicitlyEnabled[activityId],
+    explicitlyEnabled: ownRuntimeValue(explicitlyEnabledByActivity, activityId) === true,
     status: requiredLocales.every((locale) => (
-      exactLocaleIsReady(configuration.readiness[activityId], locale)
+      exactLocaleIsReady(
+        runtimeRecord(ownRuntimeValue(readinessByActivity, activityId)),
+        locale,
+      )
     ))
       ? 'ready' as const
       : 'not-ready' as const,
