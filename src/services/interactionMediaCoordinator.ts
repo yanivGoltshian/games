@@ -63,6 +63,7 @@ export interface InteractionMediaOutcome {
   intentId: string;
   status: InteractionMediaOutcomeStatus;
   speechStatus?: SpeechResult['status'];
+  cancellationReason?: InteractionCancellationReason;
   reason?: 'locale-mismatch' | 'empty-content';
 }
 
@@ -82,6 +83,7 @@ interface MediaEntry {
   started: boolean;
   playbackGuardActive: boolean;
   forcedStatus: InteractionMediaOutcomeStatus | null;
+  cancellationReason: InteractionCancellationReason | null;
   resolve: (outcome: InteractionMediaOutcome) => void;
 }
 
@@ -111,6 +113,10 @@ function sameRound(left: CommunicationGameScope, right: CommunicationGameScope):
     sameActivity(left, right)
     && left.roundId === right.roundId
   );
+}
+
+function intentWaitsForMandatory(reason: InteractionCancellationReason): boolean {
+  return reason === 'touch' || reason === 'voice' || reason === 'automatic';
 }
 
 export function createInteractionMediaUnits(
@@ -195,6 +201,7 @@ export class InteractionMediaCoordinator {
         started: false,
         playbackGuardActive: false,
         forcedStatus: null,
+        cancellationReason: null,
         resolve,
       };
       this.accept(entry);
@@ -209,10 +216,27 @@ export class InteractionMediaCoordinator {
       || sameActivity(entry.request.scope, scope)
     );
 
-    if (this.pending && relevant(this.pending)) {
-      this.settlePending(this.pending, reason === 'exit' || reason === 'background' ? 'cancelled' : 'replaced');
+    if (
+      this.pending
+      && relevant(this.pending)
+      && (
+        this.pending.request.audioClass !== 'mandatory'
+        || !intentWaitsForMandatory(reason)
+      )
+    ) {
+      this.settlePending(
+        this.pending,
+        reason === 'exit' || reason === 'background' ? 'cancelled' : 'replaced',
+        reason,
+      );
     }
     if (!this.active || !relevant(this.active)) {
+      return;
+    }
+    if (
+      this.active.request.audioClass === 'mandatory'
+      && intentWaitsForMandatory(reason)
+    ) {
       return;
     }
 
@@ -227,16 +251,24 @@ export class InteractionMediaCoordinator {
       this.active.request.audioClass !== 'mandatory'
       || mustCancelMandatory
     ) {
-      this.cancelActive(reason === 'exit' || reason === 'background' ? 'cancelled' : 'replaced');
+      this.cancelActive(
+        reason === 'exit' || reason === 'background' ? 'cancelled' : 'replaced',
+        reason === 'background' ? 'visibility' : 'replay',
+        reason,
+      );
     }
   }
 
   cancelAll(reason: Extract<InteractionCancellationReason, 'exit' | 'background'> = 'exit'): void {
     if (this.pending) {
-      this.settlePending(this.pending, 'cancelled');
+      this.settlePending(this.pending, 'cancelled', reason);
     }
     if (this.active) {
-      this.cancelActive('cancelled', reason === 'background' ? 'visibility' : 'navigation');
+      this.cancelActive(
+        'cancelled',
+        reason === 'background' ? 'visibility' : 'navigation',
+        reason,
+      );
     }
   }
 
@@ -274,21 +306,31 @@ export class InteractionMediaCoordinator {
     this.pending = entry;
   }
 
-  private settlePending(entry: MediaEntry, status: InteractionMediaOutcomeStatus): void {
+  private settlePending(
+    entry: MediaEntry,
+    status: InteractionMediaOutcomeStatus,
+    cancellationReason: InteractionCancellationReason | null = null,
+  ): void {
     if (this.pending === entry) {
       this.pending = null;
     }
-    entry.resolve({ intentId: entry.request.intentId, status });
+    entry.resolve({
+      intentId: entry.request.intentId,
+      status,
+      ...(cancellationReason === null ? {} : { cancellationReason }),
+    });
   }
 
   private cancelActive(
     status: InteractionMediaOutcomeStatus,
     reason: 'navigation' | 'replay' | 'visibility' = 'replay',
+    cancellationReason: InteractionCancellationReason | null = null,
   ): void {
-    if (!this.active) {
+    if (!this.active || this.active.forcedStatus !== null) {
       return;
     }
     this.active.forcedStatus = status;
+    this.active.cancellationReason = cancellationReason;
     this.speech.cancelScope(this.active.backendScope, reason);
   }
 
@@ -332,6 +374,9 @@ export class InteractionMediaCoordinator {
       intentId: entry.request.intentId,
       status,
       speechStatus: result.status,
+      ...(entry.cancellationReason === null
+        ? {}
+        : { cancellationReason: entry.cancellationReason }),
     });
     if (this.active !== entry) {
       return;

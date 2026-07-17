@@ -75,6 +75,41 @@ export class RecordedOnlyWordTrainSpeechBackend implements InteractionSpeechBack
 
 const wordTrainRecordedSpeech = new RecordedSpeechPlayer();
 
-export const wordTrainMediaCoordinator = new InteractionMediaCoordinator(
-  new RecordedOnlyWordTrainSpeechBackend(wordTrainRecordedSpeech),
+export interface WordTrainMediaControllerContract {
+  play: InteractionMediaCoordinator['play'];
+  notifyInteraction: InteractionMediaCoordinator['notifyInteraction'];
+  unlock: () => Promise<void>;
+}
+
+export class WordTrainMediaController implements WordTrainMediaControllerContract {
+  constructor(
+    private readonly player: RecordedSpeechBackend,
+    private readonly coordinator = new InteractionMediaCoordinator(
+      new RecordedOnlyWordTrainSpeechBackend(player),
+    ),
+  ) {}
+
+  play(
+    ...args: Parameters<InteractionMediaCoordinator['play']>
+  ): ReturnType<InteractionMediaCoordinator['play']> {
+    return this.coordinator.play(...args);
+  }
+
+  notifyInteraction(
+    ...args: Parameters<InteractionMediaCoordinator['notifyInteraction']>
+  ): ReturnType<InteractionMediaCoordinator['notifyInteraction']> {
+    return this.coordinator.notifyInteraction(...args);
+  }
+
+  unlock(): Promise<void> {
+    return this.player.unlock();
+  }
+
+  dispose(): void {
+    this.coordinator.dispose();
+  }
+}
+
+export const wordTrainMediaCoordinator = new WordTrainMediaController(
+  wordTrainRecordedSpeech,
 );

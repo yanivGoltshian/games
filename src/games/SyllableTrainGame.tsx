@@ -49,7 +49,10 @@ import {
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useGenerationToken } from './useGenerationToken';
 import { useMicEffort } from './useMicEffort';
-import { wordTrainMediaCoordinator } from './wordTrainMedia';
+import {
+  wordTrainMediaCoordinator,
+  type WordTrainMediaControllerContract,
+} from './wordTrainMedia';
 import {
   appendWordTrainContentId,
   INITIAL_WORD_TRAIN_METRICS,
@@ -84,6 +87,7 @@ interface MetricDetails {
 
 export interface SyllableTrainGameProps extends ToddlerGameProps {
   onCommunicationMetrics?: WordTrainMetricsCallback;
+  mediaCoordinator?: WordTrainMediaControllerContract;
 }
 
 function tutorialWasSeen(): boolean {
@@ -104,6 +108,13 @@ function rememberTutorial(): void {
 
 function performanceNow(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+function isLifecycleCancellation(outcome: InteractionMediaOutcome): boolean {
+  return (
+    outcome.cancellationReason === 'background'
+    || outcome.cancellationReason === 'exit'
+  );
 }
 
 function genericLabel(englishOnly: boolean, control: 'left' | 'right' | 'voice' | 'retry'): string {
@@ -129,6 +140,7 @@ export function SyllableTrainGame({
   mediaReady,
   onBack,
   onCommunicationMetrics,
+  mediaCoordinator = wordTrainMediaCoordinator,
 }: SyllableTrainGameProps) {
   const sessionId = useId();
   const lifecycle = useAppLifecycle();
@@ -179,6 +191,7 @@ export function SyllableTrainGame({
   const pointerRef = useRef<ActivePointer | null>(null);
   const ignoredPointerIdsRef = useRef(new Set<number>());
   const suppressClickRef = useRef(false);
+  const mandatoryConnectRoundRef = useRef<string | null>(null);
   const couplerRef = useRef<HTMLDivElement | null>(null);
   const connectIntentRef = useRef<(source: CommunicationInputSource) => void>(() => undefined);
   const tutorialPlaybackRef = useRef(false);
@@ -222,7 +235,7 @@ export function SyllableTrainGame({
     intentSuffix: string,
   ): Promise<InteractionMediaOutcome> => {
     const recordingKey = round.recordings[lockedLocale];
-    return wordTrainMediaCoordinator.play({
+    return mediaCoordinator.play({
       intentId: `word-train:${sessionId}:${String(roundKey)}:${intentSuffix}`,
       source,
       scope: mediaScope,
@@ -235,7 +248,16 @@ export function SyllableTrainGame({
         locale: lockedLocale,
       }],
     });
-  }, [localeLock, lockedLocale, mediaScope, round.recordings, roundKey, sessionId, settings]);
+  }, [
+    localeLock,
+    lockedLocale,
+    mediaCoordinator,
+    mediaScope,
+    round.recordings,
+    roundKey,
+    sessionId,
+    settings,
+  ]);
 
   const requestConnection = useCallback((source: CommunicationInputSource): void => {
     const current = stateRef.current;
@@ -257,11 +279,34 @@ export function SyllableTrainGame({
     ) {
       return;
     }
+    if (current.phase === 'mandatory-model') {
+      const currentRound = String(roundKey);
+      if (
+        current.pendingConnect
+        || mandatoryConnectRoundRef.current === currentRound
+      ) {
+        return;
+      }
+      mandatoryConnectRoundRef.current = currentRound;
+      if (source === 'touch') {
+        const token = generationRef.current.token;
+        void mediaCoordinator.unlock().catch(() => {
+          if (
+            generationRef.current.isCurrent(token)
+            && stateRef.current.phase === 'mandatory-model'
+          ) {
+            failAssets();
+          }
+        });
+      }
+      dispatch({ type: 'request-connect' });
+      return;
+    }
     micRef.current.stop();
     setVoiceActive(false);
-    wordTrainMediaCoordinator.notifyInteraction(scopeRef.current, source);
+    mediaCoordinator.notifyInteraction(scopeRef.current, source);
     dispatch({ type: 'request-connect' });
-  }, []);
+  }, [failAssets, mediaCoordinator, roundKey]);
   connectIntentRef.current = requestConnection;
 
   const metrics = useMemo<WordTrainMetrics>(() => ({
@@ -293,6 +338,9 @@ export function SyllableTrainGame({
     if (state.phase !== 'preparation') {
       return;
     }
+    mandatoryConnectRoundRef.current = null;
+    ignoredPointerIdsRef.current.clear();
+    suppressClickRef.current = false;
     const key = String(roundKey);
     if (observedRoundKeysRef.current.has(key)) {
       return;
@@ -391,7 +439,7 @@ export function SyllableTrainGame({
       if (outcome.status === 'completed') {
         rememberTutorial();
         dispatch({ type: 'tutorial-complete', now: Date.now() });
-      } else if (outcome.status === 'errored' || outcome.status === 'unavailable') {
+      } else if (!isLifecycleCancellation(outcome)) {
         failAssets();
       }
     });
@@ -424,7 +472,7 @@ export function SyllableTrainGame({
           latestModelPlaybackMs: Math.max(0, completedAt - startedAt),
         }));
         dispatch({ type: 'model-complete', now: Date.now() });
-      } else if (outcome.status === 'errored' || outcome.status === 'unavailable') {
+      } else if (!isLifecycleCancellation(outcome)) {
         failAssets();
       }
     });
@@ -518,11 +566,11 @@ export function SyllableTrainGame({
     const timer = window.setTimeout(() => {
       generationRef.current.invalidate();
       micRef.current.stop();
-      wordTrainMediaCoordinator.notifyInteraction(scopeRef.current, 'exit');
+      mediaCoordinator.notifyInteraction(scopeRef.current, 'exit');
       dispatch({ type: 'session-timeout' });
     }, remaining);
     return () => window.clearTimeout(timer);
-  }, [state.sessionStartedAt]);
+  }, [mediaCoordinator, state.sessionStartedAt]);
 
   useEffect(() => {
     if (lifecycle === 'background') {
@@ -530,7 +578,7 @@ export function SyllableTrainGame({
       micRef.current.stop();
       setVoiceActive(false);
       pointerRef.current = null;
-      wordTrainMediaCoordinator.notifyInteraction(scopeRef.current, 'background');
+      mediaCoordinator.notifyInteraction(scopeRef.current, 'background');
       dispatch({ type: 'background' });
     } else if (stateRef.current.phase === 'paused') {
       const current = stateRef.current;
@@ -543,7 +591,7 @@ export function SyllableTrainGame({
       }
       dispatch({ type: 'foreground', now });
     }
-  }, [lifecycle, startNextRound]);
+  }, [lifecycle, mediaCoordinator, startNextRound]);
 
   useEffect(() => {
     const handleOrientation = (): void => {
@@ -557,10 +605,9 @@ export function SyllableTrainGame({
   }, []);
 
   useEffect(() => () => {
-    generationRef.current.invalidate();
     micRef.current.stop();
-    wordTrainMediaCoordinator.notifyInteraction(scopeRef.current, 'exit');
-  }, []);
+    mediaCoordinator.notifyInteraction(scopeRef.current, 'exit');
+  }, [mediaCoordinator]);
 
   const interruptTutorial = useCallback((): void => {
     if (stateRef.current.phase !== 'tutorial') {
@@ -569,10 +616,10 @@ export function SyllableTrainGame({
     soundService.unlock();
     generationRef.current.invalidate();
     micRef.current.stop();
-    wordTrainMediaCoordinator.notifyInteraction(scopeRef.current, 'round-replacement');
+    mediaCoordinator.notifyInteraction(scopeRef.current, 'round-replacement');
     rememberTutorial();
     dispatch({ type: 'tutorial-interrupt', now: Date.now() });
-  }, []);
+  }, [mediaCoordinator]);
 
   const handlePointerDown = useCallback((
     event: ReactPointerEvent<HTMLButtonElement>,
@@ -581,7 +628,9 @@ export function SyllableTrainGame({
     suppressClickRef.current = false;
     const current = stateRef.current;
     if (current.phase === 'mandatory-model') {
-      dispatch({ type: 'request-connect' });
+      ignoredPointerIdsRef.current.add(event.pointerId);
+      event.preventDefault();
+      requestConnection('touch');
       return;
     }
     if (
@@ -607,7 +656,7 @@ export function SyllableTrainGame({
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
     dispatch({ type: 'pointer-begin', pointerId: event.pointerId });
-  }, []);
+  }, [requestConnection]);
 
   const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLButtonElement>): void => {
     const active = pointerRef.current;
@@ -701,9 +750,9 @@ export function SyllableTrainGame({
   const handleBack = useCallback((): void => {
     generationRef.current.invalidate();
     micRef.current.stop();
-    wordTrainMediaCoordinator.notifyInteraction(scopeRef.current, 'exit');
+    mediaCoordinator.notifyInteraction(scopeRef.current, 'exit');
     onBack();
-  }, [onBack]);
+  }, [mediaCoordinator, onBack]);
 
   const retryAssets = useCallback((): void => {
     assetFailureRoundRef.current = null;

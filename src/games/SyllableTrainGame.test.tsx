@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import { StrictMode, act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
   afterAll,
@@ -15,7 +15,15 @@ import {
 import { WORD_TRAIN_CONTENT_VERSION } from '../content/syllableTrain';
 import { createInitialProgress, createInitialSettings } from '../domain/progression';
 import type { SyllableTrainRound, ToddlerSettings } from '../domain/types';
-import type { InteractionMediaOutcome } from '../services/interactionMediaCoordinator';
+import {
+  InteractionMediaCoordinator,
+  type InteractionMediaOutcome,
+} from '../services/interactionMediaCoordinator';
+import { MicrophonePlaybackGuard } from '../services/microphonePlaybackGuard';
+import type {
+  RecordedSpeechBackend,
+  RecordedSpeechPlayOptions,
+} from '../services/recordedSpeech';
 import {
   WORD_TRAIN_FIRST_OPPORTUNITY_MS,
   WORD_TRAIN_REST_MS,
@@ -23,6 +31,10 @@ import {
   WORD_TRAIN_SECOND_OPPORTUNITY_MS,
 } from './syllableTrainState';
 import { SyllableTrainGame, type SyllableTrainGameProps } from './SyllableTrainGame';
+import {
+  RecordedOnlyWordTrainSpeechBackend,
+  WordTrainMediaController,
+} from './wordTrainMedia';
 
 const testRound: SyllableTrainRound = {
   conceptId: 'ball',
@@ -40,6 +52,7 @@ const doubles = vi.hoisted(() => ({
   validate: vi.fn(),
   play: vi.fn(),
   notifyInteraction: vi.fn(),
+  unlockMedia: vi.fn(),
   playTap: vi.fn(),
   unlock: vi.fn(),
   startMic: vi.fn(),
@@ -57,14 +70,9 @@ vi.mock('../services/communicationAssetReadiness', () => ({
   },
 }));
 
-vi.mock('./wordTrainMedia', () => ({
-  wordTrainMediaCoordinator: {
-    play: doubles.play,
-    notifyInteraction: doubles.notifyInteraction,
-  },
-}));
-
 vi.mock('../services/sound', () => ({
+  getSharedAudioContext: () => null,
+  unlockAudioContext: async () => undefined,
   soundService: {
     playTap: doubles.playTap,
     unlock: doubles.unlock,
@@ -72,6 +80,7 @@ vi.mock('../services/sound', () => ({
 }));
 
 vi.mock('../platform/useAppLifecycle', () => ({
+  subscribeAppLifecycle: () => () => undefined,
   useAppLifecycle: () => doubles.lifecycle,
 }));
 
@@ -117,6 +126,42 @@ function pointerEvent(
     clientY: { value: clientY },
   });
   return event;
+}
+
+interface DeferredPlayback {
+  options: RecordedSpeechPlayOptions;
+  resolve: () => void;
+  settled: boolean;
+}
+
+class DeferredRecordedSpeech implements RecordedSpeechBackend {
+  readonly played: DeferredPlayback[] = [];
+  readonly unlock = vi.fn(async () => undefined);
+  readonly cancel = vi.fn(() => {
+    this.played.find((playback) => !playback.settled)?.resolve();
+  });
+
+  isEnabled = () => true;
+
+  play = (options: RecordedSpeechPlayOptions): Promise<void> => new Promise((resolve) => {
+    const playback: DeferredPlayback = {
+      options,
+      settled: false,
+      resolve: () => {
+        playback.settled = true;
+        resolve();
+      },
+    };
+    this.played.push(playback);
+  });
+
+  start(index: number): void {
+    this.played[index]?.options.onStart();
+  }
+
+  finish(index: number): void {
+    this.played[index]?.resolve();
+  }
 }
 
 describe('SyllableTrainGame whole-word rebuild', () => {
@@ -168,6 +213,8 @@ describe('SyllableTrainGame whole-word rebuild', () => {
     doubles.play.mockReset();
     doubles.play.mockResolvedValue(completedOutcome());
     doubles.notifyInteraction.mockReset();
+    doubles.unlockMedia.mockReset();
+    doubles.unlockMedia.mockResolvedValue(undefined);
     doubles.playTap.mockReset();
     doubles.unlock.mockReset();
     doubles.startMic.mockReset();
@@ -202,6 +249,7 @@ describe('SyllableTrainGame whole-word rebuild', () => {
   async function renderGame(
     settings: ToddlerSettings = createInitialSettings(),
     overrides: Partial<SyllableTrainGameProps> = {},
+    strictMode = false,
   ): Promise<SyllableTrainGameProps> {
     const progress = createInitialProgress(false, 0);
     lastProps = {
@@ -219,10 +267,16 @@ describe('SyllableTrainGame whole-word rebuild', () => {
       onBack: vi.fn(),
       onCompleteRound: vi.fn(),
       onCommunicationMetrics: vi.fn(),
+      mediaCoordinator: {
+        play: doubles.play,
+        notifyInteraction: doubles.notifyInteraction,
+        unlock: doubles.unlockMedia,
+      },
       ...overrides,
     };
     await act(async () => {
-      root.render(<SyllableTrainGame {...lastProps} />);
+      const game = <SyllableTrainGame {...lastProps} />;
+      root.render(strictMode ? <StrictMode>{game}</StrictMode> : game);
     });
     await flush();
     return lastProps;
@@ -274,6 +328,10 @@ describe('SyllableTrainGame whole-word rebuild', () => {
     expect(surface.dataset.phase).toBe('mandatory-model');
     expect(surface.dataset.pending).toBe('true');
     expect(surface.dataset.connected).toBe('false');
+    expect(doubles.notifyInteraction).not.toHaveBeenCalledWith(
+      expect.any(Object),
+      'touch',
+    );
 
     await act(async () => {
       finishPlayback?.(completedOutcome());
@@ -285,6 +343,158 @@ describe('SyllableTrainGame whole-word rebuild', () => {
     expect(onCompleteRound).not.toHaveBeenCalled();
     expect(domainProgress).toEqual(historySnapshot);
   });
+
+  it('queues one early multi-touch intent without cancelling deferred real playback', async () => {
+    const player = new DeferredRecordedSpeech();
+    const sharedCoordinator = new InteractionMediaCoordinator(
+      new RecordedOnlyWordTrainSpeechBackend(player),
+      new MicrophonePlaybackGuard(),
+      () => () => undefined,
+    );
+    const mediaCoordinator = new WordTrainMediaController(player, sharedCoordinator);
+    const notifyInteraction = vi.spyOn(mediaCoordinator, 'notifyInteraction');
+    const onMetrics = vi.fn();
+
+    await renderGame(createInitialSettings(), {
+      mediaCoordinator,
+      onCommunicationMetrics: onMetrics,
+    });
+    const surface = container.querySelector<HTMLElement>('.syllable-train-surface')!;
+    const left = container.querySelector<HTMLButtonElement>('.syllable-train-car--left')!;
+    expect(surface.dataset.phase).toBe('mandatory-model');
+    expect(player.played).toHaveLength(1);
+
+    await act(async () => {
+      left.dispatchEvent(pointerEvent('pointerdown', 1, 10, 10));
+      left.dispatchEvent(pointerEvent('pointerdown', 2, 10, 10));
+      left.dispatchEvent(pointerEvent('pointerup', 1, 10, 10));
+      left.dispatchEvent(pointerEvent('pointerup', 2, 10, 10));
+      left.dispatchEvent(pointerEvent('click', 1, 10, 10));
+      left.dispatchEvent(pointerEvent('click', 2, 10, 10));
+    });
+
+    expect(surface.dataset.pending).toBe('true');
+    expect(surface.dataset.connected).toBe('false');
+    expect(player.unlock).toHaveBeenCalledOnce();
+    expect(player.cancel).not.toHaveBeenCalled();
+    expect(notifyInteraction).not.toHaveBeenCalled();
+
+    await act(async () => {
+      player.start(0);
+      player.finish(0);
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(player.played).toHaveLength(1);
+    expect(surface.dataset.phase).toBe('reward');
+    expect(surface.dataset.connected).toBe('true');
+    expect(onMetrics.mock.calls.at(-1)?.[0]).toMatchObject({
+      trainsConnected: 1,
+    });
+    mediaCoordinator.dispose();
+  });
+
+  it('starts one mandatory model and completes normally in StrictMode', async () => {
+    await renderGame(createInitialSettings(), {}, true);
+
+    expect(doubles.play).toHaveBeenCalledTimes(1);
+    expect(container.querySelector<HTMLElement>('.syllable-train-surface')!.dataset.phase)
+      .toBe('available');
+  });
+
+  it('keeps deferred real playback live in StrictMode without an asset error', async () => {
+    const player = new DeferredRecordedSpeech();
+    const sharedCoordinator = new InteractionMediaCoordinator(
+      new RecordedOnlyWordTrainSpeechBackend(player),
+      new MicrophonePlaybackGuard(),
+      () => () => undefined,
+    );
+    const mediaCoordinator = new WordTrainMediaController(player, sharedCoordinator);
+    const onMetrics = vi.fn();
+
+    await renderGame(createInitialSettings(), {
+      mediaCoordinator,
+      onCommunicationMetrics: onMetrics,
+    }, true);
+
+    const surface = container.querySelector<HTMLElement>('.syllable-train-surface')!;
+    expect(player.cancel).not.toHaveBeenCalled();
+    expect(player.played).toHaveLength(1);
+    expect(surface.dataset.phase).toBe('mandatory-model');
+    expect(onMetrics.mock.calls.at(-1)?.[0]).toMatchObject({ mediaErrors: 0 });
+
+    await act(async () => {
+      player.start(0);
+      player.finish(0);
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(surface.dataset.phase).toBe('available');
+    expect(onMetrics.mock.calls.at(-1)?.[0]).toMatchObject({ mediaErrors: 0 });
+    mediaCoordinator.dispose();
+  });
+
+  it('ignores real coordinator background cancellation before React lifecycle catches up', async () => {
+    let emitMediaLifecycle: (state: 'foreground' | 'background') => void = () => undefined;
+    const player = new DeferredRecordedSpeech();
+    const sharedCoordinator = new InteractionMediaCoordinator(
+      new RecordedOnlyWordTrainSpeechBackend(player),
+      new MicrophonePlaybackGuard(),
+      (listener) => {
+        emitMediaLifecycle = listener;
+        return () => {
+          emitMediaLifecycle = () => undefined;
+        };
+      },
+    );
+    const mediaCoordinator = new WordTrainMediaController(player, sharedCoordinator);
+    const onMetrics = vi.fn();
+
+    await renderGame(createInitialSettings(), {
+      mediaCoordinator,
+      onCommunicationMetrics: onMetrics,
+    });
+    const surface = container.querySelector<HTMLElement>('.syllable-train-surface')!;
+    expect(surface.dataset.phase).toBe('mandatory-model');
+
+    await act(async () => {
+      emitMediaLifecycle('background');
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(surface.dataset.phase).toBe('mandatory-model');
+    expect(onMetrics.mock.calls.at(-1)?.[0]).toMatchObject({ mediaErrors: 0 });
+
+    doubles.lifecycle = 'background';
+    await rerender();
+    expect(surface.dataset.phase).toBe('paused');
+    expect(onMetrics.mock.calls.at(-1)?.[0]).toMatchObject({ mediaErrors: 0 });
+    mediaCoordinator.dispose();
+  });
+
+  it.each(['replaced', 'cancelled', 'errored', 'unavailable'] as const)(
+    'routes same-generation %s mandatory playback to recoverable retry',
+    async (status) => {
+      doubles.play
+        .mockResolvedValueOnce({ intentId: `test-${status}`, status })
+        .mockResolvedValueOnce(completedOutcome());
+
+      await renderGame();
+      const surface = container.querySelector<HTMLElement>('.syllable-train-surface')!;
+      expect(surface.dataset.phase).toBe('asset-error');
+
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('.syllable-train-retry')!.click();
+      });
+      await flush();
+
+      expect(doubles.play).toHaveBeenCalledTimes(2);
+      expect(surface.dataset.phase).toBe('available');
+    },
+  );
 
   it('renders no syllables, parts, prompts, dashes, letters, or whole-word text', async () => {
     await renderGame();
@@ -577,7 +787,7 @@ describe('SyllableTrainGame whole-word rebuild', () => {
       'background',
     );
 
-    finishPlayback?.(completedOutcome());
+    finishPlayback?.({ intentId: 'stale-cancelled', status: 'cancelled' });
     await flush();
     expect(surface.dataset.phase).toBe('paused');
 

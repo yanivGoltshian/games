@@ -86,6 +86,7 @@ describe('interaction media coordinator', () => {
     speech.start(0);
     const stale = coordinator.play(request('stale', 'conditional'));
     const latest = coordinator.play(request('latest', 'mandatory'));
+    coordinator.notifyInteraction(scope, 'touch');
 
     await expect(stale).resolves.toMatchObject({ status: 'replaced' });
     expect(speech.cancelScope).not.toHaveBeenCalled();
@@ -101,6 +102,27 @@ describe('interaction media coordinator', () => {
   });
 
   it.each(['touch', 'voice', 'automatic'] as const)(
+    'keeps an unstarted mandatory model for queued %s intent',
+    async (source) => {
+      const speech = new FakeSpeechBackend();
+      const coordinator = new InteractionMediaCoordinator(
+        speech,
+        new MicrophonePlaybackGuard(),
+        lifecycle,
+      );
+      const mandatory = coordinator.play(request(`mandatory-${source}`, 'mandatory'));
+
+      coordinator.notifyInteraction(scope, source);
+
+      expect(speech.cancelScope).not.toHaveBeenCalled();
+      speech.start(0);
+      speech.finish(0);
+      await expect(mandatory).resolves.toMatchObject({ status: 'completed' });
+      coordinator.dispose();
+    },
+  );
+
+  it.each(['touch', 'voice', 'automatic'] as const)(
     'gives %s input the same conditional cancellation outcome',
     async (source) => {
       const speech = new FakeSpeechBackend();
@@ -110,7 +132,10 @@ describe('interaction media coordinator', () => {
 
       coordinator.notifyInteraction(scope, source);
 
-      await expect(invitation).resolves.toMatchObject({ status: 'replaced' });
+      await expect(invitation).resolves.toMatchObject({
+        status: 'replaced',
+        cancellationReason: source,
+      });
       expect(speech.cancelScope).toHaveBeenCalledOnce();
       coordinator.dispose();
     },
@@ -150,7 +175,10 @@ describe('interaction media coordinator', () => {
 
     emitLifecycle('background');
 
-    await expect(backgrounded).resolves.toMatchObject({ status: 'cancelled' });
+    await expect(backgrounded).resolves.toMatchObject({
+      status: 'cancelled',
+      cancellationReason: 'background',
+    });
     expect(speech.cancelScope).toHaveBeenLastCalledWith(
       expect.any(String),
       'visibility',
@@ -162,7 +190,34 @@ describe('interaction media coordinator', () => {
       { ...scope, activityId: 'phone', sessionId: 'session-2' },
       'activity-replacement',
     );
-    await expect(replaced).resolves.toMatchObject({ status: 'replaced' });
+    await expect(replaced).resolves.toMatchObject({
+      status: 'replaced',
+      cancellationReason: 'activity-replacement',
+    });
+    coordinator.dispose();
+  });
+
+  it('preserves lifecycle cancellation while a replacement waits for settlement', async () => {
+    const speech = new FakeSpeechBackend();
+    const coordinator = new InteractionMediaCoordinator(
+      speech,
+      new MicrophonePlaybackGuard(),
+      lifecycle,
+    );
+    const cancelled = coordinator.play(request('cancelled', 'mandatory'));
+    speech.start(0);
+
+    coordinator.notifyInteraction(scope, 'exit');
+    const replacement = coordinator.play(request('replacement', 'mandatory'));
+
+    await expect(cancelled).resolves.toMatchObject({
+      status: 'cancelled',
+      cancellationReason: 'exit',
+    });
+    expect(speech.playbacks).toHaveLength(2);
+    speech.start(1);
+    speech.finish(1);
+    await expect(replacement).resolves.toMatchObject({ status: 'completed' });
     coordinator.dispose();
   });
 
