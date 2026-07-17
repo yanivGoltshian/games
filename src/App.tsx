@@ -3,6 +3,7 @@ import { CaregiverGate } from './components/CaregiverGate';
 import { CaregiverPanel } from './components/CaregiverPanel';
 import { HomeScreen } from './components/HomeScreen';
 import { applyRoundResult, createInitialProgress } from './domain/progression';
+import { childGreeting, normalizeChildName } from './domain/childName';
 import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
@@ -51,6 +52,11 @@ export default function App() {
     document.body.dataset.reducedMotion = progress.settings.reducedMotion ? 'true' : 'false';
   }, [progress.settings.languageMode, progress.settings.reducedMotion, route.kind]);
 
+  useEffect(() => {
+    const title = childGreeting(progress.settings.childName, progress.settings.languageMode);
+    document.title = title;
+  }, [progress.settings.childName, progress.settings.languageMode]);
+
   const unlockMedia = useCallback(() => {
     speechService.unlock(progress.settings);
     soundService.unlock();
@@ -58,12 +64,15 @@ export default function App() {
   }, [progress.settings]);
 
   const updateSettings = (patch: Partial<ToddlerSettings>) => {
+    const normalizedPatch = patch.childName === undefined
+      ? patch
+      : { ...patch, childName: normalizeChildName(patch.childName) };
     setProgress((current) => ({
       ...current,
       updatedAt: Date.now(),
       settings: {
         ...current.settings,
-        ...patch,
+        ...normalizedPatch,
       },
     }));
   };
@@ -121,7 +130,12 @@ export default function App() {
       sillyAlien: <SillyAlienGame {...gameProps} />,
     }[route.domain];
   } else {
-    content = <HomeScreen onOpenGame={(domain) => navigate(`/games/${domain}`)} />;
+    content = (
+      <HomeScreen
+        onOpenGame={(domain) => navigate(`/games/${domain}`)}
+        settings={progress.settings}
+      />
+    );
   }
 
   return (

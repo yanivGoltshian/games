@@ -21,6 +21,7 @@ import {
 import { soundService } from '../services/sound';
 import {
   buildLocalizedSegments,
+  buildPersonalizedPhraseSegments,
   buildPhraseSegments,
   speechService,
   type SpeechResult,
@@ -34,6 +35,7 @@ import {
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
+import { personalizeChildName } from '../domain/childName';
 
 const SPEECH_SCOPE = 'game:silly-alien';
 
@@ -230,15 +232,17 @@ export function SillyAlienGame({
 
   const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
     await speechService.speakSegments(
-      buildLocalizedSegments(
-        [
+      [
+        ...buildLocalizedSegments(
+          [
           { ...SILLY_ALIEN_INTRO, pauseAfterMs: 240 },
           { he: round.brokenHe, en: round.brokenEn, pauseAfterMs: 360 },
-          SILLY_ALIEN_PROMPT,
-        ],
-        settings.languageMode,
-        settings.englishVoiceLocale,
-      ),
+          ],
+          settings.languageMode,
+          settings.englishVoiceLocale,
+        ).map((segment) => ({ ...segment, recordedText: null })),
+        ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, settings),
+      ],
       settings,
       {
         scope: SPEECH_SCOPE,
@@ -364,7 +368,11 @@ export function SillyAlienGame({
     ? (englishOnly ? `Yes! ${round.fullEn}` : `כן! ${round.fullHe}`)
     : isListening
       ? (englishOnly ? SILLY_ALIEN_LISTENING.en : SILLY_ALIEN_LISTENING.he)
-      : (englishOnly ? round.promptEn : round.promptHe);
+      : (
+          englishOnly
+            ? personalizeChildName(round.promptEn, settings.childName, 'en')
+            : personalizeChildName(round.promptHe, settings.childName, 'he')
+        );
 
   const surfaceStyle = {
     '--level': state.currentLevel,

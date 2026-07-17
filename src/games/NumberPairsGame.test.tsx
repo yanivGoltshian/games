@@ -43,6 +43,27 @@ vi.mock('../services/speech', () => ({
     }
     return [hebrewSegment, englishSegment];
   },
+  buildPersonalizedPhraseSegments: (
+    line: { he: string; en: string },
+    settings: {
+      childName: string;
+      languageMode: 'he' | 'en' | 'bilingual';
+      englishVoiceLocale: 'en-US' | 'en-GB';
+    },
+  ) => {
+    const hebrew = line.he.replace('שון', settings.childName);
+    const english = line.en.replace('Sean', settings.childName);
+    if (settings.languageMode === 'he') {
+      return [{ text: hebrew, locale: 'he-IL' }];
+    }
+    if (settings.languageMode === 'en') {
+      return [{ text: english, locale: settings.englishVoiceLocale }];
+    }
+    return [
+      { text: hebrew, locale: 'he-IL' },
+      { text: english, locale: settings.englishVoiceLocale },
+    ];
+  },
   speechService: {
     cancelScope: doubles.cancelScope,
     speakSegments: doubles.speakSegments,

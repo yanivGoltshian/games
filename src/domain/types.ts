@@ -20,6 +20,7 @@ export type ConceptCategory =
 export type HebrewGrammaticalGender = 'masculine' | 'feminine';
 
 export interface ToddlerSettings {
+  childName: string;
   languageMode: LanguageMode;
   englishVoiceLocale: EnglishVoiceLocale;
   soundLevel: number;

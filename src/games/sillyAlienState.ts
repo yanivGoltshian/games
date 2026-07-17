@@ -1,7 +1,7 @@
 /**
  * Pure state logic for the "Silly Alien" game.
  *
- * The alien has dropped the first syllable of a word and Sean is asked to say
+ * The alien has dropped the first syllable of a word and the child is asked to say
  * the whole word. We open the microphone and accumulate *vocal effort*: every
  * animation frame the component measures a normalised RMS level (0..1) and feeds
  * it here as `register-effort` with the elapsed milliseconds since the previous

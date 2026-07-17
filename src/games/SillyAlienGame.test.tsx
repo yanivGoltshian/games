@@ -33,6 +33,9 @@ vi.mock('../services/sound', () => ({
 
 vi.mock('../services/speech', () => ({
   buildLocalizedSegments: (lines: unknown[]) => lines,
+  buildPersonalizedPhraseSegments: (line: { he: string }, settings: { childName: string }) => [
+    { text: line.he.replace('שון', settings.childName), locale: 'he-IL' },
+  ],
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
     speakSegments: doubles.speakSegments,
@@ -100,9 +103,13 @@ describe('SillyAlienGame', () => {
     }));
   }
 
-  async function renderGame(onCompleteRound = createCompleteRound()) {
+  async function renderGame(
+    onCompleteRound = createCompleteRound(),
+    childName = 'שון',
+  ) {
     const progress = createInitialProgress(false, 0);
     const settings = createInitialSettings();
+    settings.childName = childName;
     await act(async () => {
       root.render(
         <SillyAlienGame
@@ -136,7 +143,14 @@ describe('SillyAlienGame', () => {
     expect(word!.textContent).toBe(testRound.brokenHe);
   });
 
-  it('moves through listening and completes the round when Sean affirms', async () => {
+  it('uses the configured name in the live prompt without exposing the old name', async () => {
+    await renderGame(createCompleteRound(), 'נוֹעָה');
+
+    expect(container.textContent).toContain('נוֹעָה');
+    expect(container.textContent).not.toContain('שון');
+  });
+
+  it('moves through listening and completes the round when the child affirms', async () => {
     const onCompleteRound = await renderGame();
 
     // Intro → listening.

@@ -106,7 +106,8 @@ class FakeSpeechSynthesis {
     if (!isContentful) {
       return;
     }
-    const isUnlockGreeting = stripNiqqud(utterance.text) === 'שלום שון' || utterance.text === 'Hello Sean';
+    const isUnlockGreeting = stripNiqqud(utterance.text).startsWith('שלום ')
+      || utterance.text.startsWith('Hello ');
     if (!this.engineUnlocked && !this.userActivation) {
       if (this.blockedBehavior === 'pending') {
         this.stalled = utterance;

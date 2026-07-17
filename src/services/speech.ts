@@ -1,6 +1,11 @@
 import type { EnglishVoiceLocale, LearningConcept, SpeechLocale, ToddlerSettings } from '../domain/types';
 import { HEBREW_UNLOCK_PRIMER } from '../content/hebrewPronunciation';
 import {
+  childGreeting,
+  isDefaultChildName,
+  personalizeChildName,
+} from '../domain/childName';
+import {
   recordedSpeechPlayer,
   type RecordedSpeechBackend,
 } from './recordedSpeech';
@@ -8,6 +13,7 @@ import {
 export interface SpeechSegment {
   text: string;
   locale: SpeechLocale;
+  recordedText?: string | null;
   pauseAfterMs?: number;
   cue?: string;
 }
@@ -81,7 +87,16 @@ function hasSpokenContent(text: string): boolean {
 
 function buildUnlockPrimer(settings: ToddlerSettings): SpeechSegment {
   if (settings.languageMode === 'en') {
-    return { text: 'Hello Sean', locale: settings.englishVoiceLocale };
+    return {
+      text: childGreeting(settings.childName, 'en'),
+      locale: settings.englishVoiceLocale,
+    };
+  }
+  if (!isDefaultChildName(settings.childName)) {
+    return {
+      text: childGreeting(settings.childName, 'he'),
+      locale: 'he-IL',
+    };
   }
   return { text: HEBREW_UNLOCK_PRIMER.spokenText, locale: 'he-IL' };
 }
@@ -788,7 +803,7 @@ export class SpeechService {
         finish(request.cancelledAs ?? 'cancelled');
       };
       void this.recordedSpeech.play({
-        text: segment.text,
+        text: segment.recordedText ?? segment.text,
         locale: segment.locale,
         volume: request.settings.soundLevel,
         onStart: () => {
@@ -813,8 +828,11 @@ export class SpeechService {
       if (request.cancelledAs) {
         return request.cancelledAs;
       }
-      const utteranceStatus = this.recordedSpeech.isEnabled()
-        ? await this.speakRecording(segment, request)
+      const recorded = this.recordedSpeech.isEnabled();
+      const utteranceStatus = recorded
+        ? segment.recordedText === null
+          ? 'completed'
+          : await this.speakRecording(segment, request)
         : await (
           index === 0 && firstUtterance
             ? firstUtterance
@@ -1035,6 +1053,52 @@ export interface LocalizedSpeechLine {
   en: string;
   pauseAfterMs?: number;
   cue?: string;
+}
+
+export interface PersonalizedSpeechLine {
+  he: string;
+  en: string;
+  recordedFallbackHe?: string;
+  recordedFallbackEn?: string;
+  recordedFallbackMode?: 'custom-name' | 'always';
+}
+
+const DEFAULT_RECORDED_PERSONALIZATION_FALLBACK = {
+  he: 'יופי!',
+  en: 'Great!',
+} as const;
+
+export function buildPersonalizedPhraseSegments(
+  line: PersonalizedSpeechLine,
+  settings: ToddlerSettings,
+): SpeechSegment[] {
+  const customName = !isDefaultChildName(settings.childName);
+  const alwaysUseRecordedFallback = line.recordedFallbackMode === 'always';
+  const he = personalizeChildName(line.he, settings.childName, 'he');
+  const en = personalizeChildName(line.en, settings.childName, 'en');
+  const segments = buildPhraseSegments(
+    he,
+    en,
+    settings.languageMode,
+    settings.englishVoiceLocale,
+  );
+
+  if (!customName && !alwaysUseRecordedFallback) {
+    return segments;
+  }
+
+  return segments.map((segment) => {
+    const language = segment.locale === 'he-IL' ? 'he' : 'en';
+    const source = language === 'he' ? line.he : line.en;
+    const personalized = language === 'he' ? he : en;
+    if (source === personalized && !alwaysUseRecordedFallback) {
+      return segment;
+    }
+    const recordedText = language === 'he'
+      ? (line.recordedFallbackHe ?? DEFAULT_RECORDED_PERSONALIZATION_FALLBACK.he)
+      : (line.recordedFallbackEn ?? DEFAULT_RECORDED_PERSONALIZATION_FALLBACK.en);
+    return { ...segment, recordedText };
+  });
 }
 
 export function buildLocalizedSegments(

@@ -5,7 +5,7 @@ import type { ToddlerSettings } from '../domain/types';
 import { soundService } from '../services/sound';
 import {
   buildLocalizedSegments,
-  buildPhraseSegments,
+  buildPersonalizedPhraseSegments,
   speechService,
   type LocalizedSpeechLine,
   type SpeechResult,
@@ -98,12 +98,16 @@ export function useRetryFeedback({ scope, roundKey, settings }: RetryFeedbackOpt
         scope: phraseScope,
         historyKey: `${scope}:${phraseScope}:en`,
       });
-      const encouragement = buildPhraseSegments(
-        heLine.text,
-        enLine.text,
-        settings.languageMode,
-        settings.englishVoiceLocale,
-      );
+      const encouragement = buildPersonalizedPhraseSegments({
+        he: heLine.text,
+        en: enLine.text,
+        ...(heLine.recordedFallbackText
+          ? { recordedFallbackHe: heLine.recordedFallbackText }
+          : {}),
+        ...(enLine.recordedFallbackText
+          ? { recordedFallbackEn: enLine.recordedFallbackText }
+          : {}),
+      }, settings);
       const model = buildLocalizedSegments(modelLines, settings.languageMode, settings.englishVoiceLocale);
 
       const speech = speechService.speakRetrySequence(model, encouragement, settings, {

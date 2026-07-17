@@ -1,5 +1,6 @@
 import { selectPraise, type PraiseTier } from '../content/praise';
-import { buildPhraseSegments, type SpeechSegment } from '../services/speech';
+import { personalizeChildName } from '../domain/childName';
+import { buildPersonalizedPhraseSegments, type SpeechSegment } from '../services/speech';
 import type { ToddlerSettings } from '../domain/types';
 
 export interface PraiseSelection {
@@ -17,7 +18,14 @@ export interface PraiseSelection {
 export function selectPraiseSegments(settings: ToddlerSettings, tier: PraiseTier, seed: string): PraiseSelection {
   const he = selectPraise('he', tier, seed);
   const en = selectPraise('en', tier, seed);
-  const segments = buildPhraseSegments(he.text, en.text, settings.languageMode, settings.englishVoiceLocale);
-  const displayText = settings.languageMode === 'en' ? en.text : he.text;
+  const segments = buildPersonalizedPhraseSegments({
+    he: he.text,
+    en: en.text,
+    ...(he.recordedFallbackText ? { recordedFallbackHe: he.recordedFallbackText } : {}),
+    ...(en.recordedFallbackText ? { recordedFallbackEn: en.recordedFallbackText } : {}),
+  }, settings);
+  const displayText = settings.languageMode === 'en'
+    ? personalizeChildName(en.text, settings.childName, 'en')
+    : personalizeChildName(he.text, settings.childName, 'he');
   return { segments, displayText };
 }

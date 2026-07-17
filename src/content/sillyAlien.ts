@@ -1,10 +1,10 @@
-import type { LocalizedSpeechLine } from '../services/speech';
+import type { LocalizedSpeechLine, PersonalizedSpeechLine } from '../services/speech';
 
 /**
  * "Silly Alien" (החייזר המבולבל) — auditory-discrimination content.
  *
  * The alien drops the first syllable of a familiar word (e.g. says "פוח" instead
- * of "תפוח"); Sean is asked to say the whole word out loud. We detect vocal
+ * of "תפוח"); the child is asked to say the whole word out loud. We detect vocal
  * *effort* through the microphone (never speech-to-text — toddler speech is
  * imprecise), so the exact word never has to be recognised.
  *
@@ -46,10 +46,13 @@ export const SILLY_ALIEN_INTRO: LocalizedSpeechLine = {
   en: 'Oops, I got confused!',
 };
 
-/** Narrator hands the fix to Sean. */
-export const SILLY_ALIEN_PROMPT: LocalizedSpeechLine = {
+/** Narrator hands the fix to the child. */
+export const SILLY_ALIEN_PROMPT: PersonalizedSpeechLine = {
   he: 'שון, תגיד לו איך אומרים:',
   en: 'Sean, tell him how to say it:',
+  recordedFallbackHe: 'בוא נמשיך.',
+  recordedFallbackEn: "Let's do it again.",
+  recordedFallbackMode: 'always',
 };
 
 /** Shown while the microphone is open and listening for effort. */
@@ -58,7 +61,7 @@ export const SILLY_ALIEN_LISTENING: LocalizedSpeechLine = {
   en: "I'm listening to you!",
 };
 
-/** Alien gets it right, thanks to Sean. */
+/** Alien gets it right, thanks to the child. */
 export const SILLY_ALIEN_SUCCESS: LocalizedSpeechLine = {
   he: 'כן! עכשיו אני יודע!',
   en: 'Yes! Now I know!',

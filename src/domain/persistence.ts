@@ -4,6 +4,7 @@ import {
   RECENT_RESULT_LIMIT,
   STORAGE_SCHEMA_VERSION,
 } from './progression';
+import { normalizeChildName } from './childName';
 import type {
   AppProgress,
   ConceptStat,
@@ -65,6 +66,7 @@ function sanitizeSettings(input: unknown, prefersReducedMotion: boolean): Toddle
   const quietMode = typeof input.quietMode === 'boolean' ? input.quietMode : defaults.quietMode;
 
   return {
+    childName: normalizeChildName(input.childName),
     languageMode,
     englishVoiceLocale,
     soundLevel,
@@ -143,6 +145,7 @@ function readLegacySettings(raw: Record<string, unknown>, prefersReducedMotion: 
       soundLevel: preferences.sound ?? preferences.soundLevel,
       reducedMotion: preferences.motionReduced ?? preferences.reducedMotion,
       quietMode: preferences.quiet ?? preferences.quietMode,
+      childName: preferences.childName,
     },
     prefersReducedMotion,
   );
@@ -173,7 +176,12 @@ export function migrateStoredProgress(
     return base;
   }
 
-  if (raw.version === STORAGE_SCHEMA_VERSION || raw.version === 3 || raw.version === 2) {
+  if (
+    raw.version === STORAGE_SCHEMA_VERSION
+    || raw.version === 4
+    || raw.version === 3
+    || raw.version === 2
+  ) {
     const settings = sanitizeSettings(raw.settings, prefersReducedMotion);
     const domains = sanitizeDomains(raw.domains, base.domains);
     const domainStars = Object.values(domains).reduce((sum, domain) => sum + domain.stars, 0);

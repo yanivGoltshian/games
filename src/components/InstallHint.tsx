@@ -15,7 +15,7 @@ export function InstallHint() {
         <ol>
           <li>בספארי פותחים את כפתור השיתוף.</li>
           <li>בוחרים <strong>הוספה למסך הבית</strong>.</li>
-          <li>מאשרים את השם “שלום שון”.</li>
+          <li>מאשרים את השם “הרפתקת למידה”.</li>
           <li>בכרום: Share ואז <strong>Add to Home Screen</strong>.</li>
         </ol>
         <p>אחרי ההתקנה המשחקים יעבדו גם בלי רשת, אחרי טעינה ראשונה.</p>
