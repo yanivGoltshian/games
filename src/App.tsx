@@ -16,6 +16,7 @@ import { NumberPairsGame } from './games/NumberPairsGame';
 import { PuzzleGame } from './games/PuzzleGame';
 import { SillyAlienGame } from './games/SillyAlienGame';
 import { SortingGame } from './games/SortingGame';
+import { SyllableTrainGame } from './games/SyllableTrainGame';
 
 function navigate(path: string) {
   speechService.cancelAll('navigation');
@@ -128,6 +129,7 @@ export default function App() {
       memory: <MemoryGame {...gameProps} />,
       numberPairs: <NumberPairsGame {...gameProps} />,
       sillyAlien: <SillyAlienGame {...gameProps} />,
+      syllableTrain: <SyllableTrainGame {...gameProps} />,
     }[route.domain];
   } else {
     content = (

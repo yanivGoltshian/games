@@ -11,6 +11,11 @@ import {
   SILLY_ALIEN_WORDS,
   requireSillyAlienWord,
 } from '../content/sillyAlien';
+import {
+  SYLLABLE_TRAIN_PROMPT,
+  SYLLABLE_TRAIN_WORDS,
+  requireSyllableTrainWord,
+} from '../content/syllableTrain';
 import { buildPracticeWeights, createInitialConceptStat } from './progression';
 import { createSeededRandom, pickWeightedUnique } from './rng';
 import type {
@@ -25,12 +30,14 @@ import type {
   SillyAlienRound,
   SortingRound,
   SortingRule,
+  SyllableTrainRound,
 } from './types';
 
 export const NUMBER_WORDS_HE = ['אפס', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר'];
 export const NUMBER_WORDS_EN = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 export const NUMBER_PAIRS_GENERATION_ATTEMPTS = 32;
 export const SILLY_ALIEN_GENERATION_ATTEMPTS = 32;
+export const SYLLABLE_TRAIN_GENERATION_ATTEMPTS = 32;
 export const LEARNING_ROUND_GENERATION_ATTEMPTS = 32;
 
 const learningStages: string[][] = ([1, 2, 3] as const).map((level) => learningConcepts
@@ -440,6 +447,59 @@ export function generateSillyAlienRound(
 
   for (let attempt = 0; attempt < SILLY_ALIEN_GENERATION_ATTEMPTS; attempt += 1) {
     const candidate = createSillyAlienCandidate(domain, `${String(seed)}:silly-alien:${attempt}`);
+    fallback ??= candidate;
+    if (!history.has(candidate.signature)) {
+      return candidate;
+    }
+  }
+
+  return fallback!;
+}
+
+export function getSyllableTrainRoundSignature(
+  round: Pick<SyllableTrainRound, 'conceptId'>,
+): string {
+  return round.conceptId;
+}
+
+function createSyllableTrainCandidate(
+  domain: DomainProgress,
+  seed: string | number,
+): SyllableTrainRound {
+  const random = createSeededRandom(seed);
+  const conceptIds = SYLLABLE_TRAIN_WORDS.map((word) => word.conceptId);
+  const weights = buildPracticeWeights(domain, conceptIds);
+  const conceptId = pickWeightedUnique(conceptIds, weights, 1, random)[0]!;
+  const word = requireSyllableTrainWord(conceptId);
+
+  return {
+    conceptId,
+    plainHe: word.he,
+    fullHe: word.pointedHe,
+    fullEn: word.en,
+    firstHe: word.firstHe,
+    restHe: word.restHe,
+    firstEn: word.firstEn,
+    restEn: word.restEn,
+    promptHe: SYLLABLE_TRAIN_PROMPT.he,
+    promptEn: SYLLABLE_TRAIN_PROMPT.en,
+    signature: conceptId,
+  };
+}
+
+export function generateSyllableTrainRound(
+  domain: DomainProgress,
+  seed: string | number,
+  recentSignatures: readonly string[] = [],
+): SyllableTrainRound {
+  const history = new Set(recentSignatures);
+  let fallback: SyllableTrainRound | null = null;
+
+  for (let attempt = 0; attempt < SYLLABLE_TRAIN_GENERATION_ATTEMPTS; attempt += 1) {
+    const candidate = createSyllableTrainCandidate(
+      domain,
+      `${String(seed)}:syllable-train:${attempt}`,
+    );
     fallback ??= candidate;
     if (!history.has(candidate.signature)) {
       return candidate;

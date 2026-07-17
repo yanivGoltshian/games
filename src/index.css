@@ -302,6 +302,7 @@ option {
 .accent-memory { --card-accent: var(--color-leaf-soft); }
 .accent-number-pairs { --card-accent: oklch(93% 0.055 183); }
 .accent-silly-alien { --card-accent: oklch(93% 0.06 300); }
+.accent-syllable-train { --card-accent: oklch(93% 0.05 230); }
 
 /* -------------------------------------------------------------------- */
 /* Game shell: minimal top rail + full-height stage                     */
@@ -1785,7 +1786,9 @@ input[type='text'] {
   .celebration-art,
   .celebration-art *,
   .silly-alien-surface,
-  .silly-alien-surface * {
+  .silly-alien-surface *,
+  .syllable-train-surface,
+  .syllable-train-surface * {
     transition: none !important;
     animation: none !important;
   }
@@ -1815,7 +1818,203 @@ body[data-reduced-motion='true'] .confetti-piece,
 body[data-reduced-motion='true'] .celebration-art,
 body[data-reduced-motion='true'] .celebration-art *,
 body[data-reduced-motion='true'] .silly-alien-surface,
-body[data-reduced-motion='true'] .silly-alien-surface * {
+body[data-reduced-motion='true'] .silly-alien-surface *,
+body[data-reduced-motion='true'] .syllable-train-surface,
+body[data-reduced-motion='true'] .syllable-train-surface * {
   transition: none !important;
   animation: none !important;
+}
+
+/* -------------------------------------------------------------------- */
+/* Syllable Train: couple the syllable cars, then the whole word drives  */
+/* -------------------------------------------------------------------- */
+
+.syllable-train-surface {
+  --progress: 0;
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 720px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(var(--space-3), 3dvh, var(--space-5));
+  padding-block: clamp(var(--space-2), 2dvh, var(--space-4));
+}
+
+.syllable-train-scene {
+  display: grid;
+  place-items: center;
+}
+
+.syllable-train-scene__art {
+  width: clamp(96px, 24vw, 160px);
+  height: clamp(96px, 24vw, 160px);
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px oklch(45% 0.06 230 / 0.22));
+}
+
+.syllable-train-prompt {
+  margin: 0;
+  font-size: clamp(1.1rem, 3.4vw, 1.5rem);
+  font-weight: 700;
+  color: var(--color-ink, #2a2350);
+  text-align: center;
+}
+
+.syllable-train-track {
+  position: relative;
+  width: 100%;
+  min-height: clamp(120px, 22dvh, 180px);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(var(--space-2), 2vw, var(--space-4));
+  padding-block-end: 18px;
+}
+
+.syllable-train-track::after {
+  content: '';
+  position: absolute;
+  inset-inline: 6%;
+  inset-block-end: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    90deg,
+    oklch(62% 0.04 230),
+    oklch(62% 0.04 230) 16px,
+    oklch(74% 0.03 230) 16px,
+    oklch(74% 0.03 230) 26px
+  );
+  opacity: 0.7;
+}
+
+.syllable-train-car {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(84px, 22vw, 130px);
+  min-height: clamp(84px, 20vw, 120px);
+  padding: clamp(var(--space-2), 2.4vw, var(--space-4));
+  border-radius: var(--radius-lg, 20px);
+  border: 4px solid oklch(52% 0.09 230);
+  background: linear-gradient(160deg, oklch(94% 0.05 230), oklch(86% 0.08 230));
+  box-shadow: var(--shadow-soft);
+}
+
+.syllable-train-car__label {
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  font-weight: 800;
+  color: var(--color-ink, #2a2350);
+  letter-spacing: 0.02em;
+}
+
+.syllable-train-car__wheels {
+  position: absolute;
+  inset-block-end: -14px;
+  inset-inline: 14%;
+  height: 16px;
+  display: block;
+}
+
+.syllable-train-car__wheels::before,
+.syllable-train-car__wheels::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: oklch(38% 0.03 230);
+  box-shadow: inset 0 0 0 4px oklch(88% 0.02 230);
+}
+
+.syllable-train-car__wheels::before { inset-inline-start: 0; }
+.syllable-train-car__wheels::after { inset-inline-end: 0; }
+
+.syllable-train-car--engine {
+  background: linear-gradient(160deg, oklch(82% 0.13 40), oklch(68% 0.16 35));
+  border-color: oklch(48% 0.13 32);
+}
+
+.syllable-train-car--engine::before {
+  content: '';
+  position: absolute;
+  inset-block-start: -20px;
+  inset-inline-end: 16px;
+  width: 16px;
+  height: 22px;
+  border-radius: 6px 6px 3px 3px;
+  background: oklch(52% 0.12 32);
+}
+
+.syllable-train-car--engine[data-phase='intro'] {
+  animation: syllable-train-pulse 1.6s ease-in-out infinite;
+}
+
+.syllable-train-car--loose {
+  cursor: grab;
+  touch-action: none;
+  transform: translateX(calc((1 - var(--progress)) * clamp(30px, 12vw, 84px)));
+  transition: transform 90ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.syllable-train-car--loose:active { cursor: grabbing; }
+
+.syllable-train-car--loose:focus-visible {
+  outline: 4px solid var(--card-accent, oklch(72% 0.12 230));
+  outline-offset: 4px;
+}
+
+.syllable-train-car--joined {
+  animation: syllable-train-couple 0.45s ease-out;
+}
+
+.syllable-train-surface[data-driving='true'] .syllable-train-track {
+  animation: syllable-train-drive 1.4s ease-in both;
+}
+
+.syllable-train-whole {
+  margin: 0;
+  min-height: 1.4em;
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  font-weight: 800;
+  color: var(--color-ink, #2a2350);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+.syllable-train-whole.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  animation: syllable-train-word-pop 0.5s ease-out;
+}
+
+@keyframes syllable-train-pulse {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.04); }
+}
+
+@keyframes syllable-train-couple {
+  0% { transform: translateX(clamp(30px, 12vw, 84px)); }
+  70% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes syllable-train-drive {
+  0% { transform: translateX(0); }
+  55% { transform: translateX(0); }
+  100% { transform: translateX(min(70vw, 520px)); opacity: 0; }
+}
+
+@keyframes syllable-train-word-pop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
