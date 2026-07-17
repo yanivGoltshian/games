@@ -6,6 +6,7 @@ import { DOMAIN_KEYS } from '../domain/types';
 import { CHILD_NAME_MAX_LENGTH, normalizeChildName, personalizeChildName } from '../domain/childName';
 import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import { InstallHint } from './InstallHint';
+import { FamilyPhotoManager } from './FamilyPhotoManager';
 import { ProgressStars } from './ProgressStars';
 
 interface CaregiverPanelProps {
@@ -137,6 +138,8 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
         </div>
       </section>
 
+      <FamilyPhotoManager />
+
       <section className="caregiver-card">
         <h2>התקדמות לפי תחום</h2>
         <div className="domain-progress-list">
@@ -176,19 +179,16 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
       <section className="caregiver-card caregiver-card--notes">
         <h2>הערות חשובות</h2>
         <ul>
-          <li>כל המידע נשמר רק על המכשיר המקומי דרך localStorage. אין שרת, חשבונות או איסוף אנליטיקות.</li>
+          <li>ההתקדמות וההגדרות נשמרות ב־localStorage. עותקי תמונות פרטיים ומוקטנים נשמרים בנפרד ב־IndexedDB. הכול נשאר רק במכשיר הזה, בלי שרת, חשבונות או איסוף אנליטיקות.</li>
           <li>ההקראה משתמשת בתור סדרתי ובקצב מתון, אבל איכות הקול עצמו תלויה בקולות שמותקנים במכשיר. באייפד אפשר להוריד קול משופר דרך הגדרות › נגישות › תוכן מדובר › קולות. אם אין קול זמין, המשחקים עדיין עובדים במלואם עם תמונות ומגע.</li>
-          <li>
-            כדי להחליף בעתיד לקבצי שמע מוקלטים, ממלאים את שדות <code>audio</code> היציבים ב־<code>src/content/concepts.ts</code> לפי מזהה תוכן קבוע,
-            ומעדכנים את השירות ב־<code>src/services/speech.ts</code> להעדיף קובץ מוקלט כשהוא קיים. אין צורך בממשק הקלטה, IndexedDB או MediaRecorder כדי לעשות זאת.
-          </li>
+          <li>התמונות המשפחתיות אינן מופיעות בדף הבית או במסך הנעילה. הן זמינות רק כאן ובתוך משחק הפאזל.</li>
           <li>הגישה מבוססת בהשראת מקורות מקצועיים חינוכיים לגבי שפה ומסכים (ראו README), אך אינה מציעה אבחון, טיפול או ייעוץ קליני, ואינה תחליף לשיחה ומשחק משותף עם מבוגר.</li>
         </ul>
       </section>
 
       <section className="caregiver-card privacy-note">
         <strong>פרטיות מלאה:</strong>
-        <span>הכול נשמר רק על המכשיר הזה. אין חשבונות, אין פרסומות, אין איסוף נתונים.</span>
+        <span>הכול נשמר רק על המכשיר הזה. תמונות נבנות מחדש ללא פרטי מקור, ואינן נשלחות או מסונכרנות. אין חשבונות, פרסומות או איסוף נתונים.</span>
       </section>
 
       <section className="caregiver-card danger-zone">

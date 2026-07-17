@@ -92,6 +92,9 @@ export function sceneImageHref(scene: PuzzleScene): string {
   if (scene.image.kind === 'concept') {
     return conceptAssetHref(scene.image.conceptId);
   }
+  if (scene.image.kind === 'family') {
+    return scene.image.href;
+  }
 
   const image = PUZZLE_SCENE_IMAGES[scene.id];
   if (!image) {

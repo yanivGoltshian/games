@@ -854,6 +854,65 @@ option {
   vector-effect: non-scaling-stroke;
 }
 
+.puzzle-photo-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(34vw, 190px), 1fr));
+  align-content: center;
+  justify-content: center;
+  gap: clamp(var(--space-3), 3vmin, var(--space-5));
+  width: min(100%, 920px);
+  min-height: 0;
+  margin: auto;
+  padding: var(--space-3);
+  overflow: auto;
+}
+
+.puzzle-photo-choice {
+  min-width: var(--hit-target-min);
+  min-height: var(--hit-target-min);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: clamp(5px, 1vmin, 10px) solid var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lift);
+  touch-action: manipulation;
+}
+
+.puzzle-photo-choice img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.puzzle-photo-choice--built-in {
+  border-color: var(--color-plum-soft);
+}
+
+.family-puzzle-state {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  min-height: 100%;
+  text-align: center;
+}
+
+.family-puzzle-state__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.family-puzzle-state__actions .puzzle-photo-choice {
+  width: min(42vw, 220px);
+}
+
 /* -------------------------------------------------------------------- */
 /* Memory                                                                */
 /* -------------------------------------------------------------------- */
@@ -1326,6 +1385,113 @@ option {
 
 .caregiver-card h2 {
   margin-top: 0;
+}
+
+.family-photo-manager {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.family-photo-manager__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.family-photo-manager__heading h2,
+.family-photo-manager__heading p,
+.family-photo-manager__privacy,
+.family-photo-manager__limit,
+.family-photo-manager__empty,
+.family-photo-manager__status,
+.family-photo-manager__error p {
+  margin: 0;
+}
+
+.family-photo-manager__heading > strong {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--color-plum-soft);
+  color: var(--color-plum-strong);
+}
+
+.family-photo-manager__privacy {
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--color-ocean-soft) 72%, white);
+  color: var(--color-ink-muted);
+}
+
+.family-photo-manager__actions,
+.family-photo-manager__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.file-picker-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.file-picker-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-picker-button.is-disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.family-photo-manager__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.family-photo-manager__item {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.family-photo-manager__item img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.family-photo-manager__item button {
+  width: 100%;
+}
+
+.family-photo-manager__confirm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.family-photo-manager__error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--color-coral-strong);
+}
+
+.family-photo-manager__status {
+  min-height: 1.5em;
+  color: var(--color-ink-muted);
 }
 
 .settings-grid {

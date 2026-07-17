@@ -1,9 +1,15 @@
 import { useLayoutEffect, useState, type RefObject } from 'react';
 
-export function useMeasuredSize<T extends HTMLElement>(ref: RefObject<T | null>) {
+export function useMeasuredSize<T extends HTMLElement>(
+  ref: RefObject<T | null>,
+  active = true,
+) {
   const [size, setSize] = useState({ width: 360, height: 520 });
 
   useLayoutEffect(() => {
+    if (!active) {
+      return;
+    }
     const element = ref.current;
     if (!element || typeof ResizeObserver === 'undefined') {
       return;
@@ -20,7 +26,7 @@ export function useMeasuredSize<T extends HTMLElement>(ref: RefObject<T | null>)
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [ref]);
+  }, [active, ref]);
 
   return size;
 }
