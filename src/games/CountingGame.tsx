@@ -16,7 +16,7 @@ import {
   interactionMediaCoordinator,
   type InteractionMediaOutcome,
 } from '../services/interactionMediaCoordinator';
-import { buildPhraseSegments } from '../services/speech';
+import { buildPhraseSegments, speechService } from '../services/speech';
 import { DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS } from '../services/microphonePlaybackGuard';
 import { useAppLifecycle } from '../platform/useAppLifecycle';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
@@ -262,10 +262,14 @@ export function CountingGame({
       accentClass={gameMeta.counting.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={handleBack}
-      onRepeat={() => void speakPrompt(true)}
-      repeatDisabled={settings.quietMode || !speechStatus.supported}
-      repeatSpeaking={speechStatus.speaking}
-      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
+      onRestart={() => {
+        closeVoiceCapture();
+        generation.invalidate();
+        interactionMediaCoordinator.notifyInteraction(mediaScope, 'touch');
+        speechService.cancelScope(SPEECH_SCOPE);
+        startNextRound();
+      }}
+      restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
       retryActive={retryBusy}

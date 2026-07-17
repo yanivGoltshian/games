@@ -270,12 +270,6 @@ option {
   border-radius: 22%;
 }
 
-.rail-button--replay.is-speaking {
-  box-shadow:
-    0 0 0 5px color-mix(in oklch, var(--color-ocean) 28%, transparent),
-    var(--shadow-soft);
-}
-
 .portal-card__label {
   font-size: clamp(1rem, 2.3vw, 1.75rem);
   font-weight: var(--font-weight-label);

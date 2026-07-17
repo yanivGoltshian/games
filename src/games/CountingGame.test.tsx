@@ -189,6 +189,19 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     return onCompleteRound;
   }
 
+  it('starts a fresh round instead of replaying speech from the circular arrow', async () => {
+    await renderGame();
+    doubles.speakSegments.mockClear();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--restart')!.click();
+    });
+
+    expect(doubles.cancelScope).toHaveBeenCalledWith('game:counting');
+    expect(doubles.startNextRound).toHaveBeenCalledTimes(1);
+    expect(doubles.speakSegments).not.toHaveBeenCalled();
+  });
+
   it('hides the voice toggle when the microphone is not supported', async () => {
     micDouble.supported = false;
     await renderGame();

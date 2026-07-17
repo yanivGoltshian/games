@@ -3,7 +3,7 @@ import { artA11yProps } from './a11y';
 
 /**
  * Vector control icons for the always-minimal child top rail (home/back,
- * replay) and the caregiver-only gate/star affordances. No emoji anywhere.
+ * restart) and the caregiver-only gate/star affordances. No emoji anywhere.
  */
 
 export function HomeIconArt({ label, className }: ArtProps) {
@@ -27,9 +27,9 @@ export function BackIconArt({ label, className }: ArtProps) {
   );
 }
 
-export function ReplayIconArt({ label, className }: ArtProps) {
+export function RestartIconArt({ label, className }: ArtProps) {
   return (
-    <svg viewBox="0 0 48 48" className={className} {...artA11yProps('control-replay', label)}>
+    <svg viewBox="0 0 48 48" className={className} {...artA11yProps('control-restart', label)}>
       <path
         d="M14 18 Q19 10 28 11 Q38 12.5 39 23 Q40 34 29 37.5 Q19 40.5 13 32"
         fill="none"

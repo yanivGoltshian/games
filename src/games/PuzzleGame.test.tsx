@@ -13,30 +13,38 @@ const doubles = vi.hoisted(() => ({
   familyPhotosLoading: false,
   familyPhotosError: null as Error | null,
   speakSegments: vi.fn(),
+  cancelScope: vi.fn(),
   startNextRound: vi.fn(),
-  refreshRoundForCurrentProgress: vi.fn(),
+  adaptiveLevel: 0,
+  onDrop: null as null | ((itemId: string, zoneId: string) => boolean),
 }));
 
-const builtInRound: PuzzleRound = {
-  scene: {
-    id: 'built-in-test',
-    titleHe: 'פאזל מובנה',
-    titleHeSpoken: 'פאזל מובנה',
-    titleEn: 'built-in puzzle',
-    promptHe: 'נחבר פאזל מובנה',
-    promptHeSpoken: 'נחבר פאזל מובנה',
-    promptEn: 'Build the built-in puzzle',
-    image: { kind: 'original' },
-  },
-  rows: 1,
-  cols: 2,
-  pieces: [
-    { id: 'built-in-0', row: 0, col: 0 },
-    { id: 'built-in-1', row: 0, col: 1 },
-  ],
-  promptHe: 'נחבר פאזל מובנה',
-  promptEn: 'Build the built-in puzzle',
-};
+const builtInRounds = new Map<1 | 2 | 3, PuzzleRound>(
+  ([1, 2, 3] as const).map((level) => {
+    const [rows, cols] = level === 1 ? [1, 2] : level === 2 ? [2, 2] : [3, 3];
+    return [level, {
+      scene: {
+        id: `built-in-test-${level}`,
+        titleHe: 'פאזל מובנה',
+        titleHeSpoken: 'פאזל מובנה',
+        titleEn: 'built-in puzzle',
+        promptHe: 'נחבר פאזל מובנה',
+        promptHeSpoken: 'נחבר פאזל מובנה',
+        promptEn: 'Build the built-in puzzle',
+        image: { kind: 'original' },
+      },
+      rows,
+      cols,
+      pieces: Array.from({ length: rows * cols }, (_, index) => ({
+        id: `built-in-${level}-${index}`,
+        row: Math.floor(index / cols),
+        col: index % cols,
+      })),
+      promptHe: 'נחבר פאזל מובנה',
+      promptEn: 'Build the built-in puzzle',
+    }];
+  }),
+);
 
 vi.mock('../components/useFamilyPhotoPreviews', () => ({
   useFamilyPhotoPreviews: () => ({
@@ -52,14 +60,17 @@ vi.mock('../components/useMeasuredSize', () => ({
 }));
 
 vi.mock('../components/drag/useToddlerDrag', () => ({
-  useToddlerDrag: () => ({
+  useToddlerDrag: (options: { onDrop: (itemId: string, zoneId: string) => boolean }) => {
+    doubles.onDrop = options.onDrop;
+    return {
     bindItem: () => ({}),
     bindZone: () => ({}),
     selectedId: null,
     draggingId: null,
     hoverZoneId: null,
     wigglingId: null,
-  }),
+    };
+  },
 }));
 
 vi.mock('../components/puzzle/PuzzlePieceArt', () => ({
@@ -84,17 +95,20 @@ vi.mock('../services/speech', () => ({
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
     speakSegments: doubles.speakSegments,
+    cancelScope: doubles.cancelScope,
     supersedeRetry: vi.fn(),
   },
 }));
 
 vi.mock('./useAdaptiveRound', () => ({
-  useAdaptiveRound: () => ({
-    round: builtInRound,
+  useAdaptiveRound: (_domain: string, progress: { level: 1 | 2 | 3 }) => {
+    doubles.adaptiveLevel = progress.level;
+    return {
+    round: builtInRounds.get(progress.level)!,
     roundKey: 1,
     startNextRound: doubles.startNextRound,
-    refreshRoundForCurrentProgress: doubles.refreshRoundForCurrentProgress,
-  }),
+    };
+  },
 }));
 
 vi.mock('./useRetryFeedback', () => ({
@@ -105,7 +119,24 @@ vi.mock('./useRetryFeedback', () => ({
 }));
 
 vi.mock('./RoundSuccessOverlay', () => ({
-  RoundSuccessOverlay: () => <div data-testid="success-overlay" />,
+  RoundSuccessOverlay: ({
+    onDismiss,
+    startNextRound,
+  }: {
+    onDismiss: () => void;
+    startNextRound: () => void;
+  }) => (
+    <button
+      data-testid="success-overlay"
+      onClick={() => {
+        onDismiss();
+        startNextRound();
+      }}
+      type="button"
+    >
+      Next
+    </button>
+  ),
 }));
 
 function familyPreview(): FamilyPhotoPreview {
@@ -141,7 +172,10 @@ describe('PuzzleGame family photos', () => {
     doubles.familyPhotosLoading = false;
     doubles.familyPhotosError = null;
     doubles.speakSegments.mockReset();
-    doubles.refreshRoundForCurrentProgress.mockReset();
+    doubles.cancelScope.mockReset();
+    doubles.startNextRound.mockReset();
+    doubles.adaptiveLevel = 0;
+    doubles.onDrop = null;
     doubles.speakSegments.mockResolvedValue({ status: 'completed' });
     container = document.createElement('div');
     document.body.append(container);
@@ -153,8 +187,10 @@ describe('PuzzleGame family photos', () => {
     container.remove();
   });
 
-  async function renderGame(): Promise<void> {
+  async function renderGame(persistedLevel: 1 | 2 | 3 = 1): Promise<void> {
     const progress = createInitialProgress(false, 1);
+    progress.domains.puzzle.level = persistedLevel;
+    progress.domains.puzzle.highestLevel = persistedLevel;
     await act(async () => {
       root.render(
         <PuzzleGame
@@ -192,6 +228,47 @@ describe('PuzzleGame family photos', () => {
     expect(container.querySelector('[data-image-kind="original"]')).not.toBeNull();
   });
 
+  it('always starts at two pieces even when persisted mastery reached level three', async () => {
+    await renderGame(3);
+
+    expect(doubles.adaptiveLevel).toBe(1);
+    expect(container.querySelectorAll('.puzzle-piece')).toHaveLength(2);
+  });
+
+  it('advances after one success from two to four to nine pieces', async () => {
+    await renderGame(3);
+
+    await solveVisiblePuzzle(['built-in-1-0', 'built-in-1-1']);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="success-overlay"]')!.click();
+    });
+    expect(doubles.startNextRound).toHaveBeenLastCalledWith(expect.objectContaining({ level: 2 }));
+    expect(container.querySelectorAll('.puzzle-piece')).toHaveLength(4);
+
+    await solveVisiblePuzzle([
+      'built-in-2-0',
+      'built-in-2-1',
+      'built-in-2-2',
+      'built-in-2-3',
+    ]);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="success-overlay"]')!.click();
+    });
+    expect(doubles.startNextRound).toHaveBeenLastCalledWith(expect.objectContaining({ level: 3 }));
+    expect(container.querySelectorAll('.puzzle-piece')).toHaveLength(9);
+  });
+
+  it('starts a fresh puzzle at the current session level from the circular arrow', async () => {
+    await renderGame(3);
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--restart')!.click();
+    });
+
+    expect(doubles.cancelScope).toHaveBeenCalledWith('game:puzzle');
+    expect(doubles.startNextRound).toHaveBeenCalledWith(expect.objectContaining({ level: 1 }));
+  });
+
   it('shows large private choices only when local photos exist and starts the selected puzzle', async () => {
     doubles.familyPhotos = [familyPreview()];
     await renderGame();
@@ -211,6 +288,29 @@ describe('PuzzleGame family photos', () => {
     );
   });
 
+  it('clears placed family-photo pieces before advancing to the next level', async () => {
+    doubles.familyPhotos = [familyPreview()];
+    await renderGame(3);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-family-photo-choice]')!.click();
+    });
+
+    await solveVisiblePuzzle(['family-photo-piece-0', 'family-photo-piece-1']);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="success-overlay"]')!.click();
+    });
+
+    const nextPieces = container.querySelectorAll('.puzzle-piece');
+    expect(nextPieces).toHaveLength(4);
+    expect(container.querySelectorAll('.puzzle-piece.is-placed')).toHaveLength(0);
+    await solveVisiblePuzzle([
+      'family-photo-piece-0',
+      'family-photo-piece-1',
+      'family-photo-piece-2',
+      'family-photo-piece-3',
+    ]);
+  });
+
   it('preserves the built-in choice alongside local photos', async () => {
     doubles.familyPhotos = [familyPreview()];
     await renderGame();
@@ -220,8 +320,17 @@ describe('PuzzleGame family photos', () => {
 
     expect(container.querySelector('[data-image-kind="original"]')).not.toBeNull();
     expect(container.querySelector('[data-image-kind="family"]')).toBeNull();
-    expect(doubles.refreshRoundForCurrentProgress).toHaveBeenCalledOnce();
+    expect(doubles.startNextRound).toHaveBeenCalledWith(expect.objectContaining({ level: 1 }));
   });
+
+  async function solveVisiblePuzzle(pieceIds: string[]): Promise<void> {
+    for (const pieceId of pieceIds) {
+      await act(async () => {
+        expect(doubles.onDrop?.(pieceId, pieceId)).toBe(true);
+      });
+    }
+    expect(container.querySelector('[data-testid="success-overlay"]')).not.toBeNull();
+  }
 });
 
 function progressSettings() {
