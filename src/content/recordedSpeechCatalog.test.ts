@@ -85,7 +85,7 @@ describe('recorded speech pronunciation layer', () => {
       ['עכשיו יותר מספרים', 'Now more numbers'],
       ['זכית בגביע!', 'You won a trophy!'],
       ['מעולה!', 'Excellent!'],
-      ['נעשה שוב.', "Let's do it again."],
+      ['בוא נמשיך.', "Let's do it again."],
     ] as const;
     const catalogKeys = new Set(catalog.map((entry) => `${entry.locale}\u0000${entry.text}`));
 

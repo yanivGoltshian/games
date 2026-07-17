@@ -31,7 +31,7 @@ export const PRAISE_EN: PraiseLine[] = [
 /** Slightly richer wording after a small streak or level-up. Still no pressure, no scoreboard language. */
 export const MILESTONE_PRAISE_HE: PraiseLine[] = [
   { id: 'praise-he-milestone-01', text: 'איזה כיף, שון עולה שלב!', tier: 'milestone' },
-  { id: 'praise-he-milestone-02', text: 'שון עושה את זה שוב ושוב, יופי של התמדה!', tier: 'milestone' },
+  { id: 'praise-he-milestone-02', text: 'שון מתמיד כל כך יפה, איזה אלוף!', tier: 'milestone' },
 ];
 
 export const MILESTONE_PRAISE_EN: PraiseLine[] = [

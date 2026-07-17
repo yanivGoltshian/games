@@ -10,14 +10,14 @@ export interface RetryLine {
 }
 
 export const RETRY_HE_STANDARD: RetryLine[] = [
-  { id: 'retry-he-standard-01', text: 'כמעט, שון. נסה שוב.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-01', text: 'כמעט, שון. בוא נמשיך.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! נמשיך לנסות.', scope: 'generic', tier: 'standard' },
   { id: 'retry-he-standard-03', text: 'שון, אתה יכול. עוד ניסיון קטן.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-04', text: 'יופי שניסית, חמודי. נסה שוב.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-05', text: 'שון, אתה אלוף בלנסות. בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-06', text: 'נסה שוב, חמודי. אני איתך.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
-  { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. ננסה שוב ביחד.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-04', text: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-05', text: 'שון, אתה אלוף בלנסות. בוא נמשיך.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-06', text: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. נמשיך לנסות.', scope: 'generic', tier: 'standard' },
+  { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', scope: 'generic', tier: 'standard' },
 ];
 
 export const RETRY_EN_STANDARD: RetryLine[] = [
@@ -32,11 +32,11 @@ export const RETRY_EN_STANDARD: RetryLine[] = [
 ];
 
 export const RETRY_HE_REPEATED: RetryLine[] = [
-  { id: 'retry-he-repeated-01', text: 'שון, אתה אלוף בלנסות. ניקח רגע וננסה שוב.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-01', text: 'שון, אתה אלוף בלנסות. ניקח רגע ונמשיך.', scope: 'generic', tier: 'repeated-effort' },
   { id: 'retry-he-repeated-02', text: 'שון, יופי שניסית, חמודי. עוד ניסיון קטן.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-03', text: 'שון, ביחד ובנחת, בוא ננסה שוב.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-04', text: 'שון, אתה אלוף בלנסות. ננסה שוב ביחד.', scope: 'generic', tier: 'repeated-effort' },
-  { id: 'retry-he-repeated-05', text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-03', text: 'שון, ביחד ובנחת, בוא נמשיך לנסות.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-04', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', scope: 'generic', tier: 'repeated-effort' },
+  { id: 'retry-he-repeated-05', text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא נמשיך.', scope: 'generic', tier: 'repeated-effort' },
 ];
 
 export const RETRY_EN_REPEATED: RetryLine[] = [
@@ -89,7 +89,7 @@ export const RETRY_EN_MEMORY_REPEATED: RetryLine[] = [
 ];
 
 export const RETRY_HE_NUMBER_PAIRS_STANDARD: RetryLine[] = [
-  { id: 'retry-he-number-pairs-standard-01', text: 'נעשה שוב.', scope: 'number-pairs', tier: 'standard' },
+  { id: 'retry-he-number-pairs-standard-01', text: 'בוא נמשיך.', scope: 'number-pairs', tier: 'standard' },
   { id: 'retry-he-number-pairs-standard-02', text: 'כמעט. נמצא את הזוג.', scope: 'number-pairs', tier: 'standard' },
 ];
 
@@ -99,7 +99,7 @@ export const RETRY_EN_NUMBER_PAIRS_STANDARD: RetryLine[] = [
 ];
 
 export const RETRY_HE_NUMBER_PAIRS_REPEATED: RetryLine[] = [
-  { id: 'retry-he-number-pairs-repeated-01', text: 'ננסה שוב ביחד.', scope: 'number-pairs', tier: 'repeated-effort' },
+  { id: 'retry-he-number-pairs-repeated-01', text: 'נמשיך ביחד.', scope: 'number-pairs', tier: 'repeated-effort' },
   { id: 'retry-he-number-pairs-repeated-02', text: 'עוד ניסיון קטן.', scope: 'number-pairs', tier: 'repeated-effort' },
 ];
 

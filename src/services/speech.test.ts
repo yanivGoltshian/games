@@ -536,7 +536,7 @@ describe('SpeechService', () => {
     synthesis.lockEngine('drop');
     synthesis.paused = true;
     const resumeCount = synthesis.resumeCount;
-    const done = service.speakSegments([{ text: 'נסה שוב', locale: 'he-IL' }], settings);
+    const done = service.speakSegments([{ text: 'בוא נמשיך', locale: 'he-IL' }], settings);
     await flush();
 
     expect(synthesis.spoken).toHaveLength(0);
@@ -546,7 +546,7 @@ describe('SpeechService', () => {
     await flush();
 
     expect(synthesis.resumeCount).toBeGreaterThan(resumeCount);
-    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['נסה שוב']);
+    expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual(['בוא נמשיך']);
     expect(synthesis.cancelCount).toBe(0);
     synthesis.finishCurrent();
     await expect(done).resolves.toMatchObject({ status: 'completed' });
@@ -621,7 +621,7 @@ describe('SpeechService', () => {
     const unsubscribe = service.subscribe((status) => cues.push(status.activeCue));
     const done = service.speakRetrySequence(
       [{ text: 'אחת', locale: 'he-IL', cue: 'count-item:0' }],
-      [{ text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.', locale: 'he-IL' }],
+      [{ text: 'שון, כל ניסיון עוזר לנו ללמוד. בוא נמשיך.', locale: 'he-IL' }],
       settings,
       { scope: 'game:counting', key: 'retry' },
     );
@@ -635,7 +635,7 @@ describe('SpeechService', () => {
     await flush();
     expect(synthesis.spoken.map((utterance) => utterance.text)).toEqual([
       'אחת',
-      'שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.',
+      'שון, כל ניסיון עוזר לנו ללמוד. בוא נמשיך.',
     ]);
     expect(cues.at(-1)).toBeNull();
 
@@ -655,7 +655,7 @@ describe('SpeechService', () => {
 
     const firstRetry = service.speakRetrySequence(
       [{ text: 'בוא נספור יחד', locale: 'he-IL' }],
-      [{ text: 'נסה שוב', locale: 'he-IL' }],
+      [{ text: 'בוא נמשיך', locale: 'he-IL' }],
       settings,
       { scope: 'game:counting', key: 'retry' },
     );
@@ -687,7 +687,7 @@ describe('SpeechService', () => {
     const settings = createInitialSettings();
     const first = service.speakRetrySequence(
       [{ text: 'הסל הכחול', locale: 'he-IL' }],
-      [{ text: 'נסה שוב', locale: 'he-IL' }],
+      [{ text: 'בוא נמשיך', locale: 'he-IL' }],
       settings,
       { scope: 'game:sorting', key: 'retry' },
     );
@@ -721,7 +721,7 @@ describe('SpeechService', () => {
     const cancelCount = synthesis.cancelCount;
     const first = service.speakRetrySequence(
       [{ text: 'הסל הכחול', locale: 'he-IL' }],
-      [{ text: 'נסה שוב', locale: 'he-IL' }],
+      [{ text: 'בוא נמשיך', locale: 'he-IL' }],
       settings,
       { scope: 'game:sorting', key: 'retry' },
     );
@@ -758,7 +758,7 @@ describe('SpeechService', () => {
         { text: 'אחת', locale: 'he-IL' },
         { text: 'שתיים', locale: 'he-IL' },
       ],
-      [{ text: 'נסה שוב', locale: 'he-IL' }],
+      [{ text: 'בוא נמשיך', locale: 'he-IL' }],
       settings,
       { scope: 'game:counting', key: 'retry' },
     );
@@ -826,7 +826,7 @@ describe('SpeechService', () => {
       key: 'prompt',
     });
     await flush();
-    const second = service.speakSegments([{ text: 'הקשב שוב', locale: 'he-IL' }], settings, {
+    const second = service.speakSegments([{ text: 'הקשב שנית', locale: 'he-IL' }], settings, {
       scope: 'game:listening',
       key: 'prompt',
     });

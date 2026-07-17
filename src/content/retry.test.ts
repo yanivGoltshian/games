@@ -18,14 +18,14 @@ import {
 describe('retry content banks', () => {
   it('keeps stable generic ids and text for Hebrew and English', () => {
     expect(RETRY_HE_STANDARD).toEqual([
-      { id: 'retry-he-standard-01', text: 'כמעט, שון. נסה שוב.', scope: 'generic', tier: 'standard' },
-      { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
+      { id: 'retry-he-standard-01', text: 'כמעט, שון. בוא נמשיך.', scope: 'generic', tier: 'standard' },
+      { id: 'retry-he-standard-02', text: 'ניסיון יפה, שון! נמשיך לנסות.', scope: 'generic', tier: 'standard' },
       { id: 'retry-he-standard-03', text: 'שון, אתה יכול. עוד ניסיון קטן.', scope: 'generic', tier: 'standard' },
-      { id: 'retry-he-standard-04', text: 'יופי שניסית, חמודי. נסה שוב.', scope: 'generic', tier: 'standard' },
-      { id: 'retry-he-standard-05', text: 'שון, אתה אלוף בלנסות. בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
-      { id: 'retry-he-standard-06', text: 'נסה שוב, חמודי. אני איתך.', scope: 'generic', tier: 'standard' },
-      { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. בוא ננסה שוב.', scope: 'generic', tier: 'standard' },
-      { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. ננסה שוב ביחד.', scope: 'generic', tier: 'standard' },
+      { id: 'retry-he-standard-04', text: 'יופי שניסית, חמודי. תמשיך ככה.', scope: 'generic', tier: 'standard' },
+      { id: 'retry-he-standard-05', text: 'שון, אתה אלוף בלנסות. בוא נמשיך.', scope: 'generic', tier: 'standard' },
+      { id: 'retry-he-standard-06', text: 'אני איתך, חמודי. בוא ננסה עוד פעם.', scope: 'generic', tier: 'standard' },
+      { id: 'retry-he-standard-07', text: 'שון, אהבתי שניסית. נמשיך לנסות.', scope: 'generic', tier: 'standard' },
+      { id: 'retry-he-standard-08', text: 'שון, אתה אלוף בלנסות. נמשיך ביחד.', scope: 'generic', tier: 'standard' },
     ]);
     expect(RETRY_EN_STANDARD).toEqual([
       { id: 'retry-en-standard-01', text: 'Nice try, Sean. Try again.', scope: 'generic', tier: 'standard' },
@@ -92,7 +92,7 @@ describe('retry content banks', () => {
 
   it('keeps number-pairs correction warm, concise, and locale complete', () => {
     expect(RETRY_HE_NUMBER_PAIRS_STANDARD.map((line) => line.text)).toEqual([
-      'נעשה שוב.',
+      'בוא נמשיך.',
       'כמעט. נמצא את הזוג.',
     ]);
     expect(RETRY_EN_NUMBER_PAIRS_STANDARD).toHaveLength(RETRY_HE_NUMBER_PAIRS_STANDARD.length);

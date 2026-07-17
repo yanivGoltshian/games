@@ -148,13 +148,6 @@ describe('NumberPairsGame speech progression', () => {
     expect(topTile).toBeDefined();
     expect(bottomTile).toBeDefined();
 
-    await act(async () => {
-      bottomTile!.click();
-      bottomTile!.click();
-      bottomTile!.click();
-    });
-    expect(doubles.speakSegments).not.toHaveBeenCalled();
-
     await act(async () => topTile!.click());
     expect(doubles.speakSegments).toHaveBeenCalledTimes(1);
     expect(doubles.speakSegments).toHaveBeenLastCalledWith(

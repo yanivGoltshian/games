@@ -20,7 +20,7 @@ function selectTop(state: NumberPairsState, index: number): NumberPairsState {
 }
 
 function chooseBottom(state: NumberPairsState, index: number): NumberPairsState {
-  return reduceNumberPairs(state, { type: 'choose-bottom', index }, round);
+  return reduceNumberPairs(state, { type: 'select-bottom', index }, round);
 }
 
 describe('number pairs transitions', () => {
@@ -39,8 +39,11 @@ describe('number pairs transitions', () => {
     expect(changed.attempts).toBe(0);
   });
 
-  it('ignores a bottom tap before a top tile is selected', () => {
-    expect(chooseBottom(INITIAL_NUMBER_PAIRS_STATE, 1)).toBe(INITIAL_NUMBER_PAIRS_STATE);
+  it('selects an unmatched bottom tile without counting an attempt', () => {
+    expect(chooseBottom(INITIAL_NUMBER_PAIRS_STATE, 1)).toEqual({
+      ...INITIAL_NUMBER_PAIRS_STATE,
+      selectedBottomIndex: 1,
+    });
   });
 
   it('matches equal values, locks both tiles, and clears the selection', () => {

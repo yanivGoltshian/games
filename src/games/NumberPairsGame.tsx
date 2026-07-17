@@ -95,13 +95,70 @@ export function NumberPairsGame({
     if (celebration || retryBusy) {
       return;
     }
+    const chosenValue = round.topRow[index]!;
+    const selectedBottomIndex = state.selectedBottomIndex;
+    soundService.playTap(settings);
     const nextState = reduceNumberPairs(state, { type: 'select-top', index }, round);
     if (nextState === state) {
       return;
     }
-    soundService.playTap(settings);
     setState(nextState);
-    void speakNumber(round.topRow[index]!);
+
+    // If no bottom was selected, we are just selecting the top.
+    if (selectedBottomIndex === null) {
+      void speakNumber(chosenValue);
+      return;
+    }
+
+    // A bottom was selected, so this is a match check.
+    const selectedValue = round.bottomRow[selectedBottomIndex]!;
+    if (nextState.wrongTopIndex !== null) {
+      const numberSpeech = speakNumber(chosenValue);
+      const missCount = nextState.attempts - nextState.matchedBottomIndices.length;
+      void runRetry({
+        missCount,
+        seed: `${roundKey}:${nextState.attempts}:${selectedValue}`,
+        modelLines: [{
+          he: NUMBER_WORDS_HE[selectedValue] ?? String(selectedValue),
+          en: NUMBER_WORDS_EN[selectedValue] ?? String(selectedValue),
+          pauseAfterMs: 220,
+        }],
+        phraseScope: 'number-pairs',
+        beforeSpeech: numberSpeech,
+        lockUntilComplete: true,
+      }).finally(() => {
+        setState((current) => reduceNumberPairs(current, { type: 'clear-wrong' }, round));
+      });
+      return;
+    }
+
+    soundService.playSuccess(settings);
+    if (!nextState.completed) {
+      void speakNumber(chosenValue);
+      return;
+    }
+
+    const summary = onCompleteRound({
+      attempts: nextState.attempts,
+      requiredActions: round.selectedValues.length,
+      concepts: round.selectedValues.map((value) => `number-${value}`),
+    });
+    const followUpSegments = summary.recommendation
+      ? buildPhraseSegments(
+          MORE_NUMBERS_SPEECH.he,
+          MORE_NUMBERS_SPEECH.en,
+          settings.languageMode,
+          settings.englishVoiceLocale,
+        )
+      : [];
+    setCelebration({
+      seed: `number-pairs-${roundKey}-${round.signature}-${nextState.attempts}`,
+      targetSegments: numberSegments(chosenValue, settings),
+      tier: summary.milestone ? 'milestone' : 'standard',
+      recommendation: summary.recommendation,
+      celebrationVariant: 'trophy-spark',
+      followUpSegments,
+    });
   };
 
   const handleBottom = (index: number): void => {
@@ -111,12 +168,19 @@ export function NumberPairsGame({
     const chosenValue = round.bottomRow[index]!;
     const selectedTopIndex = state.selectedTopIndex;
     soundService.playTap(settings);
-    const nextState = reduceNumberPairs(state, { type: 'choose-bottom', index }, round);
-    if (nextState === state || selectedTopIndex === null) {
+    const nextState = reduceNumberPairs(state, { type: 'select-bottom', index }, round);
+    if (nextState === state) {
       return;
     }
     setState(nextState);
 
+    // If no top was selected, we are just selecting the bottom.
+    if (selectedTopIndex === null) {
+      void speakNumber(chosenValue);
+      return;
+    }
+
+    // A top was selected, so this is a match check.
     const selectedValue = round.topRow[selectedTopIndex]!;
     if (nextState.wrongBottomIndex !== null) {
       const numberSpeech = speakNumber(chosenValue);
@@ -203,10 +267,11 @@ export function NumberPairsGame({
           {round.topRow.map((value, index) => {
             const selected = state.selectedTopIndex === index;
             const matched = state.matchedTopIndices.includes(index);
+            const wrong = state.wrongTopIndex === index;
             return (
               <button
                 key={`top-${index}-${value}`}
-                className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''}`}
+                className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
                 disabled={retryBusy || matched}
                 onClick={() => handleTop(index)}
                 type="button"
@@ -224,17 +289,18 @@ export function NumberPairsGame({
           style={rowStyle}
         >
           {round.bottomRow.map((value, index) => {
+            const selected = state.selectedBottomIndex === index;
             const matched = state.matchedBottomIndices.includes(index);
             const wrong = state.wrongBottomIndex === index;
             return (
               <button
                 key={`bottom-${index}-${value}`}
-                className={`number-pair-tile ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
+                className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
                 disabled={retryBusy || matched}
                 onClick={() => handleBottom(index)}
                 type="button"
                 aria-label={englishOnly ? NUMBER_WORDS_EN[value] : NUMBER_WORDS_HE[value]}
-                aria-pressed={matched}
+                aria-pressed={selected || matched}
               >
                 <span aria-hidden="true">{value}</span>
               </button>

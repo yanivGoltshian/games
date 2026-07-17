@@ -131,2324 +131,2324 @@
       "offset": 61.2215,
       "duration": 2.555417
     },
-    "he-IL\u0000ארבע": {
+    "he-IL\u0000אני איתך, חמודי. בוא ננסה עוד פעם.": {
       "src": "/speech/he-IL.mp3",
       "offset": 63.896917,
+      "duration": 6.320667
+    },
+    "he-IL\u0000ארבע": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 70.337584,
       "duration": 1.045667
     },
     "he-IL\u0000ארבע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 65.062584,
+      "offset": 71.503251,
       "duration": 1.604083
     },
     "he-IL\u0000ארבע כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 66.786667,
+      "offset": 73.227334,
       "duration": 1.464375
     },
     "he-IL\u0000ארבע כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 68.371042,
+      "offset": 74.811709,
       "duration": 1.535
     },
     "he-IL\u0000ארבע רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 70.026042,
+      "offset": 76.466709,
       "duration": 1.550208
     },
     "he-IL\u0000ארבעה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 71.69625,
+      "offset": 78.136917,
       "duration": 1.751417
     },
     "he-IL\u0000ארבעה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 73.567667,
+      "offset": 80.008334,
       "duration": 1.672792
     },
     "he-IL\u0000ארבעה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 75.360459,
+      "offset": 81.801126,
       "duration": 1.749708
     },
     "he-IL\u0000ארבעה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 77.230167,
+      "offset": 83.670834,
       "duration": 1.695375
     },
     "he-IL\u0000ארבעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 79.045542,
+      "offset": 85.486209,
       "duration": 1.708917
     },
     "he-IL\u0000ארבעה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 80.874459,
+      "offset": 87.315126,
       "duration": 1.589375
     },
     "he-IL\u0000ארבעה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 82.583834,
+      "offset": 89.024501,
       "duration": 1.587208
     },
     "he-IL\u0000ארבעה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 84.291042,
+      "offset": 90.731709,
       "duration": 1.437208
     },
     "he-IL\u0000ארבעה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 85.84825,
+      "offset": 92.288917,
       "duration": 1.4865
     },
     "he-IL\u0000ארבעה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 87.45475,
+      "offset": 93.895417,
       "duration": 1.535542
     },
     "he-IL\u0000ארבעה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 89.110292,
+      "offset": 95.550959,
       "duration": 1.532333
     },
     "he-IL\u0000ארבעה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 90.762625,
+      "offset": 97.203292,
       "duration": 1.776917
     },
     "he-IL\u0000ארבעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 92.659542,
+      "offset": 99.100209,
       "duration": 1.708917
     },
     "he-IL\u0000ארנב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 94.488459,
+      "offset": 100.929126,
       "duration": 1.211333
     },
     "he-IL\u0000ארנב אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 95.819792,
+      "offset": 102.260459,
       "duration": 1.424
     },
     "he-IL\u0000בוא נחבר אוטובוס": {
       "src": "/speech/he-IL.mp3",
-      "offset": 97.363792,
+      "offset": 103.804459,
       "duration": 1.999833
     },
     "he-IL\u0000בוא נחבר ארנב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 99.483625,
+      "offset": 105.924292,
       "duration": 1.736125
     },
     "he-IL\u0000בוא נחבר ברווז": {
       "src": "/speech/he-IL.mp3",
-      "offset": 101.33975,
+      "offset": 107.780417,
       "duration": 1.850375
     },
     "he-IL\u0000בוא נחבר גזר": {
       "src": "/speech/he-IL.mp3",
-      "offset": 103.310125,
+      "offset": 109.750792,
       "duration": 1.858417
     },
     "he-IL\u0000בוא נחבר כוס": {
       "src": "/speech/he-IL.mp3",
-      "offset": 105.288542,
+      "offset": 111.729209,
       "duration": 1.711667
     },
     "he-IL\u0000בוא נחבר כיסא": {
       "src": "/speech/he-IL.mp3",
-      "offset": 107.120209,
+      "offset": 113.560876,
       "duration": 1.641
     },
     "he-IL\u0000בוא נחבר כפית": {
       "src": "/speech/he-IL.mp3",
-      "offset": 108.881209,
+      "offset": 115.321876,
       "duration": 1.738542
     },
     "he-IL\u0000בוא נחבר מטוס": {
       "src": "/speech/he-IL.mp3",
-      "offset": 110.739751,
+      "offset": 117.180418,
       "duration": 1.786458
     },
     "he-IL\u0000בוא נחבר עץ": {
       "src": "/speech/he-IL.mp3",
-      "offset": 112.646209,
+      "offset": 119.086876,
       "duration": 1.604042
     },
     "he-IL\u0000בוא נחבר פיל": {
       "src": "/speech/he-IL.mp3",
-      "offset": 114.370251,
+      "offset": 120.810918,
       "duration": 1.547208
     },
     "he-IL\u0000בוא נחבר פרח": {
       "src": "/speech/he-IL.mp3",
-      "offset": 116.037459,
+      "offset": 122.478126,
       "duration": 1.72475
     },
     "he-IL\u0000בוא נחבר רכבת": {
       "src": "/speech/he-IL.mp3",
-      "offset": 117.882209,
+      "offset": 124.322876,
       "duration": 1.82125
     },
     "he-IL\u0000בוא נחבר תות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 119.823459,
+      "offset": 126.264126,
       "duration": 1.671708
     },
     "he-IL\u0000בוא נחבר תפוז": {
       "src": "/speech/he-IL.mp3",
-      "offset": 121.615167,
+      "offset": 128.055834,
       "duration": 1.776875
     },
     "he-IL\u0000בוא נחפש איפה הזוג מתחבא.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 123.512042,
+      "offset": 129.952709,
       "duration": 3.538708
     },
     "he-IL\u0000בוא נמיין לפי צבע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 127.17075,
+      "offset": 133.611417,
       "duration": 2.5625
     },
     "he-IL\u0000בוא נמיין לפי צורה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 129.85325,
+      "offset": 136.293917,
       "duration": 2.54425
+    },
+    "he-IL\u0000בוא נמשיך.": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 138.958167,
+      "duration": 2.397417
     },
     "he-IL\u0000בוא נספור יחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 132.5175,
+      "offset": 141.475584,
       "duration": 2.682708
     },
     "he-IL\u0000ביחד ובנחת, נמשיך לחפש.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 135.320208,
+      "offset": 144.278292,
       "duration": 4.340167
     },
     "he-IL\u0000בננה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 139.780375,
+      "offset": 148.738459,
       "duration": 1.057125
     },
     "he-IL\u0000בננה אחת": {
       "src": "/speech/he-IL.mp3",
-      "offset": 140.9575,
+      "offset": 149.915584,
       "duration": 1.493583
     },
     "he-IL\u0000ברווז": {
       "src": "/speech/he-IL.mp3",
-      "offset": 142.571083,
+      "offset": 151.529167,
       "duration": 1.278
     },
     "he-IL\u0000ברווז אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 143.969083,
+      "offset": 152.927167,
       "duration": 1.438958
     },
     "he-IL\u0000גזר": {
       "src": "/speech/he-IL.mp3",
-      "offset": 145.528041,
+      "offset": 154.486125,
       "duration": 1.219833
     },
     "he-IL\u0000גזר אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 146.867874,
+      "offset": 155.825958,
       "duration": 1.5745
     },
     "he-IL\u0000גינת הגזר הענק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 148.562374,
+      "offset": 157.520458,
       "duration": 2.266375
     },
     "he-IL\u0000החתיכה מתאימה למקום המואר. נסה שם.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 150.948749,
+      "offset": 159.906833,
       "duration": 5.748875
     },
     "he-IL\u0000הצבע הוא אדום. שמים בסל האדום.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 156.817624,
+      "offset": 165.775708,
       "duration": 5.302667
     },
     "he-IL\u0000הצבע הוא ירוק. שמים בסל הירוק.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 162.240291,
+      "offset": 171.198375,
       "duration": 5.517958
     },
     "he-IL\u0000הצבע הוא כחול. שמים בסל הכחול.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 167.878249,
+      "offset": 176.836333,
       "duration": 5.32775
     },
     "he-IL\u0000הצבע הוא צהוב. שמים בסל הצהוב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 173.325999,
+      "offset": 182.284083,
       "duration": 5.422792
     },
     "he-IL\u0000הצורה היא כוכב. שמים בסל עם כוכב.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 178.868791,
+      "offset": 187.826875,
       "duration": 5.55875
     },
     "he-IL\u0000הצורה היא משולש. שמים בסל עם משולש.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 184.547541,
+      "offset": 193.505625,
       "duration": 5.979958
     },
     "he-IL\u0000הצורה היא עיגול. שמים בסל עם עיגול.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 190.647499,
+      "offset": 199.605583,
       "duration": 5.653833
     },
     "he-IL\u0000הצורה היא ריבוע. שמים בסל עם ריבוע.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 196.421332,
+      "offset": 205.379416,
       "duration": 5.640292
     },
     "he-IL\u0000הצלחת!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 202.181624,
+      "offset": 211.139708,
       "duration": 2.329458
     },
     "he-IL\u0000הרפתקת מטוסי ההצלה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 204.631082,
+      "offset": 213.589166,
       "duration": 2.294542
     },
     "he-IL\u0000זוגות מספרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 207.045624,
+      "offset": 216.003708,
       "duration": 1.659833
     },
     "he-IL\u0000זכית בגביע!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 208.825457,
+      "offset": 217.783541,
       "duration": 2.709917
     },
     "he-IL\u0000חמישה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 211.655374,
+      "offset": 220.613458,
       "duration": 1.781125
     },
     "he-IL\u0000חמישה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 213.556499,
+      "offset": 222.514583,
       "duration": 1.749708
     },
     "he-IL\u0000חמישה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 215.426207,
+      "offset": 224.384291,
       "duration": 1.836208
     },
     "he-IL\u0000חמישה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 217.382415,
+      "offset": 226.340499,
       "duration": 1.74975
     },
     "he-IL\u0000חמישה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 219.252165,
+      "offset": 228.210249,
       "duration": 1.791792
     },
     "he-IL\u0000חמישה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 221.163957,
+      "offset": 230.122041,
       "duration": 1.668542
     },
     "he-IL\u0000חמישה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 222.952499,
+      "offset": 231.910583,
       "duration": 1.672542
     },
     "he-IL\u0000חמישה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 224.745041,
+      "offset": 233.703125,
       "duration": 1.536708
     },
     "he-IL\u0000חמישה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 226.401749,
+      "offset": 235.359833,
       "duration": 1.478875
     },
     "he-IL\u0000חמישה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 228.000624,
+      "offset": 236.958708,
       "duration": 1.564083
     },
     "he-IL\u0000חמישה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 229.684707,
+      "offset": 238.642791,
       "duration": 1.627417
     },
     "he-IL\u0000חמישה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 231.432124,
+      "offset": 240.390208,
       "duration": 1.794417
     },
     "he-IL\u0000חמישה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 233.346541,
+      "offset": 242.304625,
       "duration": 1.763292
     },
     "he-IL\u0000חמש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 235.229833,
+      "offset": 244.187917,
       "duration": 1.274167
     },
     "he-IL\u0000חמש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 236.624,
+      "offset": 245.582084,
       "duration": 1.630125
     },
     "he-IL\u0000חמש כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 238.374125,
+      "offset": 247.332209,
       "duration": 1.533583
     },
     "he-IL\u0000חמש כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 240.027708,
+      "offset": 248.985792,
       "duration": 1.532292
     },
     "he-IL\u0000חמש רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 241.68,
+      "offset": 250.638084,
       "duration": 1.606
     },
     "he-IL\u0000חתול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 243.406,
+      "offset": 252.364084,
       "duration": 1.169417
     },
     "he-IL\u0000יופי שהמשכת לחפש. ננסה עוד זוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 244.695417,
+      "offset": 253.653501,
       "duration": 5.735375
     },
-    "he-IL\u0000יופי שניסית, חמודי. נסה שוב.": {
+    "he-IL\u0000יופי שניסית, חמודי. תמשיך ככה.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 250.550792,
-      "duration": 5.883917
+      "offset": 259.508876,
+      "duration": 5.955958
     },
     "he-IL\u0000יופי!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 256.554709,
+      "offset": 265.584834,
       "duration": 2.0985
     },
     "he-IL\u0000יש כאן אוטובוס אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 258.773209,
+      "offset": 267.803334,
       "duration": 3.07675
     },
     "he-IL\u0000יש כאן ארבע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 261.969959,
+      "offset": 271.000084,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן ארבע כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 265.193876,
+      "offset": 274.224001,
       "duration": 2.99525
     },
     "he-IL\u0000יש כאן ארבע כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 268.309126,
+      "offset": 277.339251,
       "duration": 3.008792
     },
     "he-IL\u0000יש כאן ארבע רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 271.437918,
+      "offset": 280.468043,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן ארבעה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 274.648251,
+      "offset": 283.678376,
       "duration": 3.280542
     },
     "he-IL\u0000יש כאן ארבעה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 278.048793,
+      "offset": 287.078918,
       "duration": 3.199
     },
     "he-IL\u0000יש כאן ארבעה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 281.367793,
+      "offset": 290.397918,
       "duration": 3.226208
     },
     "he-IL\u0000יש כאן ארבעה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 284.714001,
+      "offset": 293.744126,
       "duration": 3.131125
     },
     "he-IL\u0000יש כאן ארבעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 287.965126,
+      "offset": 296.995251,
       "duration": 3.253417
     },
     "he-IL\u0000יש כאן ארבעה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 291.338543,
+      "offset": 300.368668,
       "duration": 3.158292
     },
     "he-IL\u0000יש כאן ארבעה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 294.616835,
+      "offset": 303.64696,
       "duration": 3.15825
     },
     "he-IL\u0000יש כאן ארבעה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 297.895085,
+      "offset": 306.92521,
       "duration": 2.997375
     },
     "he-IL\u0000יש כאן ארבעה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 301.01246,
+      "offset": 310.042585,
       "duration": 2.981625
     },
     "he-IL\u0000יש כאן ארבעה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 304.114085,
+      "offset": 313.14421,
       "duration": 3.049583
     },
     "he-IL\u0000יש כאן ארבעה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 307.283668,
+      "offset": 316.313793,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן ארבעה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 310.507585,
+      "offset": 319.53771,
       "duration": 3.171875
     },
     "he-IL\u0000יש כאן ארבעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 313.79946,
+      "offset": 322.829585,
       "duration": 3.185458
     },
     "he-IL\u0000יש כאן ארנב אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 317.104918,
+      "offset": 326.135043,
       "duration": 2.929417
     },
     "he-IL\u0000יש כאן בננה אחת.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 320.154335,
+      "offset": 329.18446,
       "duration": 2.995208
     },
     "he-IL\u0000יש כאן ברווז אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 323.269543,
+      "offset": 332.299668,
       "duration": 2.900125
     },
     "he-IL\u0000יש כאן גזר אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 326.289668,
+      "offset": 335.319793,
       "duration": 2.872917
     },
     "he-IL\u0000יש כאן חמישה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 329.282585,
+      "offset": 338.31271,
       "duration": 3.199
     },
     "he-IL\u0000יש כאן חמישה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 332.601585,
+      "offset": 341.63171,
       "duration": 3.131083
     },
     "he-IL\u0000יש כאן חמישה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 335.852668,
+      "offset": 344.882793,
       "duration": 3.185417
     },
     "he-IL\u0000יש כאן חמישה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 339.158085,
+      "offset": 348.18821,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן חמישה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 342.395585,
+      "offset": 351.42571,
       "duration": 3.226208
     },
     "he-IL\u0000יש כאן חמישה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 345.741793,
+      "offset": 354.771918,
       "duration": 3.117542
     },
     "he-IL\u0000יש כאן חמישה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 348.979335,
+      "offset": 358.00946,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן חמישה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 352.203252,
+      "offset": 361.233377,
       "duration": 2.915833
     },
     "he-IL\u0000יש כאן חמישה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 355.239085,
+      "offset": 364.26921,
       "duration": 2.927292
     },
     "he-IL\u0000יש כאן חמישה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 358.286377,
+      "offset": 367.316502,
       "duration": 3.036
     },
     "he-IL\u0000יש כאן חמישה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 361.442377,
+      "offset": 370.472502,
       "duration": 3.063167
     },
     "he-IL\u0000יש כאן חמישה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 364.625544,
+      "offset": 373.655669,
       "duration": 3.171833
     },
     "he-IL\u0000יש כאן חמישה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 367.917377,
+      "offset": 376.947502,
       "duration": 3.171875
     },
     "he-IL\u0000יש כאן חמש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 371.209252,
+      "offset": 380.239377,
       "duration": 3.07675
     },
     "he-IL\u0000יש כאן חמש כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 374.406002,
+      "offset": 383.436127,
       "duration": 2.954458
     },
     "he-IL\u0000יש כאן חמש כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 377.48046,
+      "offset": 386.510585,
       "duration": 2.981667
     },
     "he-IL\u0000יש כאן חמש רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 380.582127,
+      "offset": 389.612252,
       "duration": 3.063167
     },
     "he-IL\u0000יש כאן כדור אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 383.765294,
+      "offset": 392.795419,
       "duration": 2.900125
     },
     "he-IL\u0000יש כאן כוס אחת.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 386.785419,
+      "offset": 395.815544,
       "duration": 2.76425
     },
     "he-IL\u0000יש כאן כיסא אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 389.669669,
+      "offset": 398.699794,
       "duration": 2.84575
     },
     "he-IL\u0000יש כאן כפית אחת.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 392.635419,
+      "offset": 401.665544,
       "duration": 2.872917
     },
     "he-IL\u0000יש כאן מטוס אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 395.628336,
+      "offset": 404.658461,
       "duration": 2.84575
     },
     "he-IL\u0000יש כאן עץ אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 398.594086,
+      "offset": 407.624211,
       "duration": 2.818625
     },
     "he-IL\u0000יש כאן עשר בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 401.532711,
+      "offset": 410.562836,
       "duration": 2.954458
     },
     "he-IL\u0000יש כאן עשר כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 404.607169,
+      "offset": 413.637294,
       "duration": 2.872917
     },
     "he-IL\u0000יש כאן עשר כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 407.600086,
+      "offset": 416.630211,
       "duration": 2.8865
     },
     "he-IL\u0000יש כאן עשר רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 410.606586,
+      "offset": 419.636711,
       "duration": 2.927292
     },
     "he-IL\u0000יש כאן עשרה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 413.653878,
+      "offset": 422.684003,
       "duration": 3.199042
     },
     "he-IL\u0000יש כאן עשרה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 416.97292,
+      "offset": 426.003045,
       "duration": 3.090375
     },
     "he-IL\u0000יש כאן עשרה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 420.183295,
+      "offset": 429.21342,
       "duration": 3.185458
     },
     "he-IL\u0000יש כאן עשרה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 423.488753,
+      "offset": 432.518878,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן עשרה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 426.726253,
+      "offset": 435.756378,
       "duration": 3.171833
     },
     "he-IL\u0000יש כאן עשרה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 430.018086,
+      "offset": 439.048211,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן עשרה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 433.228419,
+      "offset": 442.258544,
       "duration": 3.049583
     },
     "he-IL\u0000יש כאן עשרה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 436.398002,
+      "offset": 445.428127,
       "duration": 2.900083
     },
     "he-IL\u0000יש כאן עשרה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 439.418085,
+      "offset": 448.44821,
       "duration": 2.8615
     },
     "he-IL\u0000יש כאן עשרה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 442.399585,
+      "offset": 451.42971,
       "duration": 2.968042
     },
     "he-IL\u0000יש כאן עשרה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 445.487627,
+      "offset": 454.517752,
       "duration": 2.99525
     },
     "he-IL\u0000יש כאן עשרה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 448.602877,
+      "offset": 457.633002,
       "duration": 3.131083
     },
     "he-IL\u0000יש כאן עשרה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 451.85396,
+      "offset": 460.884085,
       "duration": 3.144708
     },
     "he-IL\u0000יש כאן פיל אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 455.118668,
+      "offset": 464.148793,
       "duration": 2.628333
     },
     "he-IL\u0000יש כאן פרח אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 457.867001,
+      "offset": 466.897126,
       "duration": 2.764208
     },
     "he-IL\u0000יש כאן רכבת אחת.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 460.751209,
+      "offset": 469.781334,
       "duration": 2.913708
     },
     "he-IL\u0000יש כאן שבע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 463.784917,
+      "offset": 472.815042,
       "duration": 2.940875
     },
     "he-IL\u0000יש כאן שבע כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 466.845792,
+      "offset": 475.875917,
       "duration": 2.834333
     },
     "he-IL\u0000יש כאן שבע כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 469.800125,
+      "offset": 478.83025,
       "duration": 2.8865
     },
     "he-IL\u0000יש כאן שבע רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 472.806625,
+      "offset": 481.83675,
       "duration": 2.968042
     },
     "he-IL\u0000יש כאן שבעה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 475.894667,
+      "offset": 484.924792,
       "duration": 3.15825
     },
     "he-IL\u0000יש כאן שבעה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 479.172917,
+      "offset": 488.203042,
       "duration": 3.063167
     },
     "he-IL\u0000יש כאן שבעה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 482.356084,
+      "offset": 491.386209,
       "duration": 3.103958
     },
     "he-IL\u0000יש כאן שבעה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 485.580042,
+      "offset": 494.610167,
       "duration": 3.07675
     },
     "he-IL\u0000יש כאן שבעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 488.776792,
+      "offset": 497.806917,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן שבעה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 492.014292,
+      "offset": 501.044417,
       "duration": 3.035958
     },
     "he-IL\u0000יש כאן שבעה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 495.17025,
+      "offset": 504.200375,
       "duration": 3.022417
     },
     "he-IL\u0000יש כאן שבעה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 498.312667,
+      "offset": 507.342792,
       "duration": 2.861458
     },
     "he-IL\u0000יש כאן שבעה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 501.294125,
+      "offset": 510.32425,
       "duration": 2.84575
     },
     "he-IL\u0000יש כאן שבעה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 504.259875,
+      "offset": 513.29,
       "duration": 2.92725
     },
     "he-IL\u0000יש כאן שבעה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 507.307125,
+      "offset": 516.33725,
       "duration": 2.981667
     },
     "he-IL\u0000יש כאן שבעה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 510.408792,
+      "offset": 519.438917,
       "duration": 3.063125
     },
     "he-IL\u0000יש כאן שבעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 513.591917,
+      "offset": 522.622042,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן שישה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 516.80225,
+      "offset": 525.832375,
       "duration": 3.15825
     },
     "he-IL\u0000יש כאן שישה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 520.0805,
+      "offset": 529.110625,
       "duration": 2.981625
     },
     "he-IL\u0000יש כאן שישה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 523.182125,
+      "offset": 532.21225,
       "duration": 3.063167
     },
     "he-IL\u0000יש כאן שישה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 526.365292,
+      "offset": 535.395417,
       "duration": 3.036
     },
     "he-IL\u0000יש כאן שישה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 529.521292,
+      "offset": 538.551417,
       "duration": 3.119625
     },
     "he-IL\u0000יש כאן שישה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 532.760917,
+      "offset": 541.791042,
       "duration": 3.035958
     },
     "he-IL\u0000יש כאן שישה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 535.916875,
+      "offset": 544.947,
       "duration": 3.008792
     },
     "he-IL\u0000יש כאן שישה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 539.045667,
+      "offset": 548.075792,
       "duration": 2.84575
     },
     "he-IL\u0000יש כאן שישה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 542.011417,
+      "offset": 551.041542,
       "duration": 2.845792
     },
     "he-IL\u0000יש כאן שישה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 544.977209,
+      "offset": 554.007334,
       "duration": 2.92725
     },
     "he-IL\u0000יש כאן שישה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 548.024459,
+      "offset": 557.054584,
       "duration": 2.997375
     },
     "he-IL\u0000יש כאן שישה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 551.141834,
+      "offset": 560.171959,
       "duration": 3.07675
     },
     "he-IL\u0000יש כאן שישה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 554.338584,
+      "offset": 563.368709,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן שלוש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 557.548917,
+      "offset": 566.579042,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן שלוש כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 560.75925,
+      "offset": 569.789375,
       "duration": 2.981625
     },
     "he-IL\u0000יש כאן שלוש כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 563.860875,
+      "offset": 572.891,
       "duration": 3.022417
     },
     "he-IL\u0000יש כאן שלוש רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 567.003292,
+      "offset": 576.033417,
       "duration": 3.07675
     },
     "he-IL\u0000יש כאן שלושה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 570.200042,
+      "offset": 579.230167,
       "duration": 3.171833
     },
     "he-IL\u0000יש כאן שלושה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 573.491875,
+      "offset": 582.522,
       "duration": 3.035958
     },
     "he-IL\u0000יש כאן שלושה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 576.647833,
+      "offset": 585.677958,
       "duration": 3.117542
     },
     "he-IL\u0000יש כאן שלושה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 579.885375,
+      "offset": 588.9155,
       "duration": 3.049625
     },
     "he-IL\u0000יש כאן שלושה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 583.055,
+      "offset": 592.085125,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן שלושה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 586.278917,
+      "offset": 595.309042,
       "duration": 3.051708
     },
     "he-IL\u0000יש כאן שלושה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 589.450625,
+      "offset": 598.48075,
       "duration": 3.035958
     },
     "he-IL\u0000יש כאן שלושה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 592.606583,
+      "offset": 601.636708,
       "duration": 2.859333
     },
     "he-IL\u0000יש כאן שלושה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 595.585916,
+      "offset": 604.616041,
       "duration": 2.8615
     },
     "he-IL\u0000יש כאן שלושה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 598.567416,
+      "offset": 607.597541,
       "duration": 2.92725
     },
     "he-IL\u0000יש כאן שלושה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 601.614666,
+      "offset": 610.644791,
       "duration": 2.995208
     },
     "he-IL\u0000יש כאן שלושה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 604.729874,
+      "offset": 613.759999,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן שלושה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 607.967374,
+      "offset": 616.997499,
       "duration": 3.117458
     },
     "he-IL\u0000יש כאן שמונה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 611.204832,
+      "offset": 620.234957,
       "duration": 3.131083
     },
     "he-IL\u0000יש כאן שמונה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 614.455915,
+      "offset": 623.48604,
       "duration": 3.07675
     },
     "he-IL\u0000יש כאן שמונה בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 617.652665,
+      "offset": 626.68279,
       "duration": 3.049542
     },
     "he-IL\u0000יש כאן שמונה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 620.822207,
+      "offset": 629.852332,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן שמונה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 624.059707,
+      "offset": 633.089832,
       "duration": 3.035958
     },
     "he-IL\u0000יש כאן שמונה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 627.215665,
+      "offset": 636.24579,
       "duration": 3.103917
     },
     "he-IL\u0000יש כאן שמונה כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 630.439582,
+      "offset": 639.469707,
       "duration": 2.927292
     },
     "he-IL\u0000יש כאן שמונה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 633.486874,
+      "offset": 642.516999,
       "duration": 3.022417
     },
     "he-IL\u0000יש כאן שמונה כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 636.629291,
+      "offset": 645.659416,
       "duration": 2.968042
     },
     "he-IL\u0000יש כאן שמונה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 639.717333,
+      "offset": 648.747458,
       "duration": 3.008833
     },
     "he-IL\u0000יש כאן שמונה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 642.846166,
+      "offset": 651.876291,
       "duration": 2.84575
     },
     "he-IL\u0000יש כאן שמונה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 645.811916,
+      "offset": 654.842041,
       "duration": 2.84575
     },
     "he-IL\u0000יש כאן שמונה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 648.777666,
+      "offset": 657.807791,
       "duration": 2.981667
     },
     "he-IL\u0000יש כאן שמונה רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 651.879333,
+      "offset": 660.909458,
       "duration": 3.063125
     },
     "he-IL\u0000יש כאן שמונה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 655.062458,
+      "offset": 664.092583,
       "duration": 2.995208
     },
     "he-IL\u0000יש כאן שמונה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 658.177666,
+      "offset": 667.207791,
       "duration": 3.103958
     },
     "he-IL\u0000יש כאן שמונה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 661.401624,
+      "offset": 670.431749,
       "duration": 3.1175
     },
     "he-IL\u0000יש כאן שני אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 664.639124,
+      "offset": 673.669249,
       "duration": 3.022417
     },
     "he-IL\u0000יש כאן שני ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 667.781541,
+      "offset": 676.811666,
       "duration": 2.968083
     },
     "he-IL\u0000יש כאן שני ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 670.869624,
+      "offset": 679.899749,
       "duration": 3.036
     },
     "he-IL\u0000יש כאן שני גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 674.025624,
+      "offset": 683.055749,
       "duration": 2.954458
     },
     "he-IL\u0000יש כאן שני כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 677.100082,
+      "offset": 686.130207,
       "duration": 3.049542
     },
     "he-IL\u0000יש כאן שני כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 680.269624,
+      "offset": 689.299749,
       "duration": 2.940875
     },
     "he-IL\u0000יש כאן שני מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 683.330499,
+      "offset": 692.360624,
       "duration": 2.940875
     },
     "he-IL\u0000יש כאן שני עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 686.391374,
+      "offset": 695.421499,
       "duration": 2.750667
     },
     "he-IL\u0000יש כאן שני פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 689.262041,
+      "offset": 698.292166,
       "duration": 2.777833
     },
     "he-IL\u0000יש כאן שני פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 692.159874,
+      "offset": 701.189999,
       "duration": 2.8615
     },
     "he-IL\u0000יש כאן שני תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 695.141374,
+      "offset": 704.171499,
       "duration": 2.927292
     },
     "he-IL\u0000יש כאן שני תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 698.188666,
+      "offset": 707.218791,
       "duration": 2.99525
     },
     "he-IL\u0000יש כאן שני תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 701.303916,
+      "offset": 710.334041,
       "duration": 2.995208
     },
     "he-IL\u0000יש כאן שש בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 704.419124,
+      "offset": 713.449249,
       "duration": 2.900083
     },
     "he-IL\u0000יש כאן שש כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 707.439207,
+      "offset": 716.469332,
       "duration": 2.84575
     },
     "he-IL\u0000יש כאן שש כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 710.404957,
+      "offset": 719.435082,
       "duration": 2.818583
     },
     "he-IL\u0000יש כאן שש רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 713.34354,
+      "offset": 722.373665,
       "duration": 2.913708
     },
     "he-IL\u0000יש כאן שתי בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 716.377248,
+      "offset": 725.407373,
       "duration": 2.981667
     },
     "he-IL\u0000יש כאן שתי כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 719.478915,
+      "offset": 728.50904,
       "duration": 2.900125
     },
     "he-IL\u0000יש כאן שתי כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 722.49904,
+      "offset": 731.529165,
       "duration": 2.968042
     },
     "he-IL\u0000יש כאן שתי רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 725.587082,
+      "offset": 734.617207,
       "duration": 3.036
     },
     "he-IL\u0000יש כאן תות אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 728.743082,
+      "offset": 737.773207,
       "duration": 2.766375
     },
     "he-IL\u0000יש כאן תפוז אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 731.629457,
+      "offset": 740.659582,
       "duration": 2.818583
     },
     "he-IL\u0000יש כאן תפוח אחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 734.56804,
+      "offset": 743.598165,
       "duration": 2.913708
     },
     "he-IL\u0000יש כאן תשע בננות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 737.601748,
+      "offset": 746.631873,
       "duration": 2.99525
     },
     "he-IL\u0000יש כאן תשע כוסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 740.716998,
+      "offset": 749.747123,
       "duration": 2.913667
     },
     "he-IL\u0000יש כאן תשע כפיות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 743.750665,
+      "offset": 752.78079,
       "duration": 2.940875
     },
     "he-IL\u0000יש כאן תשע רכבות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 746.81154,
+      "offset": 755.841665,
       "duration": 2.995208
     },
     "he-IL\u0000יש כאן תשעה אוטובוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 749.926748,
+      "offset": 758.956873,
       "duration": 3.171833
     },
     "he-IL\u0000יש כאן תשעה ארנבים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 753.218581,
+      "offset": 762.248706,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן תשעה ברווזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 756.428914,
+      "offset": 765.459039,
       "duration": 3.171833
     },
     "he-IL\u0000יש כאן תשעה גזרים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 759.720747,
+      "offset": 768.750872,
       "duration": 3.117542
     },
     "he-IL\u0000יש כאן תשעה כדורים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 762.958289,
+      "offset": 771.988414,
       "duration": 3.173958
     },
     "he-IL\u0000יש כאן תשעה כיסאות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 766.252247,
+      "offset": 775.282372,
       "duration": 3.131083
     },
     "he-IL\u0000יש כאן תשעה מטוסים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 769.50333,
+      "offset": 778.533455,
       "duration": 3.090333
     },
     "he-IL\u0000יש כאן תשעה עצים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 772.713663,
+      "offset": 781.743788,
       "duration": 2.927292
     },
     "he-IL\u0000יש כאן תשעה פילים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 775.760955,
+      "offset": 784.79108,
       "duration": 2.927292
     },
     "he-IL\u0000יש כאן תשעה פרחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 778.808247,
+      "offset": 787.838372,
       "duration": 3.022417
     },
     "he-IL\u0000יש כאן תשעה תותים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 781.950664,
+      "offset": 790.980789,
       "duration": 3.049583
     },
     "he-IL\u0000יש כאן תשעה תפוזים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 785.120247,
+      "offset": 794.150372,
       "duration": 3.146833
     },
     "he-IL\u0000יש כאן תשעה תפוחים.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 788.38708,
+      "offset": 797.417205,
       "duration": 3.15825
     },
     "he-IL\u0000כדור": {
       "src": "/speech/he-IL.mp3",
-      "offset": 791.66533,
+      "offset": 800.695455,
       "duration": 1.09825
     },
     "he-IL\u0000כדור אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 792.88358,
+      "offset": 801.913705,
       "duration": 1.497042
     },
     "he-IL\u0000כוכב ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 794.500622,
+      "offset": 803.530747,
       "duration": 1.480083
     },
     "he-IL\u0000כוכב כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 796.100705,
+      "offset": 805.13083,
       "duration": 1.411417
     },
     "he-IL\u0000כוכב צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 797.632122,
+      "offset": 806.662247,
       "duration": 1.465833
     },
     "he-IL\u0000כוס": {
       "src": "/speech/he-IL.mp3",
-      "offset": 799.217955,
+      "offset": 808.24808,
       "duration": 1.125083
     },
     "he-IL\u0000כוס אחת": {
       "src": "/speech/he-IL.mp3",
-      "offset": 800.463038,
+      "offset": 809.493163,
       "duration": 1.278542
     },
     "he-IL\u0000כיסא": {
       "src": "/speech/he-IL.mp3",
-      "offset": 801.86158,
+      "offset": 810.891705,
       "duration": 1.102083
     },
     "he-IL\u0000כיסא אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 803.083663,
+      "offset": 812.113788,
       "duration": 1.3965
     },
     "he-IL\u0000כל הכבוד, שון!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 804.600163,
+      "offset": 813.630288,
       "duration": 3.441333
     },
     "he-IL\u0000כלב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 808.161496,
+      "offset": 817.191621,
       "duration": 1.139333
     },
     "he-IL\u0000כמה אוטובוסים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 809.420829,
+      "offset": 818.450954,
       "duration": 3.055958
     },
     "he-IL\u0000כמה ארנבים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 812.596787,
+      "offset": 821.626912,
       "duration": 2.947333
     },
     "he-IL\u0000כמה בננות יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 815.66412,
+      "offset": 824.694245,
       "duration": 2.920125
     },
     "he-IL\u0000כמה ברווזים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 818.704245,
+      "offset": 827.73437,
       "duration": 2.988083
     },
     "he-IL\u0000כמה גזרים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 821.812328,
+      "offset": 830.842453,
       "duration": 2.93375
     },
     "he-IL\u0000כמה כדורים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 824.866078,
+      "offset": 833.896203,
       "duration": 3.056
     },
     "he-IL\u0000כמה כוסות יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 828.042078,
+      "offset": 837.072203,
       "duration": 2.716333
     },
     "he-IL\u0000כמה כיסאות יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 830.878411,
+      "offset": 839.908536,
       "duration": 2.838625
     },
     "he-IL\u0000כמה כפיות יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 833.837036,
+      "offset": 842.867161,
       "duration": 2.811375
     },
     "he-IL\u0000כמה מטוסים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 836.768411,
+      "offset": 845.798536,
       "duration": 2.906542
     },
     "he-IL\u0000כמה עצים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 839.794953,
+      "offset": 848.825078,
       "duration": 2.743458
     },
     "he-IL\u0000כמה פילים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 842.658411,
+      "offset": 851.688536,
       "duration": 2.78425
     },
     "he-IL\u0000כמה פרחים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 845.562661,
+      "offset": 854.592786,
       "duration": 2.78425
     },
     "he-IL\u0000כמה רכבות יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 848.466911,
+      "offset": 857.497036,
       "duration": 2.892958
     },
     "he-IL\u0000כמה תותים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 851.479869,
+      "offset": 860.509994,
       "duration": 2.797833
     },
     "he-IL\u0000כמה תפוזים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 854.397702,
+      "offset": 863.427827,
       "duration": 2.988042
     },
     "he-IL\u0000כמה תפוחים יש כאן?": {
       "src": "/speech/he-IL.mp3",
-      "offset": 857.505744,
+      "offset": 866.535869,
       "duration": 2.933708
     },
-    "he-IL\u0000כמעט, שון. נסה שוב.": {
+    "he-IL\u0000כמעט, שון. בוא נמשיך.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 860.559452,
-      "duration": 5.371375
+      "offset": 869.589577,
+      "duration": 5.412208
     },
     "he-IL\u0000כמעט. נמצא את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 866.050827,
+      "offset": 875.121785,
       "duration": 4.580375
     },
     "he-IL\u0000כמעט. נסה מקום אחר.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 870.751202,
+      "offset": 879.82216,
       "duration": 4.757083
     },
     "he-IL\u0000כפית": {
       "src": "/speech/he-IL.mp3",
-      "offset": 875.628285,
+      "offset": 884.699243,
       "duration": 1.111125
     },
     "he-IL\u0000כפית אחת": {
       "src": "/speech/he-IL.mp3",
-      "offset": 876.85941,
+      "offset": 885.930368,
       "duration": 1.387792
     },
     "he-IL\u0000לחץ על הזוגות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 878.367202,
+      "offset": 887.43816,
       "duration": 1.722542
     },
     "he-IL\u0000מטוס": {
       "src": "/speech/he-IL.mp3",
-      "offset": 880.209744,
+      "offset": 889.280702,
       "duration": 1.19425
     },
     "he-IL\u0000מטוס אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 881.523994,
+      "offset": 890.594952,
       "duration": 1.316125
     },
     "he-IL\u0000מסיבת היער הכחולה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 882.960119,
+      "offset": 892.031077,
       "duration": 1.941375
     },
     "he-IL\u0000מעולה!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 885.021494,
+      "offset": 894.092452,
       "duration": 2.098458
     },
     "he-IL\u0000משולש אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 887.239952,
+      "offset": 896.31091,
       "duration": 1.455833
     },
     "he-IL\u0000משולש ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 888.815785,
+      "offset": 897.886743,
       "duration": 1.5745
     },
     "he-IL\u0000משולש צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 890.510285,
+      "offset": 899.581243,
       "duration": 1.602125
     },
     "he-IL\u0000מתאימים מספרים זהים בשתי שורות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 892.23241,
+      "offset": 901.303368,
       "duration": 2.795917
     },
     "he-IL\u0000נחבר את גינת הגזר הענק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 895.148327,
+      "offset": 904.219285,
       "duration": 2.746583
     },
     "he-IL\u0000נחבר את הרפתקת מטוסי ההצלה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 898.01491,
+      "offset": 907.085868,
       "duration": 2.660042
     },
     "he-IL\u0000נחבר את מסיבת היער הכחולה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 900.794952,
+      "offset": 909.86591,
       "duration": 2.497
     },
     "he-IL\u0000נחפש יחד את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 903.411952,
+      "offset": 912.48291,
       "duration": 3.008792
     },
-    "he-IL\u0000ניסיון יפה, שון! בוא ננסה שוב.": {
+    "he-IL\u0000ניסיון יפה, שון! נמשיך לנסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 906.540744,
-      "duration": 5.909708
+      "offset": 915.611702,
+      "duration": 5.888042
+    },
+    "he-IL\u0000נמשיך ביחד.": {
+      "src": "/speech/he-IL.mp3",
+      "offset": 921.619744,
+      "duration": 2.614792
     },
     "he-IL\u0000נמשיך לחפש את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 912.570452,
+      "offset": 924.354536,
       "duration": 2.981625
-    },
-    "he-IL\u0000ננסה שוב ביחד.": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 915.672077,
-      "duration": 3.036
-    },
-    "he-IL\u0000נסה שוב, חמודי. אני איתך.": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 918.828077,
-      "duration": 5.733333
     },
     "he-IL\u0000נעל": {
       "src": "/speech/he-IL.mp3",
-      "offset": 924.68141,
+      "offset": 927.456161,
       "duration": 1.029583
-    },
-    "he-IL\u0000נעשה שוב.": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 925.830993,
-      "duration": 2.4925
     },
     "he-IL\u0000עברת שלב!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 928.443493,
+      "offset": 928.605744,
       "duration": 2.669167
     },
     "he-IL\u0000עוד ניסיון קטן.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 931.23266,
+      "offset": 931.394911,
       "duration": 2.834292
     },
     "he-IL\u0000עיגול אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 934.186952,
+      "offset": 934.349203,
       "duration": 1.494
     },
     "he-IL\u0000עיגול ירוק": {
       "src": "/speech/he-IL.mp3",
-      "offset": 935.800952,
+      "offset": 935.963203,
       "duration": 1.565625
     },
     "he-IL\u0000עיגול כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 937.486577,
+      "offset": 937.648828,
       "duration": 1.437458
     },
     "he-IL\u0000עכשיו יותר מספרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 939.044035,
+      "offset": 939.206286,
       "duration": 1.980708
     },
     "he-IL\u0000עץ": {
       "src": "/speech/he-IL.mp3",
-      "offset": 941.144743,
+      "offset": 941.306994,
       "duration": 1.031167
     },
     "he-IL\u0000עץ אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 942.29591,
+      "offset": 942.458161,
       "duration": 1.301833
     },
     "he-IL\u0000עשר": {
       "src": "/speech/he-IL.mp3",
-      "offset": 943.717743,
+      "offset": 943.879994,
       "duration": 1.101333
     },
     "he-IL\u0000עשר בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 944.939076,
+      "offset": 945.101327,
       "duration": 1.630542
     },
     "he-IL\u0000עשר כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 946.689618,
+      "offset": 946.851869,
       "duration": 1.488042
     },
     "he-IL\u0000עשר כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 948.29766,
+      "offset": 948.459911,
       "duration": 1.500667
     },
     "he-IL\u0000עשר רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 949.918327,
+      "offset": 950.080578,
       "duration": 1.577125
     },
     "he-IL\u0000עשרה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 951.615452,
+      "offset": 951.777703,
       "duration": 1.724958
     },
     "he-IL\u0000עשרה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 953.46041,
+      "offset": 953.622661,
       "duration": 1.674958
     },
     "he-IL\u0000עשרה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 955.255368,
+      "offset": 955.417619,
       "duration": 1.763292
     },
     "he-IL\u0000עשרה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 957.13866,
+      "offset": 957.300911,
       "duration": 1.6725
     },
     "he-IL\u0000עשרה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 958.93116,
+      "offset": 959.093411,
       "duration": 1.708958
     },
     "he-IL\u0000עשרה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 960.760118,
+      "offset": 960.922369,
       "duration": 1.600208
     },
     "he-IL\u0000עשרה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 962.480326,
+      "offset": 962.642577,
       "duration": 1.615417
     },
     "he-IL\u0000עשרה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 964.215743,
+      "offset": 964.377994,
       "duration": 1.455208
     },
     "he-IL\u0000עשרה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 965.790951,
+      "offset": 965.953202,
       "duration": 1.426958
     },
     "he-IL\u0000עשרה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 967.337909,
+      "offset": 967.50016,
       "duration": 1.531083
     },
     "he-IL\u0000עשרה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 968.988992,
+      "offset": 969.151243,
       "duration": 1.532292
     },
     "he-IL\u0000עשרה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 970.641284,
+      "offset": 970.803535,
       "duration": 1.714208
     },
     "he-IL\u0000עשרה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 972.475492,
+      "offset": 972.637743,
       "duration": 1.671792
     },
     "he-IL\u0000פותחים שני קלפים ומחפשים זוג": {
       "src": "/speech/he-IL.mp3",
-      "offset": 974.267284,
+      "offset": 974.429535,
       "duration": 2.77
     },
     "he-IL\u0000פיל": {
       "src": "/speech/he-IL.mp3",
-      "offset": 977.157284,
+      "offset": 977.319535,
       "duration": 0.9345
     },
     "he-IL\u0000פיל אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 978.211784,
+      "offset": 978.374035,
       "duration": 1.15675
     },
     "he-IL\u0000פרח": {
       "src": "/speech/he-IL.mp3",
-      "offset": 979.488534,
+      "offset": 979.650785,
       "duration": 1.111125
     },
     "he-IL\u0000פרח אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 980.719659,
+      "offset": 980.88191,
       "duration": 1.249
     },
     "he-IL\u0000ריבוע אדום": {
       "src": "/speech/he-IL.mp3",
-      "offset": 982.088659,
+      "offset": 982.25091,
       "duration": 1.509417
     },
     "he-IL\u0000ריבוע כחול": {
       "src": "/speech/he-IL.mp3",
-      "offset": 983.718076,
+      "offset": 983.880327,
       "duration": 1.385
     },
     "he-IL\u0000ריבוע צהוב": {
       "src": "/speech/he-IL.mp3",
-      "offset": 985.223076,
+      "offset": 985.385327,
       "duration": 1.493708
     },
     "he-IL\u0000רכבת": {
       "src": "/speech/he-IL.mp3",
-      "offset": 986.836784,
+      "offset": 986.999035,
       "duration": 1.241
     },
     "he-IL\u0000רכבת אחת": {
       "src": "/speech/he-IL.mp3",
-      "offset": 988.197784,
+      "offset": 988.360035,
       "duration": 1.497542
     },
     "he-IL\u0000שבע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 989.815326,
+      "offset": 989.977577,
       "duration": 1.002792
     },
     "he-IL\u0000שבע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 990.938118,
+      "offset": 991.100369,
       "duration": 1.613833
     },
     "he-IL\u0000שבע כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 992.671951,
+      "offset": 992.834202,
       "duration": 1.464375
     },
     "he-IL\u0000שבע כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 994.256326,
+      "offset": 994.418577,
       "duration": 1.497958
     },
     "he-IL\u0000שבע רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 995.874284,
+      "offset": 996.036535,
       "duration": 1.588
     },
     "he-IL\u0000שבעה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 997.582284,
+      "offset": 997.744535,
       "duration": 1.737542
     },
     "he-IL\u0000שבעה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 999.439826,
+      "offset": 999.602077,
       "duration": 1.698833
     },
     "he-IL\u0000שבעה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1001.258659,
+      "offset": 1001.42091,
       "duration": 1.754292
     },
     "he-IL\u0000שבעה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1003.132951,
+      "offset": 1003.295202,
       "duration": 1.660125
     },
     "he-IL\u0000שבעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1004.913076,
+      "offset": 1005.075327,
       "duration": 1.721083
     },
     "he-IL\u0000שבעה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1006.754159,
+      "offset": 1006.91641,
       "duration": 1.613083
     },
     "he-IL\u0000שבעה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1008.487242,
+      "offset": 1008.649493,
       "duration": 1.586667
     },
     "he-IL\u0000שבעה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1010.193909,
+      "offset": 1010.35616,
       "duration": 1.464417
     },
     "he-IL\u0000שבעה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1011.778326,
+      "offset": 1011.940577,
       "duration": 1.450792
     },
     "he-IL\u0000שבעה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1013.349118,
+      "offset": 1013.511369,
       "duration": 1.480125
     },
     "he-IL\u0000שבעה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1014.949243,
+      "offset": 1015.111494,
       "duration": 1.532375
     },
     "he-IL\u0000שבעה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1016.601618,
+      "offset": 1016.763869,
       "duration": 1.683333
     },
     "he-IL\u0000שבעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1018.404951,
+      "offset": 1018.567202,
       "duration": 1.672125
     },
-    "he-IL\u0000שון עושה את זה שוב ושוב, יופי של התמדה!": {
+    "he-IL\u0000שון מתמיד כל כך יפה, איזה אלוף!": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1020.197076,
-      "duration": 4.652958
+      "offset": 1020.359327,
+      "duration": 4.48125
     },
-    "he-IL\u0000שון, אהבתי שניסית. בוא ננסה שוב.": {
+    "he-IL\u0000שון, אהבתי שניסית. נמשיך לנסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1024.970034,
-      "duration": 6.390417
+      "offset": 1024.960577,
+      "duration": 6.363292
     },
     "he-IL\u0000שון, אתה אלוף בלחפש. נמשיך יחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1031.480451,
+      "offset": 1031.443869,
       "duration": 6.580583
     },
-    "he-IL\u0000שון, אתה אלוף בלנסות. בוא ננסה שוב.": {
+    "he-IL\u0000שון, אתה אלוף בלנסות. בוא נמשיך.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1038.181034,
-      "duration": 6.702917
+      "offset": 1038.144452,
+      "duration": 6.42625
     },
-    "he-IL\u0000שון, אתה אלוף בלנסות. ניקח רגע וננסה שוב.": {
+    "he-IL\u0000שון, אתה אלוף בלנסות. ניקח רגע ונמשיך.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1045.003951,
-      "duration": 7.282167
+      "offset": 1044.690702,
+      "duration": 7.13275
     },
-    "he-IL\u0000שון, אתה אלוף בלנסות. ננסה שוב ביחד.": {
+    "he-IL\u0000שון, אתה אלוף בלנסות. נמשיך ביחד.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1052.406118,
-      "duration": 7.06975
+      "offset": 1051.943452,
+      "duration": 6.66425
     },
     "he-IL\u0000שון, אתה יכול. עוד ניסיון קטן.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1059.595868,
+      "offset": 1058.727702,
       "duration": 6.045833
     },
     "he-IL\u0000שון, בוא נמשיך לחפש את הזוג.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1065.761701,
+      "offset": 1064.893535,
       "duration": 4.206125
     },
-    "he-IL\u0000שון, ביחד ובנחת, בוא ננסה שוב.": {
+    "he-IL\u0000שון, ביחד ובנחת, בוא נמשיך לנסות.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1070.087826,
-      "duration": 5.417417
+      "offset": 1069.21966,
+      "duration": 5.568375
     },
     "he-IL\u0000שון, יופי שניסית, חמודי. עוד ניסיון קטן.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1075.625243,
+      "offset": 1074.908035,
       "duration": 7.348042
     },
-    "he-IL\u0000שון, כל ניסיון עוזר לנו ללמוד. בוא ננסה שוב.": {
+    "he-IL\u0000שון, כל ניסיון עוזר לנו ללמוד. בוא נמשיך.": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1083.093285,
-      "duration": 7.078208
+      "offset": 1082.376077,
+      "duration": 6.8065
     },
     "he-IL\u0000שישה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1090.291493,
+      "offset": 1089.302577,
       "duration": 1.662417
     },
     "he-IL\u0000שישה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1092.07391,
+      "offset": 1091.084994,
       "duration": 1.518708
     },
     "he-IL\u0000שישה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1093.712618,
+      "offset": 1092.723702,
       "duration": 1.6805
     },
     "he-IL\u0000שישה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1095.513118,
+      "offset": 1094.524202,
       "duration": 1.559042
     },
     "he-IL\u0000שישה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1097.19216,
+      "offset": 1096.203244,
       "duration": 1.668167
     },
     "he-IL\u0000שישה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1098.980327,
+      "offset": 1097.991411,
       "duration": 1.559458
     },
     "he-IL\u0000שישה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1100.659785,
+      "offset": 1099.670869,
       "duration": 1.520542
     },
     "he-IL\u0000שישה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1102.300327,
+      "offset": 1101.311411,
       "duration": 1.438
     },
     "he-IL\u0000שישה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1103.858327,
+      "offset": 1102.869411,
       "duration": 1.382875
     },
     "he-IL\u0000שישה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1105.361202,
+      "offset": 1104.372286,
       "duration": 1.437208
     },
     "he-IL\u0000שישה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1106.91841,
+      "offset": 1105.929494,
       "duration": 1.496375
     },
     "he-IL\u0000שישה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1108.534785,
+      "offset": 1107.545869,
       "duration": 1.644458
     },
     "he-IL\u0000שישה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1110.299243,
+      "offset": 1109.310327,
       "duration": 1.614375
     },
     "he-IL\u0000שלוש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1112.033618,
+      "offset": 1111.044702,
       "duration": 1.289583
     },
     "he-IL\u0000שלוש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1113.443201,
+      "offset": 1112.454285,
       "duration": 1.602917
     },
     "he-IL\u0000שלוש כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1115.166118,
+      "offset": 1114.177202,
       "duration": 1.491542
     },
     "he-IL\u0000שלוש כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1116.77766,
+      "offset": 1115.788744,
       "duration": 1.545875
     },
     "he-IL\u0000שלוש רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1118.443535,
+      "offset": 1117.454619,
       "duration": 1.605708
     },
     "he-IL\u0000שלושה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1120.169243,
+      "offset": 1119.180327,
       "duration": 1.699
     },
     "he-IL\u0000שלושה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1121.988243,
+      "offset": 1120.999327,
       "duration": 1.587
     },
     "he-IL\u0000שלושה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1123.695243,
+      "offset": 1122.706327,
       "duration": 1.723375
     },
     "he-IL\u0000שלושה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1125.538618,
+      "offset": 1124.549702,
       "duration": 1.619042
     },
     "he-IL\u0000שלושה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1127.27766,
+      "offset": 1126.288744,
       "duration": 1.698542
     },
     "he-IL\u0000שלושה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1129.096202,
+      "offset": 1128.107286,
       "duration": 1.5885
     },
     "he-IL\u0000שלושה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1130.804702,
+      "offset": 1129.815786,
       "duration": 1.612375
     },
     "he-IL\u0000שלושה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1132.537077,
+      "offset": 1131.548161,
       "duration": 1.477958
     },
     "he-IL\u0000שלושה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1134.135035,
+      "offset": 1133.146119,
       "duration": 1.450792
     },
     "he-IL\u0000שלושה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1135.705827,
+      "offset": 1134.716911,
       "duration": 1.477958
     },
     "he-IL\u0000שלושה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1137.303785,
+      "offset": 1136.314869,
       "duration": 1.534417
     },
     "he-IL\u0000שלושה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1138.958202,
+      "offset": 1137.969286,
       "duration": 1.681792
     },
     "he-IL\u0000שלושה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1140.759994,
+      "offset": 1139.771078,
       "duration": 1.668167
     },
     "he-IL\u0000שמונה": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1142.548161,
+      "offset": 1141.559245,
       "duration": 1.151917
     },
     "he-IL\u0000שמונה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1143.820078,
+      "offset": 1142.831162,
       "duration": 1.768542
     },
     "he-IL\u0000שמונה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1145.70862,
+      "offset": 1144.719704,
       "duration": 1.641
     },
     "he-IL\u0000שמונה בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1147.46962,
+      "offset": 1146.480704,
       "duration": 1.676292
     },
     "he-IL\u0000שמונה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1149.265912,
+      "offset": 1148.276996,
       "duration": 1.749708
     },
     "he-IL\u0000שמונה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1151.13562,
+      "offset": 1150.146704,
       "duration": 1.671
     },
     "he-IL\u0000שמונה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1152.92662,
+      "offset": 1151.937704,
       "duration": 1.781458
     },
     "he-IL\u0000שמונה כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1154.828078,
+      "offset": 1153.839162,
       "duration": 1.534208
     },
     "he-IL\u0000שמונה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1156.482286,
+      "offset": 1155.49337,
       "duration": 1.615792
     },
     "he-IL\u0000שמונה כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1158.218078,
+      "offset": 1157.229162,
       "duration": 1.573833
     },
     "he-IL\u0000שמונה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1159.911911,
+      "offset": 1158.922995,
       "duration": 1.602667
     },
     "he-IL\u0000שמונה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1161.634578,
+      "offset": 1160.645662,
       "duration": 1.506833
     },
     "he-IL\u0000שמונה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1163.261411,
+      "offset": 1162.272495,
       "duration": 1.454708
     },
     "he-IL\u0000שמונה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1164.836119,
+      "offset": 1163.847203,
       "duration": 1.494708
     },
     "he-IL\u0000שמונה רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1166.450827,
+      "offset": 1165.461911,
       "duration": 1.703542
     },
     "he-IL\u0000שמונה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1168.274369,
+      "offset": 1167.285453,
       "duration": 1.549833
     },
     "he-IL\u0000שמונה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1169.944202,
+      "offset": 1168.955286,
       "duration": 1.749708
     },
     "he-IL\u0000שמונה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1171.81391,
+      "offset": 1170.824994,
       "duration": 1.708917
     },
     "he-IL\u0000שני אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1173.642827,
+      "offset": 1172.653911,
       "duration": 1.618833
     },
     "he-IL\u0000שני ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1175.38166,
+      "offset": 1174.392744,
       "duration": 1.564708
     },
     "he-IL\u0000שני ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1177.066368,
+      "offset": 1176.077452,
       "duration": 1.604875
     },
     "he-IL\u0000שני גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1178.791243,
+      "offset": 1177.802327,
       "duration": 1.560042
     },
     "he-IL\u0000שני כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1180.471285,
+      "offset": 1179.482369,
       "duration": 1.59525
     },
     "he-IL\u0000שני כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1182.186535,
+      "offset": 1181.197619,
       "duration": 1.506375
     },
     "he-IL\u0000שני מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1183.81291,
+      "offset": 1182.823994,
       "duration": 1.478083
     },
     "he-IL\u0000שני עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1185.410993,
+      "offset": 1184.422077,
       "duration": 1.396458
     },
     "he-IL\u0000שני פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1186.927451,
+      "offset": 1185.938535,
       "duration": 1.357375
     },
     "he-IL\u0000שני פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1188.404826,
+      "offset": 1187.41591,
       "duration": 1.372583
     },
     "he-IL\u0000שני תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1189.897409,
+      "offset": 1188.908493,
       "duration": 1.410208
     },
     "he-IL\u0000שני תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1191.427617,
+      "offset": 1190.438701,
       "duration": 1.577458
     },
     "he-IL\u0000שני תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1193.125075,
+      "offset": 1192.136159,
       "duration": 1.568458
     },
     "he-IL\u0000שש": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1194.813533,
+      "offset": 1193.824617,
       "duration": 1.179042
     },
     "he-IL\u0000שש בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1196.112575,
+      "offset": 1195.123659,
       "duration": 1.500208
     },
     "he-IL\u0000שש כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1197.732783,
+      "offset": 1196.743867,
       "duration": 1.441583
     },
     "he-IL\u0000שש כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1199.294366,
+      "offset": 1198.30545,
       "duration": 1.398375
     },
     "he-IL\u0000שש רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1200.812741,
+      "offset": 1199.823825,
       "duration": 1.491583
     },
     "he-IL\u0000שתי בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1202.424324,
+      "offset": 1201.435408,
       "duration": 1.654583
     },
     "he-IL\u0000שתי כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1204.198907,
+      "offset": 1203.209991,
       "duration": 1.533958
     },
     "he-IL\u0000שתי כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1205.852865,
+      "offset": 1204.863949,
       "duration": 1.60025
     },
     "he-IL\u0000שתי רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1207.573115,
+      "offset": 1206.584199,
       "duration": 1.641
     },
     "he-IL\u0000שתיים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1209.334115,
+      "offset": 1208.345199,
       "duration": 1.267375
     },
     "he-IL\u0000תות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1210.72149,
+      "offset": 1209.732574,
       "duration": 1.021208
     },
     "he-IL\u0000תות אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1211.862698,
+      "offset": 1210.873782,
       "duration": 1.274125
     },
     "he-IL\u0000תפוז": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1213.256823,
+      "offset": 1212.267907,
       "duration": 1.206208
     },
     "he-IL\u0000תפוז אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1214.583031,
+      "offset": 1213.594115,
       "duration": 1.382875
     },
     "he-IL\u0000תפוח": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1216.085906,
+      "offset": 1215.09699,
       "duration": 1.266375
     },
     "he-IL\u0000תפוח אחד": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1217.472281,
+      "offset": 1216.483365,
       "duration": 1.481583
     },
     "he-IL\u0000תשע": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1219.073864,
+      "offset": 1218.084948,
       "duration": 1.026917
     },
     "he-IL\u0000תשע בננות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1220.220781,
+      "offset": 1219.231865,
       "duration": 1.608375
     },
     "he-IL\u0000תשע כוסות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1221.949156,
+      "offset": 1220.96024,
       "duration": 1.491583
     },
     "he-IL\u0000תשע כפיות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1223.560739,
+      "offset": 1222.571823,
       "duration": 1.505167
     },
     "he-IL\u0000תשע רכבות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1225.185906,
+      "offset": 1224.19699,
       "duration": 1.61775
     },
     "he-IL\u0000תשעה אוטובוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1226.923656,
+      "offset": 1225.93474,
       "duration": 1.767583
     },
     "he-IL\u0000תשעה ארנבים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1228.811239,
+      "offset": 1227.822323,
       "duration": 1.659833
     },
     "he-IL\u0000תשעה ברווזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1230.591072,
+      "offset": 1229.602156,
       "duration": 1.7775
     },
     "he-IL\u0000תשעה גזרים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1232.488572,
+      "offset": 1231.499656,
       "duration": 1.763292
     },
     "he-IL\u0000תשעה כדורים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1234.371864,
+      "offset": 1233.382948,
       "duration": 1.76725
     },
     "he-IL\u0000תשעה כיסאות": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1236.259114,
+      "offset": 1235.270198,
       "duration": 1.627417
     },
     "he-IL\u0000תשעה מטוסים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1238.006531,
+      "offset": 1237.017615,
       "duration": 1.668875
     },
     "he-IL\u0000תשעה עצים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1239.795406,
+      "offset": 1238.80649,
       "duration": 1.492792
     },
     "he-IL\u0000תשעה פילים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1241.408198,
+      "offset": 1240.419282,
       "duration": 1.49175
     },
     "he-IL\u0000תשעה פרחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1243.019948,
+      "offset": 1242.031032,
       "duration": 1.541083
     },
     "he-IL\u0000תשעה תותים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1244.681031,
+      "offset": 1243.692115,
       "duration": 1.613833
     },
     "he-IL\u0000תשעה תפוזים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1246.414864,
+      "offset": 1245.425948,
       "duration": 1.79
     },
     "he-IL\u0000תשעה תפוחים": {
       "src": "/speech/he-IL.mp3",
-      "offset": 1248.324864,
+      "offset": 1247.335948,
       "duration": 1.736833
     },
     "en-US\u0000airplane": {
