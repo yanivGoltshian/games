@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress, createInitialSettings } from '../domain/progression';
@@ -8,6 +8,7 @@ import type { CountingRound, ProgressUpdateSummary } from '../domain/types';
 import { CountingGame } from './CountingGame';
 
 const doubles = vi.hoisted(() => ({
+  cancelScope: vi.fn(),
   speakSegments: vi.fn(),
   startNextRound: vi.fn(),
   runRetry: vi.fn(),
@@ -36,6 +37,14 @@ const testRound: CountingRound = {
   answerEn: 'three apples',
 };
 
+function deferred<Value>() {
+  let resolve!: (value: Value) => void;
+  const promise = new Promise<Value>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 vi.mock('../services/sound', () => ({
   soundService: {
     playTap: vi.fn(),
@@ -47,6 +56,7 @@ vi.mock('../services/sound', () => ({
 vi.mock('../services/speech', () => ({
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
+    cancelScope: doubles.cancelScope,
     speakSegments: doubles.speakSegments,
   },
 }));
@@ -109,6 +119,7 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     micDouble.start.mockResolvedValue({ status: 'started' });
     micDouble.stop.mockReset();
     doubles.speakSegments.mockReset();
+    doubles.cancelScope.mockReset();
     doubles.startNextRound.mockReset();
     doubles.runRetry.mockReset();
     doubles.runRetry.mockResolvedValue(undefined);
@@ -136,27 +147,32 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     }));
   }
 
-  async function renderGame(onCompleteRound = createCompleteRound()) {
+  async function renderGame(
+    onCompleteRound = createCompleteRound(),
+    mediaReady = false,
+    strictMode = false,
+  ) {
     const progress = createInitialProgress(false, 0);
     const settings = createInitialSettings();
+    const game = (
+      <CountingGame
+        domainProgress={progress.domains.counting}
+        settings={settings}
+        overallStars={0}
+        mediaReady={mediaReady}
+        speechStatus={{
+          supported: true,
+          voiceAvailable: true,
+          speaking: false,
+          activeRequestId: null,
+          activeCue: null,
+        }}
+        onBack={() => undefined}
+        onCompleteRound={onCompleteRound}
+      />
+    );
     await act(async () => {
-      root.render(
-        <CountingGame
-          domainProgress={progress.domains.counting}
-          settings={settings}
-          overallStars={0}
-          mediaReady={false}
-          speechStatus={{
-            supported: true,
-            voiceAvailable: true,
-            speaking: false,
-            activeRequestId: null,
-            activeCue: null,
-          }}
-          onBack={() => undefined}
-          onCompleteRound={onCompleteRound}
-        />,
-      );
+      root.render(strictMode ? <StrictMode>{game}</StrictMode> : game);
     });
     // The mount effect resets mic state (calls stop once); start from a clean slate.
     micDouble.start.mockClear();
@@ -169,6 +185,17 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     await renderGame();
 
     expect(container.querySelector('.counting-voice')).toBeNull();
+  });
+
+  it('routes the spoken prompt through the shared media coordinator', async () => {
+    await renderGame(createCompleteRound(), true);
+
+    expect(doubles.speakSegments).toHaveBeenCalledOnce();
+    expect(doubles.speakSegments.mock.calls[0]?.[2]).toMatchObject({
+      scope: expect.stringContaining('communication:counting'),
+      priority: 'prompt',
+    });
+    expect(micDouble.start).not.toHaveBeenCalled();
   });
 
   it('opens the microphone and lights up when the toggle is pressed', async () => {
@@ -186,6 +213,44 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     const liveToggle = container.querySelector('.counting-voice__toggle');
     expect(liveToggle!.classList.contains('is-live')).toBe(true);
     expect(liveToggle!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps the microphone generation current after StrictMode effect replay', async () => {
+    await renderGame(createCompleteRound(), false, true);
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+    });
+
+    expect(micDouble.start).toHaveBeenCalledOnce();
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('ignores an older microphone start that settles after a newer tap succeeds', async () => {
+    const staleStart = deferred<{ status: 'cancelled' }>();
+    micDouble.start
+      .mockReset()
+      .mockReturnValueOnce(staleStart.promise)
+      .mockResolvedValueOnce({ status: 'started' });
+    await renderGame();
+    const toggle = container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!;
+
+    await act(async () => {
+      toggle.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      toggle.click();
+      await Promise.resolve();
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(2);
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
+
+    await act(async () => {
+      staleStart.resolve({ status: 'cancelled' });
+      await staleStart.promise;
+    });
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('drives the counting glow from the sampled voice level', async () => {

@@ -3,6 +3,7 @@ import { createInitialSettings } from '../domain/progression';
 import { createCommunicationLocaleLock, type CommunicationGameScope } from '../domain/communicationGame';
 import type { SpeechRequestOptions, SpeechResult, SpeechSegment } from './speech';
 import {
+  createInteractionMediaUnits,
   InteractionMediaCoordinator,
   type InteractionMediaRequest,
   type InteractionSpeechBackend,
@@ -222,11 +223,61 @@ describe('interaction media coordinator', () => {
     coordinator.dispose();
   });
 
+  it('keeps bilingual units individually locale locked within one guarded request', async () => {
+    const speech = new FakeSpeechBackend();
+    const guard = new MicrophonePlaybackGuard();
+    const coordinator = new InteractionMediaCoordinator(speech, guard, lifecycle);
+    const segments: SpeechSegment[] = [
+      { text: 'מילה', locale: 'he-IL' },
+      { text: 'word', locale: 'en-US' },
+    ];
+    const playback = coordinator.play({
+      intentId: 'bilingual-model',
+      source: 'automatic',
+      scope,
+      audioClass: 'mandatory',
+      settings,
+      units: createInteractionMediaUnits(scope, segments),
+    });
+
+    expect(speech.playbacks).toHaveLength(1);
+    speech.start(0);
+    expect(guard.microphoneAllowed()).toBe(false);
+    speech.finish(0);
+    await expect(playback).resolves.toMatchObject({ status: 'completed' });
+    coordinator.dispose();
+  });
+
+  it('opens the microphone exactly 400 ms after true playback completion', async () => {
+    let now = 5_000;
+    const speech = new FakeSpeechBackend();
+    const guard = new MicrophonePlaybackGuard(400, () => now);
+    const coordinator = new InteractionMediaCoordinator(speech, guard, lifecycle);
+    const playback = coordinator.play(request('guarded-model', 'mandatory', 'automatic'));
+
+    expect(guard.microphoneAllowed()).toBe(true);
+    speech.start(0);
+    expect(guard.microphoneAllowed()).toBe(false);
+    speech.finish(0);
+    await expect(playback).resolves.toMatchObject({ status: 'completed' });
+
+    now += 399;
+    expect(guard.microphoneAllowed()).toBe(false);
+    now += 1;
+    expect(guard.microphoneAllowed()).toBe(true);
+    coordinator.dispose();
+  });
+
   it('rejects a segment outside the exact locale lock without starting playback', async () => {
     const speech = new FakeSpeechBackend();
     const coordinator = new InteractionMediaCoordinator(speech, new MicrophonePlaybackGuard(), lifecycle);
-    const mismatched = {
-      ...request('mismatch', 'mandatory'),
+    const mismatched: InteractionMediaRequest = {
+      intentId: 'mismatch',
+      source: 'touch',
+      scope,
+      audioClass: 'mandatory',
+      settings,
+      localeLock: createCommunicationLocaleLock(scope, 'he-IL'),
       segments: [{ text: 'word', locale: 'en-US' as const }],
     };
 

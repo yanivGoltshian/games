@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useReducer,
   useRef,
   useState,
@@ -19,6 +20,11 @@ import {
   getSillyAlienRoundSignature,
 } from '../domain/rounds';
 import { soundService } from '../services/sound';
+import {
+  createInteractionMediaUnits,
+  interactionMediaCoordinator,
+  type InteractionMediaOutcome,
+} from '../services/interactionMediaCoordinator';
 import {
   buildLocalizedSegments,
   buildPersonalizedPhraseSegments,
@@ -40,17 +46,12 @@ import { useMicEffort } from './useMicEffort';
 import type { MicStartOutcome } from './useMicEffort';
 import { personalizeChildName } from '../domain/childName';
 import { DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS } from '../services/microphonePlaybackGuard';
+import { GenerationTokenController, useGenerationToken } from './useGenerationToken';
 
 const SPEECH_SCOPE = 'game:silly-alien';
 
-/**
- * A settled speech result should advance the round unless it was cut short by a
- * newer utterance (`cancelled`) or replaced in the queue (`superseded`). Quiet
- * mode / unsupported voices resolve as `skipped`/`unsupported`, which still
- * advance so a muted iPad never stalls.
- */
-function settledShouldAdvance(status: SpeechResult['status']): boolean {
-  return status !== 'cancelled' && status !== 'superseded';
+function mediaOutcomeAdvances(outcome: InteractionMediaOutcome): boolean {
+  return outcome.status === 'completed' || outcome.status === 'unavailable';
 }
 
 function micOutcomeUsesFallback(outcome: MicStartOutcome): boolean {
@@ -142,9 +143,11 @@ export function SillyAlienGame({
   const [state, dispatch] = useReducer(reduceSillyAlien, INITIAL_SILLY_ALIEN_STATE);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [replaying, setReplaying] = useState(false);
+  const [modelReplayActive, setModelReplayActive] = useState(false);
   const [pageVisible, setPageVisible] = useState(() =>
     typeof document === 'undefined' ? true : document.visibilityState !== 'hidden',
   );
+  const sessionId = useId();
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'sillyAlien',
     domainProgress,
@@ -153,10 +156,25 @@ export function SillyAlienGame({
   );
 
   const englishOnly = settings.languageMode === 'en';
+  const mediaScope = {
+    activityId: 'silly-alien',
+    sessionId,
+    roundId: String(roundKey),
+    stepId: `${state.phase}:${state.phase === 'nudge' ? state.nudges : state.listenAttempts}`,
+  };
+  const generation = useGenerationToken(mediaScope);
+  const replayGenerationRef = useRef<GenerationTokenController | null>(null);
+  replayGenerationRef.current ??= new GenerationTokenController();
+  const replayGeneration = replayGenerationRef.current;
   // The mic only samples while it is open (listening); the reducer ignores
   // `register-effort` outside the listening phase, so stray frames are no-ops.
   const mic = useMicEffort((level, deltaMs) => {
     dispatch({ type: 'register-effort', level, deltaMs });
+  }, {
+    generation: {
+      token: generation.token,
+      isCurrent: generation.isCurrent,
+    },
   });
 
   // Latest-values snapshot so effects can key on `phase`/`roundKey` alone and
@@ -174,6 +192,10 @@ export function SillyAlienGame({
     onCompleteRound,
     micStart: mic.start,
     micStop: mic.stop,
+    mediaScope,
+    generationToken: generation.token,
+    generationIsCurrent: generation.isCurrent,
+    invalidateGeneration: generation.invalidate,
   });
   dataRef.current = {
     phase: state.phase,
@@ -187,6 +209,10 @@ export function SillyAlienGame({
     onCompleteRound,
     micStart: mic.start,
     micStop: mic.stop,
+    mediaScope,
+    generationToken: generation.token,
+    generationIsCurrent: generation.isCurrent,
+    invalidateGeneration: generation.invalidate,
   };
   const successHandledRef = useRef(false);
 
@@ -227,19 +253,72 @@ export function SillyAlienGame({
   }, [unlock]);
 
   const handleRepeat = useCallback((): void => {
-    const { round: current, settings: currentSettings, roundKey: rk } = dataRef.current;
-    void speechService.speakSegments(
-      [
-        ...buildLocalizedSegments(
-          [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
-          currentSettings.languageMode,
-          currentSettings.englishVoiceLocale,
-        ),
-        ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, currentSettings),
-      ],
-      currentSettings,
-      { scope: SPEECH_SCOPE, key: `repeat:${rk}`, priority: 'replay', interrupt: true },
-    );
+    const snapshot = dataRef.current;
+    const {
+      phase,
+      round: current,
+      settings: currentSettings,
+      roundKey: rk,
+      micStop,
+      mediaScope: scope,
+    } = snapshot;
+    micStop();
+    interactionMediaCoordinator.notifyInteraction(scope, 'touch');
+    if (phase === 'presenting' || phase === 'listening' || phase === 'nudge') {
+      setModelReplayActive(true);
+    }
+    const replayToken = replayGeneration.issue({
+      ...scope,
+      stepId: `${scope.stepId}:repeat`,
+    });
+    const segments = [
+      ...buildLocalizedSegments(
+        [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
+        currentSettings.languageMode,
+        currentSettings.englishVoiceLocale,
+      ),
+      ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, currentSettings),
+    ];
+    void interactionMediaCoordinator.play({
+      intentId: `silly-alien:repeat:${sessionId}:${rk}`,
+      source: 'touch',
+      scope,
+      audioClass: 'mandatory',
+      settings: currentSettings,
+      units: createInteractionMediaUnits(scope, segments),
+    }).then((outcome) => {
+      if (!replayGeneration.isCurrent(replayToken)) {
+        return;
+      }
+      const currentPhase = dataRef.current.phase;
+      if (mediaOutcomeAdvances(outcome)) {
+        if (currentPhase === 'presenting') {
+          dispatch({ type: 'present-done' });
+        } else if (currentPhase === 'nudge') {
+          dispatch({ type: 'nudge-done' });
+        } else if (currentPhase === 'listening') {
+          setModelReplayActive(false);
+        }
+      } else if (outcome.status === 'errored') {
+        dispatch({ type: 'mic-denied' });
+      }
+    });
+  }, [replayGeneration, sessionId]);
+
+  const handleBack = useCallback((): void => {
+    const snapshot = dataRef.current;
+    snapshot.invalidateGeneration();
+    replayGenerationRef.current?.invalidate();
+    snapshot.micStop();
+    interactionMediaCoordinator.notifyInteraction(snapshot.mediaScope, 'exit');
+    onBack();
+  }, [onBack]);
+
+  useEffect(() => () => {
+    const snapshot = dataRef.current;
+    replayGenerationRef.current?.invalidate();
+    snapshot.micStop();
+    interactionMediaCoordinator.notifyInteraction(snapshot.mediaScope, 'exit');
   }, []);
 
   // ── Page visibility ───────────────────────────────────────────────────────
@@ -257,8 +336,10 @@ export function SillyAlienGame({
   // ── New word: reset per-round UI, stop capture, replay the gag once unlocked ─
   useEffect(() => {
     successHandledRef.current = false;
+    replayGenerationRef.current?.invalidate();
     setCelebration(null);
     setReplaying(false);
+    setModelReplayActive(false);
     dataRef.current.micStop();
     if (dataRef.current.unlocked) {
       dispatch({ type: 'begin-round' });
@@ -270,59 +351,85 @@ export function SillyAlienGame({
     if (state.phase !== 'presenting') {
       return undefined;
     }
-    const { round: current, roundKey: rk, settings: current2, micStop } = dataRef.current;
+    const {
+      round: current,
+      roundKey: rk,
+      settings: current2,
+      micStop,
+      mediaScope: scope,
+      generationToken: token,
+      generationIsCurrent,
+    } = dataRef.current;
     micStop();
     soundService.playPop(current2); // the first syllable escapes as a bubble
     let cancelled = false;
     const advance = (): void => {
-      if (cancelled) {
+      if (cancelled || !generationIsCurrent(token)) {
         return;
       }
       cancelled = true;
       dispatch({ type: 'present-done' });
     };
-    const speech = speechService.speakSegments(
-      [
-        ...buildLocalizedSegments(
-          [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
-          current2.languageMode,
-          current2.englishVoiceLocale,
-        ),
-        ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, current2),
-      ],
-      current2,
-      { scope: SPEECH_SCOPE, key: `present:${rk}`, priority: 'prompt' },
-    );
-    void speech.then((result) => {
-      if (settledShouldAdvance(result.status)) {
+    const segments = [
+      ...buildLocalizedSegments(
+        [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
+        current2.languageMode,
+        current2.englishVoiceLocale,
+      ),
+      ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, current2),
+    ];
+    void interactionMediaCoordinator.play({
+      intentId: `silly-alien:present:${sessionId}:${rk}`,
+      source: 'automatic',
+      scope,
+      audioClass: 'mandatory',
+      settings: current2,
+      units: createInteractionMediaUnits(scope, segments),
+    }).then((outcome) => {
+      if (mediaOutcomeAdvances(outcome)) {
         advance();
+      } else if (
+        outcome.status === 'errored'
+        && !cancelled
+        && generationIsCurrent(token)
+      ) {
+        dispatch({ type: 'mic-denied' });
       }
     });
-    // Backstop so a stalled/blocked voice never freezes the round.
-    const safety = window.setTimeout(advance, current2.reducedMotion ? 1600 : 4200);
     return () => {
       cancelled = true;
-      window.clearTimeout(safety);
+      interactionMediaCoordinator.notifyInteraction(scope, 'state-transition');
     };
-  }, [state.phase, roundKey]);
+  }, [state.phase, roundKey, sessionId]);
 
   // ── Listening: open mic after the model, generous window, pause when hidden ─
   useEffect(() => {
-    if (state.phase !== 'listening' || !pageVisible) {
+    if (state.phase !== 'listening' || !pageVisible || modelReplayActive) {
       return undefined;
     }
-    const { micStart, micStop } = dataRef.current;
+    const {
+      micStart,
+      micStop,
+      generationToken: token,
+      generationIsCurrent,
+    } = dataRef.current;
     let cancelled = false;
     let listenTimer = 0;
     let retryTimer = 0;
     const startListening = async (): Promise<void> => {
+      if (cancelled || !generationIsCurrent(token)) {
+        return;
+      }
       const outcome = await micStart();
-      if (cancelled) {
+      if (cancelled || !generationIsCurrent(token)) {
         micStop();
         return;
       }
       if (outcome.status === 'started') {
         listenTimer = window.setTimeout(() => {
+          if (cancelled || !generationIsCurrent(token)) {
+            return;
+          }
           micStop();
           dispatch({ type: 'listen-timeout' });
         }, SILLY_ALIEN_LISTEN_WINDOW_MS);
@@ -334,7 +441,11 @@ export function SillyAlienGame({
       }
       if (outcome.status !== 'background') {
         retryTimer = window.setTimeout(
-          () => void startListening(),
+          () => {
+            if (!cancelled && generationIsCurrent(token)) {
+              void startListening();
+            }
+          },
           DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS,
         );
       }
@@ -346,47 +457,64 @@ export function SillyAlienGame({
       window.clearTimeout(retryTimer);
       micStop();
     };
-  }, [state.phase, roundKey, pageVisible]);
+  }, [state.phase, roundKey, pageVisible, modelReplayActive]);
 
   // ── Nudge: supportive replay (never framed as failure), then listen again ───
   useEffect(() => {
     if (state.phase !== 'nudge') {
       return undefined;
     }
-    const { round: current, settings: current2, roundKey: rk, nudges, micStop } = dataRef.current;
+    const {
+      round: current,
+      settings: current2,
+      roundKey: rk,
+      nudges,
+      micStop,
+      mediaScope: scope,
+      generationToken: token,
+      generationIsCurrent,
+    } = dataRef.current;
     micStop();
     soundService.playRetry(current2);
     let cancelled = false;
     const advance = (): void => {
-      if (cancelled) {
+      if (cancelled || !generationIsCurrent(token)) {
         return;
       }
       cancelled = true;
       dispatch({ type: 'nudge-done' });
     };
-    const speech = speechService.speakSegments(
-      buildLocalizedSegments(
-        [
-          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 360 },
-          SILLY_ALIEN_RETRY,
-        ],
-        current2.languageMode,
-        current2.englishVoiceLocale,
-      ),
-      current2,
-      { scope: SPEECH_SCOPE, key: `nudge:${rk}:${nudges}`, priority: 'retry', staleAfterSuccess: true },
+    const segments = buildLocalizedSegments(
+      [
+        { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 360 },
+        SILLY_ALIEN_RETRY,
+      ],
+      current2.languageMode,
+      current2.englishVoiceLocale,
     );
-    void speech.then((result) => {
-      if (settledShouldAdvance(result.status)) {
+    void interactionMediaCoordinator.play({
+      intentId: `silly-alien:nudge:${sessionId}:${rk}:${nudges}`,
+      source: 'automatic',
+      scope,
+      audioClass: 'conditional',
+      settings: current2,
+      units: createInteractionMediaUnits(scope, segments),
+    }).then((outcome) => {
+      if (mediaOutcomeAdvances(outcome)) {
         advance();
+      } else if (
+        outcome.status === 'errored'
+        && !cancelled
+        && generationIsCurrent(token)
+      ) {
+        dispatch({ type: 'mic-denied' });
       }
     });
-    const safety = window.setTimeout(advance, current2.reducedMotion ? 1400 : 3400);
     return () => {
       cancelled = true;
-      window.clearTimeout(safety);
+      interactionMediaCoordinator.notifyInteraction(scope, 'state-transition');
     };
-  }, [state.phase, roundKey, state.nudges]);
+  }, [state.phase, roundKey, state.nudges, sessionId]);
 
   // ── Success: snap the syllable home, model the full word, then celebrate ────
   useEffect(() => {
@@ -524,7 +652,7 @@ export function SillyAlienGame({
       languageMode={settings.languageMode}
       accentClass={gameMeta.sillyAlien.accentClass}
       reducedMotion={settings.reducedMotion}
-      onHome={onBack}
+      onHome={handleBack}
       onRepeat={handleRepeat}
       repeatDisabled={settings.quietMode || !speechStatus.supported || isLocked || !mediaReady}
       repeatSpeaking={speechStatus.speaking}

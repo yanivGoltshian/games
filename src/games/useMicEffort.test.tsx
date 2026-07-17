@@ -2,7 +2,7 @@
 
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { useEffect } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MicrophonePlaybackGuard } from '../services/microphonePlaybackGuard';
 import {
@@ -37,10 +37,12 @@ function Harness({
 
 function deferred<Value>() {
   let resolve!: (value: Value) => void;
-  const promise = new Promise<Value>((resolvePromise) => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<Value>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
+    reject = rejectPromise;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 
 function streamWithTrack(stop = vi.fn()): MediaStream {
@@ -145,22 +147,73 @@ describe('useMicEffort hook', () => {
     vi.restoreAllMocks();
   });
 
-  async function render(options: MicEffortOptions = { playbackGuard: defaultGuard }) {
+  async function render(
+    options: MicEffortOptions = { playbackGuard: defaultGuard },
+    strictMode = false,
+  ) {
+    const harness = (
+      <Harness
+        onReady={(next) => {
+          controller = next;
+        }}
+        onSample={sampleSpy}
+        options={options}
+      />
+    );
     await act(async () => {
-      root.render(
-        <Harness
-          onReady={(next) => {
-            controller = next;
-          }}
-          onSample={sampleSpy}
-          options={options}
-        />,
-      );
+      root.render(strictMode ? <StrictMode>{harness}</StrictMode> : harness);
     });
   }
 
   async function rerender(options: MicEffortOptions) {
     await render(options);
+  }
+
+  function installDeferredAudioContexts(resumes: readonly ReturnType<typeof deferred<void>>[]) {
+    const contexts: Array<{
+      close: ReturnType<typeof vi.fn>;
+      resume: ReturnType<typeof vi.fn>;
+      sourceDisconnect: ReturnType<typeof vi.fn>;
+      analyserDisconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class DeferredAudioContext {
+      state: AudioContextState = 'suspended';
+      readonly close: ReturnType<typeof vi.fn>;
+      readonly resume: ReturnType<typeof vi.fn>;
+      readonly createMediaStreamSource: ReturnType<typeof vi.fn>;
+      readonly createAnalyser: ReturnType<typeof vi.fn>;
+
+      constructor() {
+        const resume = resumes[contexts.length];
+        if (!resume) {
+          throw new Error('Missing deferred resume control');
+        }
+        const controls = {
+          close: vi.fn().mockResolvedValue(undefined),
+          resume: vi.fn(() => resume.promise),
+          sourceDisconnect: vi.fn(),
+          analyserDisconnect: vi.fn(),
+        };
+        contexts.push(controls);
+        this.close = controls.close;
+        this.resume = controls.resume;
+        this.createMediaStreamSource = vi.fn(() => ({
+          connect: vi.fn(),
+          disconnect: controls.sourceDisconnect,
+        }));
+        this.createAnalyser = vi.fn(() => ({
+          fftSize: 1024,
+          smoothingTimeConstant: 0,
+          connect: vi.fn(),
+          disconnect: controls.analyserDisconnect,
+          getByteTimeDomainData: (array: Uint8Array) => array.fill(128),
+        }));
+      }
+    }
+
+    globalThis.AudioContext = DeferredAudioContext as unknown as typeof AudioContext;
+    return contexts;
   }
 
   it('opens the mic and emits only coarse binary effort', async () => {
@@ -218,6 +271,84 @@ describe('useMicEffort hook', () => {
     await expect(start).resolves.toEqual({ status: 'cancelled' });
     expect(lateStop).toHaveBeenCalledOnce();
     expect(contextConstructed).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['normally', false],
+    ['after StrictMode effect replay', true],
+  ])('keeps a newer acquisition alive when an older resume rejects %s', async (_label, strictMode) => {
+    const firstResume = deferred<void>();
+    const secondResume = deferred<void>();
+    const contexts = installDeferredAudioContexts([firstResume, secondResume]);
+    const firstTrackStop = vi.fn();
+    const secondTrackStop = vi.fn();
+    getUserMedia
+      .mockResolvedValueOnce(streamWithTrack(firstTrackStop))
+      .mockResolvedValueOnce(streamWithTrack(secondTrackStop));
+    await render({ playbackGuard: defaultGuard }, strictMode);
+
+    const firstStart = controller!.start();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(contexts).toHaveLength(1);
+
+    const secondStart = controller!.start();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(contexts).toHaveLength(2);
+    expect(contexts[0]!.close).toHaveBeenCalledOnce();
+    expect(firstTrackStop).toHaveBeenCalledOnce();
+
+    secondResume.resolve(undefined);
+    await expect(secondStart).resolves.toEqual({ status: 'started' });
+    firstResume.reject(new DOMException('stale resume', 'AbortError'));
+    await expect(firstStart).resolves.toEqual({ status: 'cancelled' });
+
+    expect(contexts[1]!.close).not.toHaveBeenCalled();
+    expect(contexts[1]!.sourceDisconnect).not.toHaveBeenCalled();
+    expect(contexts[1]!.analyserDisconnect).not.toHaveBeenCalled();
+    expect(secondTrackStop).not.toHaveBeenCalled();
+  });
+
+  it('cancellation releases only the acquisition whose identity still matches', async () => {
+    const firstResume = deferred<void>();
+    const secondResume = deferred<void>();
+    const contexts = installDeferredAudioContexts([firstResume, secondResume]);
+    const firstTrackStop = vi.fn();
+    const secondTrackStop = vi.fn();
+    getUserMedia
+      .mockResolvedValueOnce(streamWithTrack(firstTrackStop))
+      .mockResolvedValueOnce(streamWithTrack(secondTrackStop));
+    await render();
+
+    const firstStart = controller!.start();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const secondStart = controller!.start();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(contexts[0]!.close).toHaveBeenCalledOnce();
+    expect(firstTrackStop).toHaveBeenCalledOnce();
+    expect(contexts[1]!.close).not.toHaveBeenCalled();
+    expect(secondTrackStop).not.toHaveBeenCalled();
+
+    controller!.stop();
+    expect(contexts[0]!.close).toHaveBeenCalledOnce();
+    expect(firstTrackStop).toHaveBeenCalledOnce();
+    expect(contexts[1]!.close).toHaveBeenCalledOnce();
+    expect(secondTrackStop).toHaveBeenCalledOnce();
+
+    firstResume.reject(new DOMException('cancelled first', 'AbortError'));
+    secondResume.reject(new DOMException('cancelled second', 'AbortError'));
+    await expect(firstStart).resolves.toEqual({ status: 'cancelled' });
+    await expect(secondStart).resolves.toEqual({ status: 'cancelled' });
+    expect(contexts[0]!.close).toHaveBeenCalledOnce();
+    expect(contexts[1]!.close).toHaveBeenCalledOnce();
   });
 
   it('stops a late permission stream after unmount', async () => {

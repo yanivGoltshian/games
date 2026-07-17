@@ -57,6 +57,38 @@ export interface MicEffortController {
   supported: boolean;
 }
 
+interface MicAcquisition {
+  generation: number;
+  cancelled: boolean;
+  stream: MediaStream | null;
+  streamStopped: boolean;
+  context: AudioContext | null;
+  contextClosed: boolean;
+  source: MediaStreamAudioSourceNode | null;
+  sourceDisconnected: boolean;
+  analyser: AnalyserNode | null;
+  analyserDisconnected: boolean;
+  rafId: number | null;
+  lastSampleTime: number;
+}
+
+function createAcquisition(generation: number): MicAcquisition {
+  return {
+    generation,
+    cancelled: false,
+    stream: null,
+    streamStopped: false,
+    context: null,
+    contextClosed: false,
+    source: null,
+    sourceDisconnected: false,
+    analyser: null,
+    analyserDisconnected: false,
+    rafId: null,
+    lastSampleTime: 0,
+  };
+}
+
 function stopStream(stream: MediaStream): void {
   stream.getTracks().forEach((track) => track.stop());
 }
@@ -95,50 +127,54 @@ export function useMicEffort(
   optionsRef.current = options;
   const lifecycleRef = useRef<AppLifecycleState>(readAppLifecycleState());
   const acquisitionGenerationRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const pendingStreamRef = useRef<MediaStream | null>(null);
-  const contextRef = useRef<AudioContext | null>(null);
-  const pendingContextRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const lastTimeRef = useRef(0);
+  const pendingAcquisitionRef = useRef<MicAcquisition | null>(null);
+  const activeAcquisitionRef = useRef<MicAcquisition | null>(null);
   const playbackGuard = options.playbackGuard ?? communicationMicrophoneGuard;
   const subscribeLifecycle = options.subscribeLifecycle ?? subscribeAppLifecycle;
   const supported = microphoneSupported();
 
-  const teardown = useCallback((): void => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+  const releaseAcquisition = useCallback((acquisition: MicAcquisition): void => {
+    acquisition.cancelled = true;
+    if (pendingAcquisitionRef.current === acquisition) {
+      pendingAcquisitionRef.current = null;
     }
-    sourceRef.current?.disconnect();
-    sourceRef.current = null;
-    analyserRef.current?.disconnect();
-    analyserRef.current = null;
-
-    const activeStream = streamRef.current;
-    streamRef.current = null;
-    if (activeStream) {
-      stopStream(activeStream);
-    }
-    const pendingStream = pendingStreamRef.current;
-    pendingStreamRef.current = null;
-    if (pendingStream && pendingStream !== activeStream) {
-      stopStream(pendingStream);
+    if (activeAcquisitionRef.current === acquisition) {
+      activeAcquisitionRef.current = null;
     }
 
-    const activeContext = contextRef.current;
-    contextRef.current = null;
-    if (activeContext) {
-      closeContext(activeContext);
+    if (acquisition.rafId !== null) {
+      cancelAnimationFrame(acquisition.rafId);
+      acquisition.rafId = null;
     }
-    const pendingContext = pendingContextRef.current;
-    pendingContextRef.current = null;
-    if (pendingContext && pendingContext !== activeContext) {
-      closeContext(pendingContext);
+
+    if (acquisition.source && !acquisition.sourceDisconnected) {
+      acquisition.sourceDisconnected = true;
+      acquisition.source.disconnect();
+    }
+    if (acquisition.analyser && !acquisition.analyserDisconnected) {
+      acquisition.analyserDisconnected = true;
+      acquisition.analyser.disconnect();
+    }
+    if (acquisition.stream && !acquisition.streamStopped) {
+      acquisition.streamStopped = true;
+      stopStream(acquisition.stream);
+    }
+    if (acquisition.context && !acquisition.contextClosed) {
+      acquisition.contextClosed = true;
+      closeContext(acquisition.context);
     }
   }, []);
+
+  const teardown = useCallback((): void => {
+    const pending = pendingAcquisitionRef.current;
+    const active = activeAcquisitionRef.current;
+    if (pending) {
+      releaseAcquisition(pending);
+    }
+    if (active && active !== pending) {
+      releaseAcquisition(active);
+    }
+  }, [releaseAcquisition]);
 
   const stop = useCallback((): void => {
     acquisitionGenerationRef.current += 1;
@@ -181,59 +217,57 @@ export function useMicEffort(
       return initialBlock;
     }
 
-    let stream: MediaStream;
+    const acquisition = createAcquisition(generation);
+    pendingAcquisitionRef.current = acquisition;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      acquisition.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (error: unknown) {
+      releaseAcquisition(acquisition);
       return currentBlock(generation, generationGuard, guard) ?? classifyStartError(error);
     }
 
     const postPermissionBlock = currentBlock(generation, generationGuard, guard);
     if (postPermissionBlock) {
-      stopStream(stream);
+      releaseAcquisition(acquisition);
       return postPermissionBlock;
     }
-    pendingStreamRef.current = stream;
 
-    let context: AudioContext;
     try {
-      context = new Ctor();
-      pendingContextRef.current = context;
-      if (context.state === 'suspended') {
-        await context.resume();
+      acquisition.context = new Ctor();
+      if (acquisition.context.state === 'suspended') {
+        await acquisition.context.resume();
       }
 
       const postResumeBlock = currentBlock(generation, generationGuard, guard);
       if (postResumeBlock) {
-        if (pendingStreamRef.current === stream) {
-          pendingStreamRef.current = null;
-          stopStream(stream);
-        }
-        if (pendingContextRef.current === context) {
-          pendingContextRef.current = null;
-          closeContext(context);
-        }
+        releaseAcquisition(acquisition);
         return postResumeBlock;
       }
 
-      const source = context.createMediaStreamSource(stream);
-      const analyser = context.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.65;
-      source.connect(analyser);
+      if (acquisition.cancelled || pendingAcquisitionRef.current !== acquisition) {
+        releaseAcquisition(acquisition);
+        return { status: 'cancelled' };
+      }
 
-      pendingStreamRef.current = null;
-      pendingContextRef.current = null;
-      streamRef.current = stream;
-      contextRef.current = context;
-      sourceRef.current = source;
-      analyserRef.current = analyser;
+      acquisition.source = acquisition.context.createMediaStreamSource(acquisition.stream);
+      acquisition.analyser = acquisition.context.createAnalyser();
+      acquisition.analyser.fftSize = 1024;
+      acquisition.analyser.smoothingTimeConstant = 0.65;
+      acquisition.source.connect(acquisition.analyser);
 
-      const waveform = new Uint8Array(analyser.fftSize);
-      lastTimeRef.current = performance.now();
+      pendingAcquisitionRef.current = null;
+      activeAcquisitionRef.current = acquisition;
+
+      const waveform = new Uint8Array(acquisition.analyser.fftSize);
+      acquisition.lastSampleTime = performance.now();
       const loop = (): void => {
-        const node = analyserRef.current;
-        if (!node || generation !== acquisitionGenerationRef.current) {
+        const node = acquisition.analyser;
+        if (
+          !node
+          || acquisition.cancelled
+          || activeAcquisitionRef.current !== acquisition
+          || acquisition.generation !== acquisitionGenerationRef.current
+        ) {
           return;
         }
         node.getByteTimeDomainData(waveform);
@@ -245,26 +279,18 @@ export function useMicEffort(
         const rms = Math.sqrt(sumSquares / waveform.length);
         const level: MicEffortLevel = rms >= COARSE_EFFORT_RMS_THRESHOLD ? 1 : 0;
         const now = performance.now();
-        const deltaMs = now - lastTimeRef.current;
-        lastTimeRef.current = now;
+        const deltaMs = now - acquisition.lastSampleTime;
+        acquisition.lastSampleTime = now;
         onSampleRef.current(level, deltaMs);
-        rafRef.current = requestAnimationFrame(loop);
+        acquisition.rafId = requestAnimationFrame(loop);
       };
-      rafRef.current = requestAnimationFrame(loop);
+      acquisition.rafId = requestAnimationFrame(loop);
       return { status: 'started' };
     } catch (error: unknown) {
-      if (pendingStreamRef.current === stream) {
-        pendingStreamRef.current = null;
-        stopStream(stream);
-      }
-      const pendingContext = pendingContextRef.current;
-      pendingContextRef.current = null;
-      if (pendingContext) {
-        closeContext(pendingContext);
-      }
+      releaseAcquisition(acquisition);
       return currentBlock(generation, generationGuard, guard) ?? classifyStartError(error);
     }
-  }, [currentBlock, supported, teardown]);
+  }, [currentBlock, releaseAcquisition, supported, teardown]);
 
   useEffect(() => subscribeLifecycle((state) => {
     lifecycleRef.current = state;

@@ -1,5 +1,6 @@
 import {
   communicationScopeKey,
+  createCommunicationLocaleLock,
   localeLockMatches,
   type CommunicationGameScope,
   type CommunicationInputSource,
@@ -30,15 +31,32 @@ export type InteractionCancellationReason =
   | 'background'
   | 'activity-replacement';
 
-export interface InteractionMediaRequest {
+interface InteractionMediaRequestBase {
   intentId: string;
   source: CommunicationInputSource;
   scope: CommunicationGameScope;
-  localeLock: CommunicationLocaleLock;
   audioClass: InteractionAudioClass;
-  segments: readonly SpeechSegment[];
   settings: ToddlerSettings;
 }
+
+export interface InteractionMediaUnit {
+  scope: CommunicationGameScope;
+  localeLock: CommunicationLocaleLock;
+  segment: SpeechSegment;
+}
+
+export type InteractionMediaRequest = InteractionMediaRequestBase & (
+  | {
+    localeLock: CommunicationLocaleLock;
+    segments: readonly SpeechSegment[];
+    units?: never;
+  }
+  | {
+    localeLock?: never;
+    segments?: never;
+    units: readonly InteractionMediaUnit[];
+  }
+);
 
 export interface InteractionMediaOutcome {
   intentId: string;
@@ -58,6 +76,7 @@ export interface InteractionSpeechBackend {
 
 interface MediaEntry {
   request: InteractionMediaRequest;
+  segments: readonly SpeechSegment[];
   backendScope: string;
   started: boolean;
   playbackGuardActive: boolean;
@@ -86,6 +105,53 @@ function sameActivity(left: CommunicationGameScope, right: CommunicationGameScop
   return left.activityId === right.activityId && left.sessionId === right.sessionId;
 }
 
+function sameRound(left: CommunicationGameScope, right: CommunicationGameScope): boolean {
+  return (
+    sameActivity(left, right)
+    && left.roundId === right.roundId
+  );
+}
+
+export function createInteractionMediaUnits(
+  scope: CommunicationGameScope,
+  segments: readonly SpeechSegment[],
+): InteractionMediaUnit[] {
+  return segments.map((segment, index) => {
+    const unitScope = {
+      ...scope,
+      stepId: `${scope.stepId}:segment:${index + 1}`,
+    };
+    return {
+      scope: unitScope,
+      localeLock: createCommunicationLocaleLock(unitScope, segment.locale, 'step'),
+      segment,
+    };
+  });
+}
+
+function readRequestSegments(request: InteractionMediaRequest): {
+  segments: readonly SpeechSegment[];
+  valid: boolean;
+} {
+  if (request.units !== undefined) {
+    return {
+      segments: request.units.map((unit) => unit.segment),
+      valid: request.units.every((unit) => (
+        sameRound(request.scope, unit.scope)
+        && localeLockMatches(unit.localeLock, unit.scope, unit.segment.locale)
+      )),
+    };
+  }
+
+  return {
+    segments: request.segments,
+    valid: (
+      localeLockMatches(request.localeLock, request.scope, request.localeLock.locale)
+      && request.segments.every((segment) => segment.locale === request.localeLock.locale)
+    ),
+  };
+}
+
 export class InteractionMediaCoordinator {
   private active: MediaEntry | null = null;
   private pending: MediaEntry | null = null;
@@ -104,17 +170,15 @@ export class InteractionMediaCoordinator {
   }
 
   play(request: InteractionMediaRequest): Promise<InteractionMediaOutcome> {
-    if (
-      !localeLockMatches(request.localeLock, request.scope, request.localeLock.locale)
-      || request.segments.some((segment) => segment.locale !== request.localeLock.locale)
-    ) {
+    const content = readRequestSegments(request);
+    if (!content.valid) {
       return Promise.resolve({
         intentId: request.intentId,
         status: 'unavailable',
         reason: 'locale-mismatch',
       });
     }
-    if (request.segments.length === 0) {
+    if (content.segments.length === 0) {
       return Promise.resolve({
         intentId: request.intentId,
         status: 'unavailable',
@@ -125,6 +189,7 @@ export class InteractionMediaCoordinator {
     return new Promise((resolve) => {
       const entry: MediaEntry = {
         request,
+        segments: content.segments,
         backendScope: `communication:${communicationScopeKey(request.scope)}`,
         started: false,
         playbackGuardActive: false,
@@ -246,7 +311,7 @@ export class InteractionMediaCoordinator {
     };
 
     void this.speech.speakSegments(
-      [...entry.request.segments],
+      [...entry.segments],
       entry.request.settings,
       options,
     ).then(
