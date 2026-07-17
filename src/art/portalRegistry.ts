@@ -9,7 +9,6 @@ import {
   SillyAlienPortalArt,
   SortingPortalArt,
   SyllableTrainPortalArt,
-  WordStretchPortalArt,
 } from './portals';
 
 export const PORTAL_ART: Record<DomainKey, (props: ArtProps) => React.JSX.Element> = {
@@ -21,5 +20,4 @@ export const PORTAL_ART: Record<DomainKey, (props: ArtProps) => React.JSX.Elemen
   numberPairs: NumberPairsPortalArt,
   sillyAlien: SillyAlienPortalArt,
   syllableTrain: SyllableTrainPortalArt,
-  wordStretch: WordStretchPortalArt,
 };

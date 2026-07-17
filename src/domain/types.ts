@@ -1,4 +1,4 @@
-export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'syllableTrain', 'wordStretch'] as const;
+export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'syllableTrain'] as const;
 
 export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';
@@ -261,10 +261,5 @@ export interface SyllableTrainRound {
   restEn: string;
   promptHe: string;
   promptEn: string;
-  signature: string;
-}
-
-export interface WordStretchRound {
-  conceptId: string;
   signature: string;
 }

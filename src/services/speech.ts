@@ -9,7 +9,6 @@ import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import {
   recordedSpeechPlayer,
   type RecordedSpeechBackend,
-  type RecordedSpeechStretch,
 } from './recordedSpeech';
 
 export interface SpeechSegment {
@@ -18,7 +17,6 @@ export interface SpeechSegment {
   recordedText?: string | null;
   pauseAfterMs?: number;
   cue?: string;
-  stretch?: RecordedSpeechStretch;
 }
 
 export interface SpeechStatus {
@@ -816,7 +814,6 @@ export class SpeechService {
           this.activeCue = segment.cue ?? null;
           this.notify();
         },
-        ...(segment.stretch ? { stretch: segment.stretch } : {}),
       }).then(
         () => finish(request.cancelledAs ?? 'completed'),
         () => finish(request.cancelledAs ?? 'error'),

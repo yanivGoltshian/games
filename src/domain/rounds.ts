@@ -16,9 +16,6 @@ import {
   SYLLABLE_TRAIN_WORDS,
   requireSyllableTrainWord,
 } from '../content/syllableTrain';
-import {
-  wordStretchConceptIdsForLevel,
-} from '../content/wordStretch';
 import { buildPracticeWeights, createInitialConceptStat } from './progression';
 import { createSeededRandom, pickWeightedUnique } from './rng';
 import type {
@@ -34,7 +31,6 @@ import type {
   SortingRound,
   SortingRule,
   SyllableTrainRound,
-  WordStretchRound,
 } from './types';
 
 export const NUMBER_WORDS_HE = ['אפס', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר'];
@@ -466,12 +462,6 @@ export function getSyllableTrainRoundSignature(
   return round.conceptId;
 }
 
-export function getWordStretchRoundSignature(
-  round: Pick<WordStretchRound, 'conceptId'>,
-): string {
-  return round.conceptId;
-}
-
 function createSyllableTrainCandidate(
   domain: DomainProgress,
   seed: string | number,
@@ -517,31 +507,4 @@ export function generateSyllableTrainRound(
   }
 
   return fallback!;
-}
-
-function createWordStretchCandidate(
-  domain: DomainProgress,
-  seed: string | number,
-): WordStretchRound {
-  const random = createSeededRandom(seed);
-  const conceptIds = wordStretchConceptIdsForLevel(domain.level);
-  const weights = buildPracticeWeights(domain, conceptIds);
-  const conceptId = pickWeightedUnique(conceptIds, weights, 1, random)[0]!;
-  return { conceptId, signature: conceptId };
-}
-
-export function generateWordStretchRound(
-  domain: DomainProgress,
-  seed: string | number,
-  recentSignatures: readonly string[] = [],
-): WordStretchRound {
-  return createRepeatSafeRound({
-    seed,
-    scope: 'word-stretch',
-    recentSignatures,
-    create: (candidateSeed) => createWordStretchCandidate(domain, candidateSeed),
-    getSignature: getWordStretchRoundSignature,
-    getTokens: (round) => [round.conceptId],
-    getSignatureTokens: (signature) => [signature],
-  });
 }

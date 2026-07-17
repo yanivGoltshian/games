@@ -5,7 +5,7 @@ import { DOMAIN_KEYS } from './domain/types';
 import { parseHash } from './routes';
 
 describe('child navigation', () => {
-  it('exposes exactly nine stable activity destinations with art and metadata', () => {
+  it('exposes exactly eight stable activity destinations with art and metadata', () => {
     expect(DOMAIN_KEYS).toEqual([
       'listening',
       'counting',
@@ -15,7 +15,6 @@ describe('child navigation', () => {
       'numberPairs',
       'sillyAlien',
       'syllableTrain',
-      'wordStretch',
     ]);
     for (const domain of DOMAIN_KEYS) {
       expect(gameMeta[domain].title).toBeTruthy();
