@@ -1754,7 +1754,7 @@ select {
   100% { transform: scaleY(1) scaleX(1); }
 }
 
-
+@media (prefers-reduced-motion: reduce) {
   .memory-card__inner,
   .draggable-chip,
   .puzzle-piece,
