@@ -5,8 +5,8 @@ import { DOMAIN_KEYS } from './domain/types';
 import { parseHash } from './routes';
 
 describe('child navigation', () => {
-  it('exposes exactly seven stable activity destinations with art and metadata', () => {
-    expect(DOMAIN_KEYS).toEqual(['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien']);
+  it('exposes exactly eight stable activity destinations with art and metadata', () => {
+    expect(DOMAIN_KEYS).toEqual(['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'wordStretch']);
     for (const domain of DOMAIN_KEYS) {
       expect(gameMeta[domain].title).toBeTruthy();
       expect(PORTAL_ART[domain]).toBeTypeOf('function');
