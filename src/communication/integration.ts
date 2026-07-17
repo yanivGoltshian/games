@@ -36,8 +36,17 @@ export interface CommunicationIntegrationContract {
 
 export interface CommunicationPublicAvailability {
   available: boolean;
+  publicActivityIds: readonly CommunicationActivityId[];
   release: CommunicationReleaseEvaluation;
-  missingGameActivityIds: readonly CommunicationActivityId[];
+  activities: readonly CommunicationActivityPublicStatus[];
+}
+
+export interface CommunicationActivityPublicStatus {
+  activityId: CommunicationActivityId;
+  publiclyAvailable: boolean;
+  explicitlyEnabled: boolean;
+  componentRegistered: boolean;
+  contentReady: boolean;
 }
 
 export interface CommunicationCaregiverItem extends CommunicationCaregiverMetrics {
@@ -52,17 +61,32 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
 
 export function evaluateCommunicationPublicAvailability(
   integration: CommunicationIntegrationContract,
-  settings: Pick<ToddlerSettings, 'languageMode' | 'englishVoiceLocale'>,
 ): CommunicationPublicAvailability {
-  const release = evaluateCommunicationRelease(integration.release, settings);
-  const missingGameActivityIds = COMMUNICATION_SHELF_REGISTRY
-    .filter(({ activityId }) => integration.games[activityId]?.component === undefined)
-    .map(({ activityId }) => activityId);
+  const release = evaluateCommunicationRelease(integration.release);
+  const activities = COMMUNICATION_SHELF_REGISTRY.map(({ activityId }) => {
+    const releaseStatus = release.activities.find((activity) => (
+      activity.activityId === activityId
+    ));
+    const explicitlyEnabled = releaseStatus?.explicitlyEnabled ?? false;
+    const contentReady = releaseStatus?.status === 'ready';
+    const componentRegistered = integration.games[activityId]?.component !== undefined;
+    return {
+      activityId,
+      publiclyAvailable: explicitlyEnabled && contentReady && componentRegistered,
+      explicitlyEnabled,
+      componentRegistered,
+      contentReady,
+    };
+  });
+  const publicActivityIds = activities
+    .filter((activity) => activity.publiclyAvailable)
+    .map((activity) => activity.activityId);
 
   return {
-    available: release.enabledAndContentReady && missingGameActivityIds.length === 0,
+    available: publicActivityIds.length > 0,
+    publicActivityIds,
     release,
-    missingGameActivityIds,
+    activities,
   };
 }
 

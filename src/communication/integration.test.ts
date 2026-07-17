@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import {
+  COMMUNICATION_ACTIVITY_IDS,
+  type CommunicationActivityId,
+} from '../domain/communicationGame';
 import { createInitialProgress } from '../domain/progression';
 import type { SpeechLocale } from '../domain/types';
 import type { CommunicationAssetReadiness } from '../services/communicationAssetReadiness';
@@ -9,6 +13,8 @@ import {
 } from './integration';
 import {
   evaluateCommunicationRelease,
+  REQUIRED_COMMUNICATION_RELEASE_LOCALES,
+  type CommunicationActivityEnablement,
   type CommunicationReleaseConfiguration,
   type CommunicationReleaseReadiness,
 } from './release';
@@ -19,69 +25,118 @@ function ready(locale: SpeechLocale): CommunicationAssetReadiness {
   return { status: 'ready', contentVersion: 'pack-1', locale };
 }
 
-const activityIds = ['peek', 'train', 'phone', 'story'] as const;
+function enablement(
+  enabledActivityIds: readonly CommunicationActivityId[],
+): CommunicationActivityEnablement {
+  return Object.fromEntries(
+    COMMUNICATION_ACTIVITY_IDS.map((activityId) => [
+      activityId,
+      enabledActivityIds.includes(activityId),
+    ]),
+  ) as CommunicationActivityEnablement;
+}
 
-function readyRelease(): CommunicationReleaseConfiguration {
+function readyRelease(
+  enabledActivityIds: readonly CommunicationActivityId[],
+  readinessPatch: Partial<CommunicationReleaseReadiness> = {},
+): CommunicationReleaseConfiguration {
+  const readyForRelease = Object.fromEntries(
+    REQUIRED_COMMUNICATION_RELEASE_LOCALES.map((locale) => [locale, ready(locale)]),
+  );
   return {
-    explicitlyEnabled: true,
-    readiness: Object.fromEntries(
-      activityIds.map((activityId) => [activityId, { 'he-IL': ready('he-IL') }]),
-    ) as CommunicationReleaseReadiness,
+    explicitlyEnabled: enablement(enabledActivityIds),
+    readiness: {
+      ...Object.fromEntries(
+        COMMUNICATION_ACTIVITY_IDS.map((activityId) => [activityId, readyForRelease]),
+      ) as CommunicationReleaseReadiness,
+      ...readinessPatch,
+    },
   };
 }
 
-describe('communication integration caregiver surface', () => {
+function integration(
+  enabledActivityIds: readonly CommunicationActivityId[],
+  registeredActivityIds: readonly CommunicationActivityId[],
+  readinessPatch: Partial<CommunicationReleaseReadiness> = {},
+): CommunicationIntegrationContract {
+  return {
+    release: readyRelease(enabledActivityIds, readinessPatch),
+    games: Object.fromEntries(
+      registeredActivityIds.map((activityId) => [activityId, { component: EmptyGame }]),
+    ) as CommunicationIntegrationContract['games'],
+  };
+}
+
+describe('communication integration selectors', () => {
   it.each([
-    [0, ['peek', 'train', 'phone', 'story']],
-    [1, ['train', 'phone', 'story']],
-    [3, ['story']],
-    [4, []],
+    [['story'], ['story']],
+    [['phone', 'peek'], ['peek', 'phone']],
+    [COMMUNICATION_ACTIVITY_IDS, COMMUNICATION_ACTIVITY_IDS],
   ] as const)(
-    'requires all four registered components for public availability with %i registrations',
-    (registrationCount, missingGameActivityIds) => {
-      const release = readyRelease();
-      const games = Object.fromEntries(
-        activityIds.slice(0, registrationCount).map((activityId) => [
-          activityId,
-          { component: EmptyGame },
-        ]),
-      ) as CommunicationIntegrationContract['games'];
-      const progress = createInitialProgress(false, 1);
+    'publishes enabled, registered, ready activities in fixed registry order',
+    (enabledActivityIds, expectedPublicActivityIds) => {
       const result = evaluateCommunicationPublicAvailability(
-        { release, games },
-        progress.settings,
+        integration(enabledActivityIds, COMMUNICATION_ACTIVITY_IDS),
       );
 
-      expect(result.available).toBe(registrationCount === 4);
-      expect(result.release.enabledAndContentReady).toBe(true);
-      expect(result.missingGameActivityIds).toEqual(missingGameActivityIds);
+      expect(result.available).toBe(true);
+      expect(result.publicActivityIds).toEqual(expectedPublicActivityIds);
     },
   );
 
-  it('returns only fixed-order caregiver-safe readiness and permitted metrics', () => {
-    const readiness = {
-      peek: { 'he-IL': ready('he-IL') },
-      train: { 'he-IL': ready('he-IL') },
-      phone: { 'he-IL': ready('he-IL') },
-      story: { 'he-IL': ready('he-IL') },
-    } satisfies CommunicationReleaseReadiness;
-    const integration: CommunicationIntegrationContract = {
-      release: { explicitlyEnabled: true, readiness },
-      games: {
+  it('keeps ready and registered activities private when their own flags are false', () => {
+    const result = evaluateCommunicationPublicAvailability(
+      integration([], COMMUNICATION_ACTIVITY_IDS),
+    );
+
+    expect(result.available).toBe(false);
+    expect(result.publicActivityIds).toEqual([]);
+    expect(result.activities.every((activity) => !activity.publiclyAvailable)).toBe(true);
+  });
+
+  it('fails only the affected activity closed for a missing component', () => {
+    const result = evaluateCommunicationPublicAvailability(
+      integration(['peek', 'phone'], ['peek']),
+    );
+
+    expect(result.available).toBe(true);
+    expect(result.publicActivityIds).toEqual(['peek']);
+    expect(result.activities.find(({ activityId }) => activityId === 'phone')).toMatchObject({
+      publiclyAvailable: false,
+      explicitlyEnabled: true,
+      componentRegistered: false,
+      contentReady: true,
+    });
+  });
+
+  it('fails only the affected activity closed for any missing exact locale pack', () => {
+    const result = evaluateCommunicationPublicAvailability(
+      integration(['peek', 'phone'], ['peek', 'phone'], {
         phone: {
-          component: EmptyGame,
-          selectCaregiverMetrics: () => ({
-            lastPlayedAt: 123,
-            sessionsCompleted: 4,
-          }),
+          'he-IL': ready('he-IL'),
+          'en-US': ready('en-US'),
         },
-      },
-    };
+      }),
+    );
+
+    expect(result.publicActivityIds).toEqual(['peek']);
+    expect(result.activities.find(({ activityId }) => activityId === 'phone')).toMatchObject({
+      publiclyAvailable: false,
+      contentReady: false,
+    });
+  });
+
+  it('returns only fixed-order caregiver-safe readiness and permitted metrics', () => {
+    const contract = integration(['phone'], ['phone']);
+    contract.games.phone!.selectCaregiverMetrics = () => ({
+      lastPlayedAt: 123,
+      sessionsCompleted: 4,
+    });
     const progress = createInitialProgress(false, 1);
     const items = buildCommunicationCaregiverItems(
-      integration,
+      contract,
       progress,
-      evaluateCommunicationRelease(integration.release, progress.settings),
+      evaluateCommunicationRelease(contract.release),
     );
 
     expect(items.map((item) => item.activityId)).toEqual(['peek', 'train', 'phone', 'story']);

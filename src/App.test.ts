@@ -54,13 +54,13 @@ describe('child navigation', () => {
     const shelf = parseHash('#/communication');
     const game = parseHash('#/communication/word-train');
 
-    expect(resolveRouteForCommunicationAvailability(shelf, false)).toEqual({
+    expect(resolveRouteForCommunicationAvailability(shelf, [])).toEqual({
       kind: 'home',
     });
-    expect(resolveRouteForCommunicationAvailability(game, false)).toEqual({
+    expect(resolveRouteForCommunicationAvailability(game, ['peek'])).toEqual({
       kind: 'home',
     });
-    expect(resolveRouteForCommunicationAvailability(game, true)).toEqual(game);
+    expect(resolveRouteForCommunicationAvailability(game, ['train'])).toEqual(game);
   });
 
   it('recognizes complete communication hash identities for fail-closed normalization', () => {

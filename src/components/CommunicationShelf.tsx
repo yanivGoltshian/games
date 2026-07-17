@@ -12,6 +12,7 @@ import type { LanguageMode } from '../domain/types';
 import { COMMUNICATION_SHELF_REGISTRY } from '../communication/registry';
 
 interface CommunicationShelfProps {
+  activityIds: readonly CommunicationActivityId[];
   languageMode: LanguageMode;
   reducedMotion: boolean;
   onHome: () => void;
@@ -24,12 +25,16 @@ interface PointerOwner {
 }
 
 export function CommunicationShelf({
+  activityIds,
   languageMode,
   reducedMotion,
   onHome,
   onSelect,
 }: CommunicationShelfProps) {
   const english = languageMode === 'en';
+  const entries = COMMUNICATION_SHELF_REGISTRY.filter((entry) => (
+    activityIds.includes(entry.activityId)
+  ));
   const pointerOwner = useRef<PointerOwner | null>(null);
   const selectionCommitted = useRef(false);
   const [pressedActivity, setPressedActivity] = useState<CommunicationActivityId | null>(null);
@@ -114,8 +119,8 @@ export function CommunicationShelf({
         <PuppyMascotArt className="communication-shelf__mascot" />
       </header>
 
-      <ul className="communication-shelf__doors">
-        {COMMUNICATION_SHELF_REGISTRY.map((entry) => {
+      <ul className="communication-shelf__doors" data-door-count={entries.length}>
+        {entries.map((entry) => {
           const title = english ? entry.title.en : entry.title.he;
           const pressed = pressedActivity === entry.activityId;
           return (

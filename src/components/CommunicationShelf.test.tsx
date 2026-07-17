@@ -6,6 +6,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CommunicationShelf } from './CommunicationShelf';
 
+const allActivityIds = ['peek', 'train', 'phone', 'story'] as const;
+
 function pointerEvent(type: string, pointerId: number): Event {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'pointerId', { value: pointerId });
@@ -42,6 +44,7 @@ describe('CommunicationShelf', () => {
     await act(async () => {
       root.render(
         <CommunicationShelf
+          activityIds={allActivityIds}
           languageMode="en"
           onHome={() => undefined}
           onSelect={() => undefined}
@@ -71,11 +74,46 @@ describe('CommunicationShelf', () => {
     expect(container.textContent).not.toMatch(/locked|coming soon|score|stars/i);
   });
 
+  it('renders only public doors in fixed order and centers a one-door shelf', async () => {
+    await act(async () => {
+      root.render(
+        <CommunicationShelf
+          activityIds={['story']}
+          languageMode="en"
+          onHome={() => undefined}
+          onSelect={() => undefined}
+          reducedMotion={false}
+        />,
+      );
+    });
+
+    const doors = [...container.querySelectorAll<HTMLButtonElement>('.communication-door')];
+    expect(doors.map((door) => door.dataset.activityId)).toEqual(['story']);
+    expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
+      .toBe('1');
+    expect(container.textContent).not.toMatch(/locked|coming soon/i);
+
+    await act(async () => {
+      root.render(
+        <CommunicationShelf
+          activityIds={['phone', 'peek']}
+          languageMode="en"
+          onHome={() => undefined}
+          onSelect={() => undefined}
+          reducedMotion={false}
+        />,
+      );
+    });
+    expect([...container.querySelectorAll<HTMLElement>('.communication-door')]
+      .map((door) => door.dataset.activityId)).toEqual(['peek', 'phone']);
+  });
+
   it('emits one semantic selection under ten rapid activations', async () => {
     const onSelect = vi.fn();
     await act(async () => {
       root.render(
         <CommunicationShelf
+          activityIds={allActivityIds}
           languageMode="he"
           onHome={() => undefined}
           onSelect={onSelect}
@@ -100,6 +138,7 @@ describe('CommunicationShelf', () => {
     await act(async () => {
       root.render(
         <CommunicationShelf
+          activityIds={allActivityIds}
           languageMode="he"
           onHome={() => undefined}
           onSelect={onSelect}
@@ -127,6 +166,7 @@ describe('CommunicationShelf', () => {
     await act(async () => {
       root.render(
         <CommunicationShelf
+          activityIds={allActivityIds}
           languageMode="en"
           onHome={onHome}
           onSelect={onSelect}
@@ -154,6 +194,7 @@ describe('CommunicationShelf', () => {
   it('supports RTL, English layout, keyboard activation, and reduced motion state', async () => {
     const hebrew = renderToStaticMarkup(
       <CommunicationShelf
+        activityIds={allActivityIds}
         languageMode="he"
         onHome={() => undefined}
         onSelect={() => undefined}
@@ -162,6 +203,7 @@ describe('CommunicationShelf', () => {
     );
     const english = renderToStaticMarkup(
       <CommunicationShelf
+        activityIds={allActivityIds}
         languageMode="en"
         onHome={() => undefined}
         onSelect={() => undefined}
@@ -178,6 +220,7 @@ describe('CommunicationShelf', () => {
     await act(async () => {
       root.render(
         <CommunicationShelf
+          activityIds={allActivityIds}
           languageMode="en"
           onHome={() => undefined}
           onSelect={onSelect}

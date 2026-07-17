@@ -37,13 +37,13 @@ export function parseHash(hash: string): Route {
 
 export function resolveRouteForCommunicationAvailability(
   route: Route,
-  communicationAvailable: boolean,
+  publicActivityIds: readonly CommunicationActivityId[],
 ): Route {
   if (route.kind === 'communication-shelf') {
-    return communicationAvailable ? route : { kind: 'home' };
+    return publicActivityIds.length > 0 ? route : { kind: 'home' };
   }
   if (route.kind === 'communication-game') {
-    return communicationAvailable
+    return publicActivityIds.includes(route.activityId)
       ? route
       : { kind: 'home' };
   }

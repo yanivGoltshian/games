@@ -460,6 +460,21 @@ option {
   gap: clamp(var(--space-5), 3vw, var(--space-7));
 }
 
+.communication-shelf__doors[data-door-count='1'] {
+  width: min(100%, 300px);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.communication-shelf__doors[data-door-count='2'] {
+  width: min(100%, 620px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.communication-shelf__doors[data-door-count='3'] {
+  width: min(100%, 930px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .communication-shelf__door-slot {
   min-width: 0;
   min-height: 0;
@@ -595,6 +610,15 @@ option {
     gap: var(--space-5);
   }
 
+  .communication-shelf__doors[data-door-count='1'] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .communication-shelf__doors[data-door-count='2'] {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
   .communication-door {
     padding-block: var(--space-3);
   }
@@ -623,6 +647,18 @@ option {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: minmax(0, 1fr);
     gap: var(--space-5);
+  }
+
+  .communication-shelf__doors[data-door-count='1'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .communication-shelf__doors[data-door-count='2'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .communication-shelf__doors[data-door-count='3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .communication-door__art {

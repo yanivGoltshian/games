@@ -60,15 +60,15 @@ export default function App({
   const [speechStatus, setSpeechStatus] = useState(() => speechService.getStatus());
   const requestedRoute = useMemo(() => parseHash(requestedHash), [requestedHash]);
   const communicationAvailability = useMemo(
-    () => evaluateCommunicationPublicAvailability(communication, progress.settings),
-    [communication, progress.settings],
+    () => evaluateCommunicationPublicAvailability(communication),
+    [communication],
   );
   const route = useMemo(
     () => resolveRouteForCommunicationAvailability(
       requestedRoute,
-      communicationAvailability.available,
+      communicationAvailability.publicActivityIds,
     ),
-    [communicationAvailability.available, requestedRoute],
+    [communicationAvailability.publicActivityIds, requestedRoute],
   );
   const communicationCaregiverItems = useMemo(
     () => buildCommunicationCaregiverItems(
@@ -209,6 +209,7 @@ export default function App({
   } else if (route.kind === 'communication-shelf') {
     content = (
       <CommunicationShelf
+        activityIds={communicationAvailability.publicActivityIds}
         languageMode={progress.settings.languageMode}
         onHome={() => navigate('/')}
         onSelect={(activityId) => navigate(communicationShelfEntry(activityId).path)}

@@ -8,44 +8,62 @@ import type {
   CommunicationGameHostProps,
   CommunicationIntegrationContract,
 } from './communication/integration';
-import type { CommunicationReleaseReadiness } from './communication/release';
+import type { CommunicationActivityId } from './domain/communicationGame';
+import type { SpeechLocale } from './domain/types';
+import type { CommunicationAssetReadiness } from './services/communicationAssetReadiness';
+import type {
+  CommunicationActivityEnablement,
+  CommunicationReleaseReadiness,
+} from './communication/release';
 import { speechService } from './services/speech';
 
 const activityIds = ['peek', 'train', 'phone', 'story'] as const;
+const requiredLocales = ['he-IL', 'en-US', 'en-GB'] as const;
 
 function RegisteredGame({ activityId }: CommunicationGameHostProps) {
   return <main data-mounted-communication-game={activityId} />;
 }
 
-interface ReadyIntegrationOptions {
-  readinessPatch?: Partial<CommunicationReleaseReadiness>;
-  registeredCount?: number;
+function ready(locale: SpeechLocale): CommunicationAssetReadiness {
+  return {
+    status: 'ready',
+    contentVersion: `pack-${locale}`,
+    locale,
+  };
 }
 
-function readyIntegration(
-  {
-    readinessPatch = {},
-    registeredCount = activityIds.length,
-  }: ReadyIntegrationOptions = {},
-): CommunicationIntegrationContract {
-  const ready = {
-    status: 'ready' as const,
-    contentVersion: 'pack-1',
-    locale: 'he-IL' as const,
-  };
+interface ReadyIntegrationOptions {
+  enabledActivityIds?: readonly CommunicationActivityId[];
+  registeredActivityIds?: readonly CommunicationActivityId[];
+  readinessPatch?: Partial<CommunicationReleaseReadiness>;
+}
+
+function readyIntegration({
+  enabledActivityIds = activityIds,
+  registeredActivityIds = activityIds,
+  readinessPatch = {},
+}: ReadyIntegrationOptions = {}): CommunicationIntegrationContract {
+  const explicitlyEnabled = Object.fromEntries(
+    activityIds.map((activityId) => [
+      activityId,
+      enabledActivityIds.includes(activityId),
+    ]),
+  ) as CommunicationActivityEnablement;
+  const completeReadiness = Object.fromEntries(
+    requiredLocales.map((locale) => [locale, ready(locale)]),
+  );
   return {
     release: {
-      explicitlyEnabled: true,
+      explicitlyEnabled,
       readiness: {
-        peek: { 'he-IL': ready },
-        train: { 'he-IL': ready },
-        phone: { 'he-IL': ready },
-        story: { 'he-IL': ready },
+        ...Object.fromEntries(
+          activityIds.map((activityId) => [activityId, completeReadiness]),
+        ) as CommunicationReleaseReadiness,
         ...readinessPatch,
       },
     },
     games: Object.fromEntries(
-      activityIds.slice(0, registeredCount).map((activityId) => [
+      registeredActivityIds.map((activityId) => [
         activityId,
         { component: RegisteredGame },
       ]),
@@ -53,7 +71,17 @@ function readyIntegration(
   };
 }
 
-describe('App communication release routing', () => {
+function homeDomains(container: HTMLElement): (string | undefined)[] {
+  return [...container.querySelectorAll<HTMLElement>('.portal-grid__item')]
+    .map((item) => item.dataset.domain);
+}
+
+function shelfDoorIds(container: HTMLElement): (string | undefined)[] {
+  return [...container.querySelectorAll<HTMLElement>('.communication-door')]
+    .map((door) => door.dataset.activityId);
+}
+
+describe('App progressive communication release routing', () => {
   let container: HTMLDivElement;
   let root: Root | null;
   let getUserMedia: ReturnType<typeof vi.fn>;
@@ -125,9 +153,7 @@ describe('App communication release routing', () => {
   it('keeps the production home at the current exact eight tiles by default', async () => {
     await act(async () => root?.render(<App />));
 
-    const domains = [...container.querySelectorAll<HTMLElement>('.portal-grid__item')]
-      .map((item) => item.dataset.domain);
-    expect(domains).toEqual([
+    expect(homeDomains(container)).toEqual([
       'listening',
       'counting',
       'sorting',
@@ -139,122 +165,161 @@ describe('App communication release routing', () => {
     ]);
   });
 
-  it('replaces Train with one shelf tile only when enabled and fully ready', async () => {
-    await act(async () => root?.render(<App communication={readyIntegration()} />));
+  it('replaces Train while keeping exactly eight tiles when one activity becomes public', async () => {
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: ['peek'] })} />,
+    ));
 
-    const domains = [...container.querySelectorAll<HTMLElement>('.portal-grid__item')]
-      .map((item) => item.dataset.domain);
+    const domains = homeDomains(container);
     expect(domains).toHaveLength(8);
     expect(domains.at(-1)).toBe('communication');
     expect(domains).not.toContain('syllableTrain');
   });
 
-  it.each([0, 1, 3])(
-    'keeps the current eight home tiles when only %i communication games are registered',
-    async (registeredCount) => {
-      await act(async () => root?.render(
-        <App communication={readyIntegration({ registeredCount })} />,
-      ));
+  it('keeps Train when all activities are ready and registered but every flag is false', async () => {
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: [] })} />,
+    ));
 
-      const domains = [...container.querySelectorAll<HTMLElement>('.portal-grid__item')]
-        .map((item) => item.dataset.domain);
-      expect(domains).toHaveLength(8);
-      expect(domains.at(-1)).toBe('syllableTrain');
-      expect(domains).not.toContain('communication');
-    },
-  );
+    const domains = homeDomains(container);
+    expect(domains).toHaveLength(8);
+    expect(domains.at(-1)).toBe('syllableTrain');
+    expect(domains).not.toContain('communication');
+  });
 
-  it('shows all four doors together on the enabled shelf route', async () => {
+  it('renders only the one public activity on a progressive shelf', async () => {
+    window.history.replaceState(null, '', '#/communication');
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: ['story'] })} />,
+    ));
+
+    expect(shelfDoorIds(container)).toEqual(['story']);
+    expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
+      .toBe('1');
+  });
+
+  it('adds later public activities without changing App or route wiring', async () => {
+    window.history.replaceState(null, '', '#/communication');
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: ['phone'] })} />,
+    ));
+    expect(shelfDoorIds(container)).toEqual(['phone']);
+
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: ['phone', 'peek'] })} />,
+    ));
+    expect(shelfDoorIds(container)).toEqual(['peek', 'phone']);
+  });
+
+  it('renders all four public doors in fixed registry order', async () => {
     window.history.replaceState(null, '', '#/communication');
     await act(async () => root?.render(<App communication={readyIntegration()} />));
 
-    expect([...container.querySelectorAll<HTMLElement>('.communication-door')]
-      .map((door) => door.dataset.activityId)).toEqual([
-      'peek',
-      'train',
-      'phone',
-      'story',
-    ]);
+    expect(shelfDoorIds(container)).toEqual(['peek', 'train', 'phone', 'story']);
   });
 
-  it('redirects disabled and not-ready direct routes without media or permission side effects', async () => {
+  it('redirects a shelf with no public activities without media or permission side effects', async () => {
     window.history.replaceState(null, '', '#/communication');
     const cancelAll = vi.spyOn(speechService, 'cancelAll');
     const unlock = vi.spyOn(speechService, 'unlock');
-    const notReady = readyIntegration({ readinessPatch: { story: {} } });
+    const unavailable = readyIntegration({
+      enabledActivityIds: ['story'],
+      readinessPatch: {
+        story: {
+          'he-IL': ready('he-IL'),
+          'en-US': ready('en-US'),
+        },
+      },
+    });
 
-    await act(async () => root?.render(<App communication={notReady} />));
+    await act(async () => root?.render(<App communication={unavailable} />));
 
     expect(window.location.hash).toBe('#/');
-    expect(container.querySelectorAll('.portal-grid__item')).toHaveLength(8);
+    expect(homeDomains(container)).toHaveLength(8);
     expect(container.querySelector('[data-domain="communication"]')).toBeNull();
     expect(cancelAll).not.toHaveBeenCalled();
     expect(unlock).not.toHaveBeenCalled();
     expect(getUserMedia).not.toHaveBeenCalled();
   });
 
-  it('keeps Train visible when an explicitly disabled direct activity route fails closed', async () => {
-    window.history.replaceState(null, '', '#/communication/peek-and-discover');
-    const cancelAll = vi.spyOn(speechService, 'cancelAll');
-    const unlock = vi.spyOn(speechService, 'unlock');
-
-    await act(async () => root?.render(<App />));
-
-    expect(window.location.hash).toBe('#/');
-    expect(container.querySelector('[data-domain="syllableTrain"]')).not.toBeNull();
-    expect(container.querySelector('[data-domain="communication"]')).toBeNull();
-    expect(cancelAll).not.toHaveBeenCalled();
-    expect(unlock).not.toHaveBeenCalled();
-    expect(getUserMedia).not.toHaveBeenCalled();
-  });
-
-  it('blocks the entire release and direct activity routes when any registration is missing', async () => {
-    window.history.replaceState(null, '', '#/communication/toy-phone');
+  it('fails a disabled activity route closed while another public activity keeps the shelf available', async () => {
+    window.history.replaceState(null, '', '#/communication/story-that-waits');
     await act(async () => root?.render(
-      <App communication={readyIntegration({ registeredCount: 3 })} />,
+      <App communication={readyIntegration({ enabledActivityIds: ['peek'] })} />,
     ));
 
     expect(window.location.hash).toBe('#/');
-    expect(container.querySelectorAll('.portal-grid__item')).toHaveLength(8);
-    expect(container.querySelector('[data-domain="syllableTrain"]')).not.toBeNull();
-    expect(container.querySelector('[data-domain="communication"]')).toBeNull();
-    expect(container.querySelector('.communication-door')).toBeNull();
+    expect(container.querySelector('[data-domain="communication"]')).not.toBeNull();
     expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
   });
 
-  it('opens a direct activity route only with all four registrations', async () => {
+  it('fails an unregistered activity route closed without hiding other public activities', async () => {
     window.history.replaceState(null, '', '#/communication/toy-phone');
-    await act(async () => root?.render(<App communication={readyIntegration()} />));
+    await act(async () => root?.render(
+      <App communication={readyIntegration({
+        enabledActivityIds: ['peek', 'phone'],
+        registeredActivityIds: ['peek'],
+      })} />,
+    ));
+
+    expect(window.location.hash).toBe('#/');
+    expect(container.querySelector('[data-domain="communication"]')).not.toBeNull();
+    expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
+  });
+
+  it('fails an activity missing one exact locale closed without hiding other public activities', async () => {
+    window.history.replaceState(null, '', '#/communication/toy-phone');
+    await act(async () => root?.render(
+      <App communication={readyIntegration({
+        enabledActivityIds: ['peek', 'phone'],
+        readinessPatch: {
+          phone: {
+            'he-IL': ready('he-IL'),
+            'en-US': ready('en-US'),
+          },
+        },
+      })} />,
+    ));
+
+    expect(window.location.hash).toBe('#/');
+    expect(container.querySelector('[data-domain="communication"]')).not.toBeNull();
+    expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
+  });
+
+  it('opens a direct activity route when that activity alone is public', async () => {
+    window.history.replaceState(null, '', '#/communication/toy-phone');
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: ['phone'] })} />,
+    ));
 
     expect(window.location.hash).toBe('#/communication/toy-phone');
     expect(container.querySelector('[data-mounted-communication-game="phone"]')).not.toBeNull();
   });
 
-  it('does not resurrect a normalized deep link after availability changes', async () => {
+  it('does not resurrect a normalized activity deep link after that activity becomes public', async () => {
     window.history.replaceState(null, '', '#/communication/story-that-waits');
     await act(async () => root?.render(
-      <App communication={readyIntegration({ registeredCount: 3 })} />,
+      <App communication={readyIntegration({ enabledActivityIds: ['peek'] })} />,
+    ));
+    expect(window.location.hash).toBe('#/');
+
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: ['peek', 'story'] })} />,
     ));
 
     expect(window.location.hash).toBe('#/');
-    expect(container.querySelector('[data-domain="syllableTrain"]')).not.toBeNull();
-
-    await act(async () => root?.render(<App communication={readyIntegration()} />));
-
-    expect(window.location.hash).toBe('#/');
     expect(container.querySelector('[data-domain="communication"]')).not.toBeNull();
-    expect(container.querySelector('.communication-door')).toBeNull();
     expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
   });
 
-  it('normalizes consecutive malformed and blocked communication hashes', async () => {
+  it('normalizes consecutive malformed and unavailable communication hashes', async () => {
     await act(async () => root?.render(
-      <App communication={readyIntegration({ registeredCount: 3 })} />,
+      <App communication={readyIntegration({ enabledActivityIds: ['peek'] })} />,
     ));
 
     for (const hash of [
       '#/communication/unknown-one',
-      '#/communication/peek-and-discover',
+      '#/communication/story-that-waits',
       '#/communication/toy-phone?mode=child',
     ]) {
       await act(async () => {
@@ -262,16 +327,15 @@ describe('App communication release routing', () => {
         window.dispatchEvent(new Event('hashchange'));
       });
       expect(window.location.hash).toBe('#/');
-      expect(container.querySelector('[data-domain="syllableTrain"]')).not.toBeNull();
+      expect(container.querySelector('[data-domain="communication"]')).not.toBeNull();
     }
   });
 
-  it('allows valid user navigation after a blocked route was normalized', async () => {
-    window.history.replaceState(null, '', '#/communication/peek-and-discover');
+  it('allows valid shelf navigation after an unavailable route was normalized', async () => {
+    window.history.replaceState(null, '', '#/communication/story-that-waits');
     await act(async () => root?.render(
-      <App communication={readyIntegration({ registeredCount: 3 })} />,
+      <App communication={readyIntegration({ enabledActivityIds: ['peek'] })} />,
     ));
-    await act(async () => root?.render(<App communication={readyIntegration()} />));
 
     const shelfPortal = container.querySelector<HTMLButtonElement>(
       '[data-domain="communication"] .portal-card',
@@ -282,6 +346,6 @@ describe('App communication release routing', () => {
     });
 
     expect(window.location.hash).toBe('#/communication');
-    expect(container.querySelectorAll('.communication-door')).toHaveLength(4);
+    expect(shelfDoorIds(container)).toEqual(['peek']);
   });
 });
