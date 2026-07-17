@@ -191,7 +191,9 @@ describe('communication integration selectors', () => {
 
   it('fails an activity closed instead of throwing when its readiness map is omitted', () => {
     const release = readyRelease(['peek', 'phone']);
-    const { phone: _omittedPhoneReadiness, ...readiness } = release.readiness;
+    const readiness = Object.fromEntries(
+      Object.entries(release.readiness).filter(([activityId]) => activityId !== 'phone'),
+    ) as Partial<CommunicationReleaseReadiness>;
     const result = evaluateCommunicationPublicAvailability({
       release: {
         ...release,
