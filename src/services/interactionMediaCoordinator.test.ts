@@ -221,6 +221,32 @@ describe('interaction media coordinator', () => {
     coordinator.dispose();
   });
 
+  it('cancels deferred mandatory speech on background before onStart', async () => {
+    let emitLifecycle: (state: 'foreground' | 'background') => void = () => undefined;
+    const subscribe = (listener: (state: 'foreground' | 'background') => void) => {
+      emitLifecycle = listener;
+      return () => {
+        emitLifecycle = () => undefined;
+      };
+    };
+    const speech = new FakeSpeechBackend();
+    const coordinator = new InteractionMediaCoordinator(
+      speech,
+      new MicrophonePlaybackGuard(),
+      subscribe,
+    );
+    const deferredPlayback = coordinator.play(request('deferred', 'mandatory'));
+
+    emitLifecycle('background');
+
+    await expect(deferredPlayback).resolves.toMatchObject({ status: 'cancelled' });
+    expect(speech.cancelScope).toHaveBeenCalledWith(
+      expect.any(String),
+      'visibility',
+    );
+    coordinator.dispose();
+  });
+
   it('limits round replacement to the matching activity', async () => {
     const speech = new FakeSpeechBackend();
     const coordinator = new InteractionMediaCoordinator(

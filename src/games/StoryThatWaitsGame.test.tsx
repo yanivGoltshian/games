@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import { StrictMode, act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialCommunicationProgress } from '../domain/communicationProgress';
@@ -59,6 +59,7 @@ interface PendingPlayback {
 }
 
 interface CoordinatorDouble extends StoryThatWaitsMediaCoordinator {
+  unlock: ReturnType<typeof vi.fn>;
   play: ReturnType<typeof vi.fn>;
   notifyInteraction: ReturnType<typeof vi.fn>;
   cancelAll: ReturnType<typeof vi.fn>;
@@ -75,6 +76,7 @@ function createCoordinator(): CoordinatorDouble {
   const pending: PendingPlayback[] = [];
   return {
     pending,
+    unlock: vi.fn(),
     play: vi.fn((request: InteractionMediaRequest) => new Promise<InteractionMediaOutcome>((resolve) => {
       pending.push({ request, resolve });
     })),
@@ -233,7 +235,7 @@ describe('StoryThatWaitsGame', () => {
     ]);
   });
 
-  it('starts the first mandatory sentence inside a no-text tutorial and queues child touch', async () => {
+  it('unlocks without cancelling the first mandatory sentence and queues one child touch', async () => {
     await renderGame();
 
     expect(container.querySelector('.story-book.is-tutorial')).not.toBeNull();
@@ -253,14 +255,27 @@ describe('StoryThatWaitsGame', () => {
       container.querySelector<HTMLButtonElement>('.story-book')!.click();
     });
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('narrating-page');
-    expect(coordinator.notifyInteraction).toHaveBeenCalledWith(
-      expect.objectContaining({ stepId: 'page-1' }),
-      'touch',
-    );
+    expect(coordinator.unlock).toHaveBeenCalledOnce();
+    expect(coordinator.notifyInteraction).not.toHaveBeenCalled();
+    expect(coordinator.play).toHaveBeenCalledOnce();
 
-    await resolveCurrentPlayback('cancelled');
-    expect(container.querySelector('.story-unavailable')).not.toBeNull();
+    await resolveCurrentPlayback();
+    expect(container.querySelector('.story-unavailable')).toBeNull();
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('guard');
   });
+
+  it.each(['cancelled', 'errored', 'unavailable'] as const)(
+    'fails closed when mandatory narration settles as %s outside lifecycle cancellation',
+    async (status) => {
+      await renderGame();
+      await startStory();
+
+      await resolveCurrentPlayback(status);
+
+      expect(container.querySelector('.story-unavailable')).not.toBeNull();
+      expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('asset-error');
+    },
+  );
 
   it('opens only at the 400ms guard and consumes the coalesced narration touch', async () => {
     await renderGame();
@@ -448,7 +463,7 @@ describe('StoryThatWaitsGame', () => {
     expect(coordinator.play).toHaveBeenCalledTimes(1);
   });
 
-  it('backgrounds silently, cancels work, and requires touch to resume on the same page', async () => {
+  it('replays interrupted narration from the beginning before consuming a fresh queued touch', async () => {
     await renderGame();
     await startStory();
     expect(coordinator.play).toHaveBeenCalledTimes(1);
@@ -472,19 +487,31 @@ describe('StoryThatWaitsGame', () => {
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.story-book')!.click();
+      await Promise.resolve();
     });
-    await advance(STORY_THAT_WAITS_GUARD_MS);
+    expect(coordinator.unlock).toHaveBeenCalledOnce();
+    expect(coordinator.play).toHaveBeenCalledTimes(2);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('narrating-page');
+    await advance(2_000);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('narrating-page');
+
+    await act(async () => {
+      completePlayback(coordinator, 1);
+      await Promise.resolve();
+    });
+    await advance(STORY_THAT_WAITS_GUARD_MS - 1);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('guard');
+    await advance(1);
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('page-action');
-    expect(coordinator.play).toHaveBeenCalledTimes(1);
+    expect(coordinator.play).toHaveBeenCalledTimes(2);
   });
 
-  it('holds the resumed guard during explicit replay and surfaces replay errors', async () => {
+  it('holds a post-narration resumed guard during explicit replay and surfaces replay errors', async () => {
     await renderGame();
     await startStory();
+    await resolveCurrentPlayback();
     await act(async () => {
       lifecycleListeners.forEach((listener) => listener('background'));
-      completePlayback(coordinator, 0, 'cancelled');
-      await Promise.resolve();
     });
     await act(async () => {
       lifecycleListeners.forEach((listener) => listener('foreground'));
@@ -506,6 +533,27 @@ describe('StoryThatWaitsGame', () => {
     await advance(20_000);
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('asset-error');
     expect(coordinator.play).toHaveBeenCalledTimes(2);
+  });
+
+  it('disables explicit replay while paused mandatory narration is incomplete', async () => {
+    await renderGame();
+    await startStory();
+    await act(async () => {
+      lifecycleListeners.forEach((listener) => listener('background'));
+    });
+    await act(async () => {
+      lifecycleListeners.forEach((listener) => listener('foreground'));
+    });
+
+    const replay = container.querySelector<HTMLButtonElement>('.rail-button--replay')!;
+    expect(replay.disabled).toBe(true);
+    await act(async () => {
+      replay.click();
+      await Promise.resolve();
+    });
+
+    expect(coordinator.play).toHaveBeenCalledOnce();
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('paused');
   });
 
   it('does not let a stale replay callback clear a newer replay guard', async () => {
@@ -663,7 +711,7 @@ describe('StoryThatWaitsGame', () => {
     expect(book?.textContent).not.toContain('The duck sees a ball.');
   });
 
-  it('ignores stale narration completion after pause and a silent resume', async () => {
+  it('ignores stale narration completion after pause and waits for the fresh replay', async () => {
     await renderGame();
     await startStory();
     const stalePlayback = coordinator.pending[0]!;
@@ -679,8 +727,44 @@ describe('StoryThatWaitsGame', () => {
       await Promise.resolve();
     });
 
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('narrating-page');
+    expect(coordinator.play).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      completePlayback(coordinator, 1);
+      await Promise.resolve();
+    });
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('guard');
-    expect(coordinator.play).toHaveBeenCalledTimes(1);
+    await advance(STORY_THAT_WAITS_GUARD_MS - 1);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('guard');
+    await advance(1);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('page-action');
+  });
+
+  it('starts one mandatory playback under StrictMode and coalesces rapid first-touch intent', async () => {
+    await act(async () => {
+      root.render(
+        <StrictMode>
+          <StoryThatWaitsGame {...props()} />
+        </StrictMode>,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(coordinator.play).toHaveBeenCalledOnce();
+    await act(async () => {
+      const book = container.querySelector<HTMLButtonElement>('.story-book')!;
+      book.click();
+      book.click();
+      book.click();
+    });
+    expect(coordinator.play).toHaveBeenCalledOnce();
+    expect(coordinator.notifyInteraction).not.toHaveBeenCalled();
+
+    await resolveCurrentPlayback();
+    await advance(STORY_THAT_WAITS_GUARD_MS);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('page-action');
   });
 
   it('emits only the approved nonclinical metric allowlist', async () => {

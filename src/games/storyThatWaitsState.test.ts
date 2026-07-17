@@ -339,6 +339,41 @@ describe('storyThatWaitsState', () => {
     expect(resumed.narrationCompleted).toBe(true);
   });
 
+  it('keeps interrupted mandatory narration incomplete and gives its replay a fresh step generation', () => {
+    const narrating = reduceStoryThatWaits(
+      requestAndLoadStory(),
+      { type: 'touch-advance' },
+    );
+    const paused = reduceStoryThatWaits(narrating, { type: 'pause' });
+    const foregrounded = reduceStoryThatWaits(paused, { type: 'foregrounded' });
+    const replaying = reduceStoryThatWaits(paused, { type: 'resume-after-pause' });
+    const queued = reduceStoryThatWaits(replaying, { type: 'touch-advance' });
+    const staleCompletion = reduceStoryThatWaits(queued, {
+      type: 'narration-completed',
+      token: getStoryThatWaitsGenerationToken(narrating),
+      completed: true,
+    });
+
+    expect(paused).toMatchObject({
+      phase: 'paused',
+      pausedResumeTarget: 'narrating-page',
+      narrationCompleted: false,
+      queuedPageAdvanceIntent: false,
+    });
+    expect(foregrounded).toBe(paused);
+    expect(replaying).toMatchObject({
+      phase: 'narrating-page',
+      pageIndex: narrating.pageIndex,
+      pageGeneration: narrating.pageGeneration,
+      narrationCompleted: false,
+      queuedPageAdvanceIntent: false,
+      pausedResumeTarget: null,
+    });
+    expect(replaying.stepGeneration).toBe(paused.stepGeneration + 1);
+    expect(queued.queuedPageAdvanceIntent).toBe(true);
+    expect(staleCompletion).toBe(queued);
+  });
+
   it('ignores elapsed deadline callbacks that race with pause', () => {
     const paused = reduceStoryThatWaits(requestAndLoadStory(), { type: 'pause' });
     const raced = reduceStoryThatWaits(paused, {

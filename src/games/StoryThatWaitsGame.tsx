@@ -37,12 +37,11 @@ import {
   type CommunicationContentRequirements,
 } from '../services/communicationAssetReadiness';
 import {
-  interactionMediaCoordinator,
   type InteractionCancellationReason,
-  type InteractionMediaCoordinator,
   type InteractionMediaOutcome,
   type InteractionMediaRequest,
 } from '../services/interactionMediaCoordinator';
+import { storyThatWaitsMediaCoordinator } from '../services/storyThatWaitsMedia';
 import {
   getStoryThatWaitsGenerationToken,
   INITIAL_STORY_THAT_WAITS_STATE,
@@ -102,6 +101,7 @@ export type StoryThatWaitsMetric =
   };
 
 export interface StoryThatWaitsMediaCoordinator {
+  unlock(): void;
   play(request: InteractionMediaRequest): Promise<InteractionMediaOutcome>;
   notifyInteraction(
     scope: InteractionMediaRequest['scope'],
@@ -251,7 +251,7 @@ export function StoryThatWaitsGame({
   initialProgress,
   onProgressChange,
   readinessCheck = defaultReadinessCheck,
-  mediaCoordinator = interactionMediaCoordinator as InteractionMediaCoordinator,
+  mediaCoordinator = storyThatWaitsMediaCoordinator,
   micController,
   queryMicrophonePermission = queryPreauthorizedMicrophonePermission,
   readLifecycle = readAppLifecycleState,
@@ -509,7 +509,12 @@ export function StoryThatWaitsGame({
       return;
     }
     const token = getStoryThatWaitsGenerationToken(stateRef.current);
-    const key = `${token.sessionGeneration}:${token.storyGeneration}:${token.pageGeneration}`;
+    const key = [
+      token.sessionGeneration,
+      token.storyGeneration,
+      token.pageGeneration,
+      token.stepGeneration,
+    ].join(':');
     if (narrationKeysRef.current.has(key)) {
       return;
     }
@@ -799,6 +804,7 @@ export function StoryThatWaitsGame({
   const handleBookInteraction = useCallback((): void => {
     setTutorialActive(false);
     pulseTouch();
+    mediaCoordinator.unlock();
     const snapshot = stateRef.current;
     if (snapshot.phase === 'tutorial') {
       return;
@@ -825,7 +831,12 @@ export function StoryThatWaitsGame({
     }
     if (
       snapshot.phase === 'narrating-page'
-      || snapshot.phase === 'guard'
+    ) {
+      dispatch({ type: 'touch-advance' });
+      return;
+    }
+    if (
+      snapshot.phase === 'guard'
       || snapshot.phase === 'turn1'
       || snapshot.phase === 'turn2'
     ) {
@@ -841,6 +852,7 @@ export function StoryThatWaitsGame({
       || runtimeError
       || replayActiveRef.current
       || snapshot.pausedResumeTarget === 'ending'
+      || snapshot.pausedResumeTarget === 'narrating-page'
       || (
         snapshot.phase !== 'paused'
         && snapshot.phase !== 'guard'
@@ -851,6 +863,7 @@ export function StoryThatWaitsGame({
     if (snapshot.phase === 'paused') {
       dispatch({ type: 'resume-after-pause' });
     }
+    mediaCoordinator.unlock();
     microphoneRef.current.stop();
     mediaCoordinator.notifyInteraction(currentScope, 'round-replacement');
     replayActiveRef.current = true;
@@ -954,6 +967,7 @@ export function StoryThatWaitsGame({
         || state.phase === 'ending'
         || state.phase === 'rest'
         || state.pausedResumeTarget === 'ending'
+        || state.pausedResumeTarget === 'narrating-page'
         || resumeReplayActive
       }
       repeatSpeaking={state.phase === 'narrating-page' || resumeReplayActive}

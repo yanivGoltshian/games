@@ -498,6 +498,14 @@ export function reduceStoryThatWaits(
       if (state.phase !== 'paused' || state.pausedResumeTarget === null) {
         return state;
       }
+      if (state.pausedResumeTarget === 'narrating-page') {
+        return withPhase(state, 'narrating-page', {
+          queuedPageAdvanceIntent: false,
+          opportunityCount: 0,
+          narrationCompleted: false,
+          pausedResumeTarget: null,
+        });
+      }
       if (isStoryPagePhase(state.pausedResumeTarget)) {
         return withPhase(state, 'guard', {
           queuedPageAdvanceIntent: false,

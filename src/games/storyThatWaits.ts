@@ -27,3 +27,4 @@ export {
   type StoryThatWaitsAction,
   type StoryThatWaitsState,
 } from './storyThatWaitsState';
+export { STORY_THAT_WAITS_MEDIA_POLICY } from '../services/storyThatWaitsMedia';
