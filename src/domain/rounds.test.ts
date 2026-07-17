@@ -452,23 +452,22 @@ describe('round generation', () => {
   });
 
   describe('syllable train', () => {
-    it('produces a coherent round whose narrated strings stay in the recorded manifest', () => {
+    it('produces whole-word V2 rounds with exact locale recordings and images', () => {
       const domain = createInitialDomainProgress();
 
       for (let index = 0; index < 40; index += 1) {
         const round = generateSyllableTrainRound(domain, `syllable-train-${index}`);
         const concept = requireLearningConcept(round.conceptId);
 
-        expect(round.plainHe).toBe(concept.he);
-        expect(round.fullEn).toBe(concept.en);
-        expect(round.fullHe).toBe(concept.spokenHe);
-        expect(round.firstHe + round.restHe).toBe(concept.spokenHe);
-        expect(round.firstHe).not.toBe('');
-        expect(round.restHe).not.toBe('');
-        expect(round.firstEn).not.toBe('');
-        expect(round.restEn).not.toBe('');
-        expect(round.promptHe).not.toBe('');
-        expect(round.promptEn).not.toBe('');
+        expect(round.image).toBe(concept.image);
+        expect(round.recordings).toEqual({
+          'he-IL': concept.he,
+          'en-US': concept.en,
+          'en-GB': concept.en,
+        });
+        expect(round).not.toHaveProperty('firstHe');
+        expect(round).not.toHaveProperty('restHe');
+        expect(round).not.toHaveProperty('promptHe');
         expect(round.signature).toBe(getSyllableTrainRoundSignature(round));
         expect(round.signature).toBe(round.conceptId);
       }
