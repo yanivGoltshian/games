@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { createFamilyPhotoRound } from './familyPuzzle';
+import { createFamilyPhotoRound, nextPuzzleLevel } from './familyPuzzle';
 
 describe('createFamilyPhotoRound', () => {
+  it.each([
+    [1, 2],
+    [2, 3],
+    [3, 3],
+  ] as const)('advances puzzle level %i to %i after one success', (level, expected) => {
+    expect(nextPuzzleLevel(level)).toBe(expected);
+  });
+
   it.each([
     [1, 1, 2, 2],
     [2, 2, 2, 4],

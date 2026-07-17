@@ -490,7 +490,7 @@ export const sortingItems: SortingItemDefinition[] = [
   { id: 'yellow-star', colorId: 'yellow', shapeId: 'star', he: 'כוכב צהוב', en: 'yellow star' },
 ];
 
-const originalPuzzleScenes: readonly PuzzleScene[] = [
+export const originalPuzzleScenes: readonly PuzzleScene[] = [
   {
     id: 'blue-forest-party',
     titleHe: 'מסיבת היער הכחולה',

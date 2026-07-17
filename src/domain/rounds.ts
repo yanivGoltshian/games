@@ -1,7 +1,7 @@
 import {
   countingConceptIds,
   learningConcepts,
-  puzzleScenes,
+  originalPuzzleScenes,
   requireLearningConcept,
   sortingItems,
 } from '../content/concepts';
@@ -270,12 +270,7 @@ export function generateSortingRound(domain: DomainProgress, seed: string | numb
 function createPuzzleCandidate(domain: DomainProgress, seed: string | number): PuzzleRound {
   const random = createSeededRandom(seed);
   const [rows, cols] = domain.level === 1 ? [1, 2] : domain.level === 2 ? [2, 2] : [3, 3];
-  const availableScenes = puzzleScenes.filter((scene) => (
-    scene.image.kind === 'original'
-    || (scene.image.kind === 'concept'
-      && requireLearningConcept(scene.image.conceptId).introducedAtLevel <= domain.level)
-  ));
-  const scene = random.pick(availableScenes);
+  const scene = random.pick(originalPuzzleScenes);
   const pieces = Array.from({ length: rows * cols }, (_, index) => ({
     id: `${scene.id}-${index}`,
     row: Math.floor(index / cols),

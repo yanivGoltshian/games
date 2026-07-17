@@ -8,6 +8,7 @@ import type { CountingRound, ProgressUpdateSummary } from '../domain/types';
 import { CountingGame } from './CountingGame';
 
 const doubles = vi.hoisted(() => ({
+  cancelScope: vi.fn(),
   speakSegments: vi.fn(),
   startNextRound: vi.fn(),
   runRetry: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock('../services/sound', () => ({
 vi.mock('../services/speech', () => ({
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
+    cancelScope: doubles.cancelScope,
     speakSegments: doubles.speakSegments,
   },
 }));
@@ -109,6 +111,7 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     micDouble.start.mockResolvedValue(true);
     micDouble.stop.mockReset();
     doubles.speakSegments.mockReset();
+    doubles.cancelScope.mockReset();
     doubles.startNextRound.mockReset();
     doubles.runRetry.mockReset();
     doubles.runRetry.mockResolvedValue(undefined);
@@ -163,6 +166,19 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     micDouble.stop.mockClear();
     return onCompleteRound;
   }
+
+  it('starts a fresh round instead of replaying speech from the circular arrow', async () => {
+    await renderGame();
+    doubles.speakSegments.mockClear();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--restart')!.click();
+    });
+
+    expect(doubles.cancelScope).toHaveBeenCalledWith('game:counting');
+    expect(doubles.startNextRound).toHaveBeenCalledTimes(1);
+    expect(doubles.speakSegments).not.toHaveBeenCalled();
+  });
 
   it('hides the voice toggle when the microphone is not supported', async () => {
     micDouble.supported = false;

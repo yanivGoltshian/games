@@ -26,6 +26,28 @@ const BLUE_FOREST_PARTY = svgDataUri(`
     <path d="M78 102q32 35 65 0" fill="none" stroke="#17344f" stroke-width="9" stroke-linecap="round"/>
     <path d="M-5 150q-90-55-105 15M225 150q90-55 105 15" fill="none" stroke="#69aee0" stroke-width="34" stroke-linecap="round"/>
   </g>
+  <g transform="translate(55 600)">
+    <ellipse cx="115" cy="250" rx="105" ry="32" fill="#1d5945" opacity=".28"/>
+    <ellipse cx="115" cy="165" rx="65" ry="78" fill="#f7f1dd"/>
+    <circle cx="115" cy="86" r="56" fill="#fffaf0"/>
+    <ellipse cx="82" cy="18" rx="19" ry="65" fill="#fffaf0" transform="rotate(-10 82 18)"/>
+    <ellipse cx="148" cy="18" rx="19" ry="65" fill="#fffaf0" transform="rotate(10 148 18)"/>
+    <circle cx="96" cy="80" r="8" fill="#25394b"/><circle cx="135" cy="80" r="8" fill="#25394b"/>
+    <path d="M105 105q12 14 24 0M60 170q-45-25-55 12M170 170q45-25 55 12" fill="none" stroke="#d8cdb6" stroke-width="12" stroke-linecap="round"/>
+    <path d="M182 173q42-35 78-3" fill="none" stroke="#f7d85b" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="271" cy="160" r="17" fill="#ef476f"/>
+  </g>
+  <g transform="translate(710 630)">
+    <rect x="15" y="150" width="235" height="25" rx="12" fill="#8a5a3b"/>
+    <path d="M55 175l-20 100M215 175l20 100" stroke="#6b422f" stroke-width="18" stroke-linecap="round"/>
+    <ellipse cx="130" cy="135" rx="70" ry="22" fill="#fff4d6"/>
+    <path d="M80 132h100l-14-65H94Z" fill="#ff9fce" stroke="#b84c7a" stroke-width="8"/>
+    <path d="M93 75q35-50 72 0" fill="#fff5bd"/>
+    <circle cx="128" cy="48" r="17" fill="#ef476f"/><path d="M128 33q10-24 24-24" stroke="#3d9b58" stroke-width="7" fill="none"/>
+    <g fill="#ffe873"><circle cx="35" cy="50" r="18"/><circle cx="220" cy="35" r="16"/></g>
+  </g>
+  <g fill="#f7d85b"><circle cx="290" cy="365" r="12"/><circle cx="410" cy="405" r="12"/><circle cx="650" cy="390" r="12"/></g>
+  <g fill="none" stroke="#17344f" stroke-width="9" stroke-linecap="round"><path d="M300 250v55q30-18 42 3"/><path d="M690 285v55q30-18 42 3"/></g>
   <g fill="#eef8ff"><circle cx="140" cy="760" r="18"/><circle cx="250" cy="840" r="13"/><circle cx="770" cy="770" r="17"/><circle cx="870" cy="850" r="12"/></g>
 </svg>`);
 
@@ -52,6 +74,23 @@ const RESCUE_PLANES = svgDataUri(`
     <path d="M205 118L300 0l75 25-45 110Z" fill="#f9c74f" stroke="#28666e" stroke-width="14"/>
     <circle cx="20" cy="170" r="55" fill="#28666e"/>
   </g>
+  <path d="M0 900q150-85 310 0t330 0t360 0v100H0Z" fill="#4ca7c9" opacity=".75"/>
+  <path d="M595 560q-5 105-10 195" fill="none" stroke="#704f37" stroke-width="10" stroke-dasharray="18 12"/>
+  <g transform="translate(510 715)">
+    <path d="M45 55h120l-18 70H62Z" fill="#ffd166" stroke="#8b4c30" stroke-width="9"/>
+    <path d="M60 55q45-42 90 0" fill="none" stroke="#8b4c30" stroke-width="9"/>
+    <circle cx="105" cy="10" r="42" fill="#f2d2a9"/>
+    <path d="M72-10q-30-45 8-55q35 20 40 58M138-10q30-45-8-55q-35 20-40 58" fill="#ad7145"/>
+    <circle cx="92" cy="5" r="7" fill="#2f4858"/><circle cx="120" cy="5" r="7" fill="#2f4858"/>
+    <path d="M94 25q14 12 27 0" fill="none" stroke="#2f4858" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(75 560)">
+    <rect x="0" y="115" width="170" height="85" rx="12" fill="#f5f3e7" stroke="#8b4c30" stroke-width="10"/>
+    <path d="M0 115l85-78 85 78M85 37V0" fill="none" stroke="#8b4c30" stroke-width="12"/>
+    <path d="M85 0l80 28-80 28Z" fill="#ef476f"/>
+    <circle cx="85" cy="150" r="20" fill="#4cc9a6"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round"><path d="M120 310q55-45 110 0"/><path d="M740 150q55-45 110 0"/></g>
   <path d="M720 875h180l-30-95H750Z" fill="#f5f3e7"/><rect x="785" y="810" width="50" height="65" fill="#ef476f"/>
 </svg>`);
 
@@ -77,6 +116,28 @@ const GIANT_CARROT_GARDEN = svgDataUri(`
   </g>
   <g fill="#6b4b36"><circle cx="155" cy="770" r="10"/><circle cx="205" cy="770" r="10"/><circle cx="780" cy="800" r="10"/><circle cx="832" cy="800" r="10"/></g>
   <path d="M148 807q32 25 65 0M778 837q32 25 65 0" fill="none" stroke="#6b4b36" stroke-width="9" stroke-linecap="round"/>
+  <path d="M455 585Q330 560 235 675Q170 740 105 775" fill="none" stroke="#7b4f32" stroke-width="18" stroke-linecap="round"/>
+  <g transform="translate(50 585)">
+    <ellipse cx="90" cy="190" rx="72" ry="64" fill="#fff7df" stroke="#8f6b4a" stroke-width="8"/>
+    <circle cx="90" cy="105" r="52" fill="#fff7df" stroke="#8f6b4a" stroke-width="8"/>
+    <ellipse cx="62" cy="42" rx="17" ry="55" fill="#fff7df" stroke="#8f6b4a" stroke-width="8" transform="rotate(-12 62 42)"/>
+    <ellipse cx="118" cy="42" rx="17" ry="55" fill="#fff7df" stroke="#8f6b4a" stroke-width="8" transform="rotate(12 118 42)"/>
+    <circle cx="74" cy="100" r="7" fill="#5b3525"/><circle cx="108" cy="100" r="7" fill="#5b3525"/>
+    <path d="M70 130q20 18 40 0M150 160q40-18 72 8" fill="none" stroke="#8f6b4a" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(205 650)">
+    <ellipse cx="80" cy="140" rx="67" ry="55" fill="#f7d85b" stroke="#9a633f" stroke-width="8"/>
+    <circle cx="80" cy="75" r="45" fill="#ffe873" stroke="#9a633f" stroke-width="8"/>
+    <path d="M40 70L5 55l35 35M120 70l35-15-35 35" fill="#ef8d32" stroke="#9a633f" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="67" cy="72" r="6" fill="#5b3525"/><circle cx="95" cy="72" r="6" fill="#5b3525"/>
+    <path d="M125 125q35-18 65 4" fill="none" stroke="#9a633f" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(690 580)">
+    <path d="M40 170h170l-18 80H58Z" fill="#7dcf8a" stroke="#267146" stroke-width="10"/>
+    <circle cx="75" cy="260" r="28" fill="#5b3525"/><circle cx="180" cy="260" r="28" fill="#5b3525"/>
+    <path d="M60 168q70-105 135 0" fill="#d8f3dc" stroke="#267146" stroke-width="10"/>
+    <path d="M90 128q20-65 42 0M130 125q25-70 45 2" fill="none" stroke="#3d9b58" stroke-width="14" stroke-linecap="round"/>
+  </g>
   <g fill="#fff"><circle cx="80" cy="680" r="12"/><circle cx="260" cy="720" r="10"/><circle cx="725" cy="690" r="12"/><circle cx="920" cy="735" r="11"/></g>
 </svg>`);
 

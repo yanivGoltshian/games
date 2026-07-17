@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { HomeIconArt, ReplayIconArt } from '../art/controls';
+import { HomeIconArt, RestartIconArt } from '../art/controls';
 import { PuppyMascotArt } from '../art/mascot';
 import type { LanguageMode } from '../domain/types';
 
@@ -8,10 +8,9 @@ interface GameShellProps {
   accentClass: string;
   reducedMotion: boolean;
   onHome: () => void;
-  onRepeat?: () => void;
-  repeatDisabled?: boolean;
-  repeatSpeaking?: boolean;
-  replayLabel: string;
+  onRestart?: () => void;
+  restartDisabled?: boolean;
+  restartLabel: string;
   homeLabel: string;
   /** Visually-hidden but screen-reader-announced current task state. */
   liveStatus: string;
@@ -23,7 +22,7 @@ interface GameShellProps {
 
 /**
  * Minimal child game frame: a top rail with exactly two large controls
- * (home/back, replay) and nothing else instructional. The stage below fills
+ * (home/back, restart) and nothing else instructional. The stage below fills
  * the rest of the viewport without page scroll. The caregiver gate never
  * renders inside a game screen.
  */
@@ -32,10 +31,9 @@ export function GameShell({
   accentClass,
   reducedMotion,
   onHome,
-  onRepeat,
-  repeatDisabled,
-  repeatSpeaking,
-  replayLabel,
+  onRestart,
+  restartDisabled,
+  restartLabel,
   homeLabel,
   liveStatus,
   languageMode,
@@ -54,16 +52,15 @@ export function GameShell({
         <button className="rail-button rail-button--home" onClick={onHome} type="button" aria-label={homeLabel}>
           <HomeIconArt className="rail-button__icon" />
         </button>
-        {onRepeat ? (
+        {onRestart ? (
           <button
-            className={`rail-button rail-button--replay ${repeatSpeaking ? 'is-speaking' : ''}`}
-            disabled={repeatDisabled}
-            onClick={onRepeat}
+            className="rail-button rail-button--restart"
+            disabled={restartDisabled}
+            onClick={onRestart}
             type="button"
-            aria-label={replayLabel}
-            aria-pressed={repeatSpeaking}
+            aria-label={restartLabel}
           >
-            <ReplayIconArt className="rail-button__icon" />
+            <RestartIconArt className="rail-button__icon" />
           </button>
         ) : (
           <span aria-hidden="true" />

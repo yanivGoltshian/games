@@ -124,8 +124,6 @@ function AlienFace({ level, mood, replaying, chasing }: AlienFaceProps) {
 export function SillyAlienGame({
   domainProgress,
   settings,
-  mediaReady,
-  speechStatus,
   onBack,
   onCompleteRound,
 }: ToddlerGameProps) {
@@ -216,22 +214,6 @@ export function SillyAlienGame({
       dispatch({ type: 'succeed' });
     }
   }, [unlock]);
-
-  const handleRepeat = useCallback((): void => {
-    const { round: current, settings: currentSettings, roundKey: rk } = dataRef.current;
-    void speechService.speakSegments(
-      [
-        ...buildLocalizedSegments(
-          [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
-          currentSettings.languageMode,
-          currentSettings.englishVoiceLocale,
-        ),
-        ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, currentSettings),
-      ],
-      currentSettings,
-      { scope: SPEECH_SCOPE, key: `repeat:${rk}`, priority: 'replay', interrupt: true },
-    );
-  }, []);
 
   // ── Page visibility ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -503,10 +485,11 @@ export function SillyAlienGame({
       accentClass={gameMeta.sillyAlien.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={handleRepeat}
-      repeatDisabled={settings.quietMode || !speechStatus.supported || isLocked || !mediaReady}
-      repeatSpeaking={speechStatus.speaking}
-      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
+      onRestart={() => {
+        speechService.cancelScope(SPEECH_SCOPE);
+        startNextRound();
+      }}
+      restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={liveStatus}
       successOverlay={
