@@ -1,6 +1,18 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { localeLockMatches } from '../domain/communicationGame';
 import { collectRecordedSpeechCatalog } from './recordedSpeechCatalog';
+import {
+  getHebrewPronunciation,
+  getHebrewPronunciationSkeleton,
+  hasNiqqud,
+  stripNiqqud,
+} from './hebrewPronunciation';
+import {
+  STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
+  STORY_THAT_WAITS_HEBREW_REVIEW_GATE,
+} from './storyThatWaitsHebrew';
 import {
   STORY_THAT_WAITS_ACTION_KINDS,
   STORY_THAT_WAITS_APPROVED_ART_IDS,
@@ -23,6 +35,7 @@ import {
 } from './storyThatWaits';
 
 const DISALLOWED_MARKERS = [/\{\{/u, /\}\}/u, /\$\{/u, /TODO/u, /TBD/u, /\.{3,}/u, /__+/u, /\[\[/u, /\]\]/u];
+const HEBREW_WORD_PATTERN = /[\u05D0-\u05EA][\u0591-\u05C7\u05D0-\u05EA]*/gu;
 
 function countWords(sentence: string): number {
   return sentence.trim().split(/\s+/u).filter(Boolean).length;
@@ -173,6 +186,63 @@ describe('Story That Waits content pack', () => {
       expect(
         installedCatalogKeys.has(`${requirement.locale}\u0000${requirement.recordedLookupText}`),
       ).toBe(false);
+    }
+  });
+
+  it('maps every unpointed Hebrew lookup key to one fully pointed production sentence', () => {
+    const hebrewRequirements = collectStoryThatWaitsRecordingRequirements('he-IL');
+    const productionEntries = Object.entries(STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS);
+
+    expect(productionEntries).toHaveLength(16);
+    expect(new Set(productionEntries.map(([, productionText]) => productionText)).size).toBe(16);
+    expect(new Set(productionEntries.map(([lookupText]) => lookupText))).toEqual(
+      new Set(hebrewRequirements.map((requirement) => requirement.recordedLookupText)),
+    );
+    expect(STORY_THAT_WAITS_HEBREW_REVIEW_GATE).toEqual({
+      status: 'pending-human-review',
+      generationAllowed: false,
+      requiredChecks: [
+        'pronunciation',
+        'stress',
+        'masculine-agreement',
+        'natural-prosody',
+      ],
+    });
+
+    for (const requirement of hebrewRequirements) {
+      const productionText = STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS[
+        requirement.recordedLookupText as keyof typeof STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS
+      ];
+      expect(productionText, `missing pointed production text for ${requirement.recordedLookupText}`)
+        .toBeTruthy();
+      expect(getHebrewPronunciation(requirement.recordedLookupText)).toBe(productionText);
+      expect(stripNiqqud(productionText).normalize('NFC'))
+        .toBe(getHebrewPronunciationSkeleton(requirement.recordedLookupText));
+      const productionWords = productionText.match(HEBREW_WORD_PATTERN) ?? [];
+      expect(productionWords).toHaveLength(countWords(requirement.recordedLookupText));
+      expect(
+        productionWords.every((word) => hasNiqqud(word)),
+        `every word must be pointed in ${productionText}`,
+      ).toBe(true);
+    }
+  });
+
+  it('includes every pointed Hebrew mapping in the immutable 48-row review inventory', () => {
+    const inventory = readFileSync(
+      resolve('docs/source/content/story-that-waits-recording-inventory.csv'),
+      'utf8',
+    );
+    const rows = inventory.trimEnd().split('\n');
+
+    expect(rows).toHaveLength(49);
+    expect(rows[0]).toContain('hebrewProductionText');
+    expect(rows[0]).toContain('hebrewReviewStatus');
+    for (const [lookupText, productionText] of Object.entries(
+      STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
+    )) {
+      const row = rows.find((candidate) => candidate.includes(`,${lookupText},`));
+      expect(row, `missing inventory row for ${lookupText}`).toBeDefined();
+      expect(row).toContain(`,${productionText},pending-human-review,`);
     }
   });
 });

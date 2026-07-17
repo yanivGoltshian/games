@@ -765,7 +765,14 @@ export function StoryThatWaitsGame({
       progressRef.current = next;
       onProgressChange(next);
     }
-  }, [emitMetric, onProgressChange, state.elapsedMs, state.phase]);
+  }, [
+    emitMetric,
+    onProgressChange,
+    state.diagnostic,
+    state.elapsedMs,
+    state.pageIndex,
+    state.phase,
+  ]);
 
   useEffect(() => () => {
     if (touchPulseTimerRef.current !== null) {

@@ -8,6 +8,7 @@ import {
   getCountingQuestion,
   getCountingQuestionSpoken,
 } from './countingQuantity';
+import { STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS } from './storyThatWaitsHebrew';
 
 /**
  * Hebrew pronunciation layer for the recorded-speech fallback.
@@ -94,15 +95,18 @@ function collectCatalogPronunciations(): Record<string, string> {
 }
 
 /**
- * Manually, context-aware niqqud for every unique Hebrew phrase in the catalog.
- * Keys are the exact unpointed source strings (never edit them); values are the
- * pointed forms fed to Azure neural text to speech.
+ * Manually, context-aware niqqud for every catalog phrase and staged production
+ * phrase. Keys are exact unpointed source strings (never edit them); values are
+ * pointed synthesis text. A staged phrase still requires its own release gate.
  */
 export const HEBREW_PRONUNCIATIONS: Readonly<Record<string, string>> = {
   ...collectCatalogPronunciations(),
 
   // Web Speech unlock primer.
   [HEBREW_UNLOCK_PRIMER.sourceText]: HEBREW_UNLOCK_PRIMER.spokenText,
+
+  // Story That Waits — staged for human review; not yet in the recorded catalog.
+  ...STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
 
   // Nouns / concept words.
   'אוטו': 'אוֹטוֹ',

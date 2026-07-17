@@ -16,6 +16,11 @@ export {
   type StoryThatWaitsStoryId,
 } from '../content/storyThatWaits';
 export {
+  STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
+  STORY_THAT_WAITS_HEBREW_REVIEW_GATE,
+  type StoryThatWaitsHebrewLookupText,
+} from '../content/storyThatWaitsHebrew';
+export {
   INITIAL_STORY_THAT_WAITS_STATE,
   STORY_THAT_WAITS_PHASES,
   reduceStoryThatWaits,
