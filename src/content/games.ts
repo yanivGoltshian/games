@@ -57,4 +57,10 @@ export const gameMeta: Record<DomainKey, GameMeta> = {
     accentClass: 'accent-syllable-train',
     colorToken: 'rail',
   },
+  wordStretch: {
+    title: 'מותחים את המילה',
+    subtitle: 'נוגעים בתמונה ושומעים איך תחילת המילה נמתחת',
+    accentClass: 'accent-word-stretch',
+    colorToken: 'spring',
+  },
 };

@@ -247,6 +247,33 @@ describe('SpeechService recorded fallback', () => {
     await expect(queued).resolves.toMatchObject({ status: 'completed' });
   });
 
+  it('uses the base manifest key while preserving stretched playback options', async () => {
+    service.unlock(createInitialSettings());
+    await flush();
+    const done = service.speakSegments(
+      [{
+        text: 'dooooog',
+        recordedText: 'dog',
+        locale: 'en-US',
+        cue: 'word-stretch:dog',
+        stretch: { leadSeconds: 0.18, playbackRate: 0.34 },
+      }],
+      createInitialSettings(),
+    );
+    await flush();
+
+    expect(backend.played).toEqual([
+      expect.objectContaining({
+        text: 'dog',
+        locale: 'en-US',
+        stretch: { leadSeconds: 0.18, playbackRate: 0.34 },
+      }),
+    ]);
+
+    backend.complete();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
   it('lets an active retry word finish before coalescing the newer retry', async () => {
     service.unlock(createInitialSettings());
     await flush();
