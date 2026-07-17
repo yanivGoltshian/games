@@ -167,6 +167,30 @@ class SoundService {
     ]);
   }
 
+  /**
+   * Comic "pop" — the alien's first syllable escapes as a bubble. A quick,
+   * bright upward blip; playful, never harsh. Nonverbal by design so it can
+   * carry the gag without the spoken "oops, I got confused" line.
+   */
+  playPop(settings: ToddlerSettings): void {
+    this.playSequence(settings, [
+      { frequency: 660, duration: 0.05, gain: 0.07, type: 'triangle', shimmer: 0.1 },
+      { frequency: 1040, duration: 0.09, gain: 0.08, type: 'triangle', shimmer: 0.28 },
+    ]);
+  }
+
+  /**
+   * Cartoon "boing" — the missing sound springs back into place on success.
+   * A down-then-up wobble that reads as a bouncy spring, kept soft and warm.
+   */
+  playBoing(settings: ToddlerSettings): void {
+    this.playSequence(settings, [
+      { frequency: 300, duration: 0.08, gain: 0.08, type: 'triangle', shimmer: 0.12 },
+      { frequency: 520, duration: 0.1, gain: 0.09, type: 'triangle', shimmer: 0.2 },
+      { frequency: 680, duration: 0.16, gain: 0.1, shimmer: 0.34 },
+    ]);
+  }
+
   playCelebrate(settings: ToddlerSettings): void {
     this.playSequence(settings, [
       { frequency: 523, duration: 0.1, gain: 0.1 },

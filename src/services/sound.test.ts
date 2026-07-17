@@ -108,4 +108,25 @@ describe('soundService synthesis engine', () => {
     soundService.playSuccess({ quietMode: false, soundLevel: 0 } as ToddlerSettings);
     expect(created.oscillators.length).toBe(before);
   });
+
+  it('plays a two-step comic pop for the escaping syllable', () => {
+    const before = created.oscillators.length;
+    soundService.playPop(audible);
+    // Two steps, each a fundamental + gentle shimmer overtone = 4 voices.
+    expect(created.oscillators.length - before).toBe(4);
+  });
+
+  it('plays a three-step spring boing for the snap-back', () => {
+    const before = created.oscillators.length;
+    soundService.playBoing(audible);
+    // Three steps, each a fundamental + shimmer overtone = 6 voices.
+    expect(created.oscillators.length - before).toBe(6);
+  });
+
+  it('keeps the comic cues silent in quiet mode and at zero volume', () => {
+    const before = created.oscillators.length;
+    soundService.playPop({ quietMode: true, soundLevel: 1 } as ToddlerSettings);
+    soundService.playBoing({ quietMode: false, soundLevel: 0 } as ToddlerSettings);
+    expect(created.oscillators.length).toBe(before);
+  });
 });

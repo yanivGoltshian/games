@@ -10,9 +10,9 @@ import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
 import { gameMeta } from '../content/games';
 import {
-  SILLY_ALIEN_INTRO,
   SILLY_ALIEN_LISTENING,
   SILLY_ALIEN_PROMPT,
+  SILLY_ALIEN_RETRY,
 } from '../content/sillyAlien';
 import {
   generateSillyAlienRound,
@@ -30,6 +30,7 @@ import {
   reduceSillyAlien,
   selectEffortProgress,
   SILLY_ALIEN_LEVEL_THRESHOLD,
+  SILLY_ALIEN_LISTEN_WINDOW_MS,
 } from './sillyAlienState';
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
@@ -38,17 +39,46 @@ import { useMicEffort } from './useMicEffort';
 
 const SPEECH_SCOPE = 'game:silly-alien';
 
-interface AlienFaceProps {
-  level: number;
-  mood: 'idle' | 'listening' | 'happy';
-  replaying: boolean;
+/**
+ * A settled speech result should advance the round unless it was cut short by a
+ * newer utterance (`cancelled`) or replaced in the queue (`superseded`). Quiet
+ * mode / unsupported voices resolve as `skipped`/`unsupported`, which still
+ * advance so a muted iPad never stalls.
+ */
+function settledShouldAdvance(status: SpeechResult['status']): boolean {
+  return status !== 'cancelled' && status !== 'superseded';
 }
 
-function AlienFace({ level, mood, replaying }: AlienFaceProps) {
+type AlienMood = 'asleep' | 'confused' | 'listening' | 'happy';
+
+interface AlienFaceProps {
+  level: number;
+  mood: AlienMood;
+  replaying: boolean;
+  chasing: boolean;
+}
+
+/**
+ * The alien creature. Everything expressive is driven by CSS from the `mood`
+ * class and the live `--level` custom property (microphone energy), so a
+ * pre-reading child understands the whole interaction from motion alone:
+ *   asleep    → gentle bob, waiting for the wake tap.
+ *   confused  → the comic gag: eyes/antennae chase the escaped syllable.
+ *   listening → leans in, glows and pulses with Sean's voice.
+ *   happy     → beams and springs (paired with the snap-back animation).
+ */
+function AlienFace({ level, mood, replaying, chasing }: AlienFaceProps) {
   const style = { '--level': level } as CSSProperties;
   return (
     <div
-      className={`silly-alien-figure silly-alien-figure--${mood} ${replaying ? 'is-replaying' : ''}`}
+      className={[
+        'silly-alien-figure',
+        `silly-alien-figure--${mood}`,
+        replaying ? 'is-replaying' : '',
+        chasing ? 'is-chasing' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={style}
       aria-hidden="true"
     >
@@ -100,7 +130,9 @@ export function SillyAlienGame({
   const [state, dispatch] = useReducer(reduceSillyAlien, INITIAL_SILLY_ALIEN_STATE);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [replaying, setReplaying] = useState(false);
-  const [micDenied, setMicDenied] = useState(false);
+  const [pageVisible, setPageVisible] = useState(() =>
+    typeof document === 'undefined' ? true : document.visibilityState !== 'hidden',
+  );
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'sillyAlien',
     domainProgress,
@@ -109,73 +141,238 @@ export function SillyAlienGame({
   );
 
   const englishOnly = settings.languageMode === 'en';
+  // The mic only samples while it is open (listening); the reducer ignores
+  // `register-effort` outside the listening phase, so stray frames are no-ops.
   const mic = useMicEffort((level, deltaMs) => {
     dispatch({ type: 'register-effort', level, deltaMs });
   });
 
-  const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
-    await speechService.speakSegments(
-      buildLocalizedSegments(
-        [
-          { ...SILLY_ALIEN_INTRO, pauseAfterMs: 240 },
-          { he: round.brokenHe, en: round.brokenEn, pauseAfterMs: 360 },
-          SILLY_ALIEN_PROMPT,
-        ],
-        settings.languageMode,
-        settings.englishVoiceLocale,
-      ),
-      settings,
-      {
-        scope: SPEECH_SCOPE,
-        key: `prompt:${roundKey}`,
-        priority: interrupt ? 'replay' : 'prompt',
-        interrupt,
-      },
-    );
-  }, [round.brokenEn, round.brokenHe, roundKey, settings]);
-  const speakPromptRef = useRef(speakPrompt);
-  speakPromptRef.current = speakPrompt;
-
-  // Latest-values snapshot so the success effect can depend solely on `phase`
-  // and still read fresh round/settings/callbacks without re-firing.
-  const successDataRef = useRef({
+  // Latest-values snapshot so effects can key on `phase`/`roundKey` alone and
+  // still read fresh round/settings/mic handles without re-firing on every
+  // render. Refs are stable, so this never triggers extra effect runs.
+  const dataRef = useRef({
+    phase: state.phase,
+    unlocked: state.unlocked,
     round,
     roundKey,
     settings,
+    englishOnly,
     listenAttempts: state.listenAttempts,
+    nudges: state.nudges,
     onCompleteRound,
-    stop: mic.stop,
+    micStart: mic.start,
+    micStop: mic.stop,
   });
-  successDataRef.current = {
+  dataRef.current = {
+    phase: state.phase,
+    unlocked: state.unlocked,
     round,
     roundKey,
     settings,
+    englishOnly,
     listenAttempts: state.listenAttempts,
+    nudges: state.nudges,
     onCompleteRound,
-    stop: mic.stop,
+    micStart: mic.start,
+    micStop: mic.stop,
   };
   const successHandledRef = useRef(false);
 
-  const { stop: stopMic } = mic;
+  // The one obvious, non-reading gesture. It must run inside the user gesture so
+  // iOS Safari grants both the AudioContext (soundService.unlock) and the
+  // microphone. We open the mic just to satisfy the permission prompt, then stop
+  // it immediately — real listening starts only after the model has spoken.
+  const unlock = useCallback(async (): Promise<void> => {
+    if (dataRef.current.unlocked) {
+      return;
+    }
+    const { settings: current, micStart, micStop } = dataRef.current;
+    soundService.unlock();
+    soundService.playTap(current);
+    let granted = false;
+    try {
+      granted = await micStart();
+    } catch {
+      granted = false;
+    }
+    micStop();
+    dispatch({ type: 'unlock', micGranted: granted });
+  }, []);
+
+  // Tapping the alien: wakes it when locked; otherwise it is an optional,
+  // non-blocking "I said it / grown-up help" shortcut (never required, never a
+  // press-and-hold). Ignored while the alien is talking or celebrating.
+  const handleAlienTap = useCallback((): void => {
+    const { phase, settings: current, micStop } = dataRef.current;
+    if (phase === 'locked') {
+      void unlock();
+      return;
+    }
+    if (phase === 'listening' || phase === 'nudge' || phase === 'parentFallback') {
+      soundService.playTap(current);
+      micStop();
+      dispatch({ type: 'succeed' });
+    }
+  }, [unlock]);
+
+  const handleRepeat = useCallback((): void => {
+    const { round: current, settings: currentSettings, roundKey: rk } = dataRef.current;
+    void speechService.speakSegments(
+      buildLocalizedSegments(
+        [
+          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 },
+          SILLY_ALIEN_PROMPT,
+        ],
+        currentSettings.languageMode,
+        currentSettings.englishVoiceLocale,
+      ),
+      currentSettings,
+      { scope: SPEECH_SCOPE, key: `repeat:${rk}`, priority: 'replay', interrupt: true },
+    );
+  }, []);
+
+  // ── Page visibility ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+    const onVisibility = (): void => {
+      setPageVisible(document.visibilityState !== 'hidden');
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  // ── New word: reset per-round UI, stop capture, replay the gag once unlocked ─
   useEffect(() => {
     successHandledRef.current = false;
     setCelebration(null);
     setReplaying(false);
-    setMicDenied(false);
-    stopMic();
-    dispatch({ type: 'reset' });
-    if (mediaReady) {
-      void speakPromptRef.current();
+    dataRef.current.micStop();
+    if (dataRef.current.unlocked) {
+      dispatch({ type: 'begin-round' });
     }
-  }, [mediaReady, roundKey, stopMic]);
+  }, [roundKey]);
 
+  // ── Presenting: comic gag + spoken model, mic strictly OFF ──────────────────
+  useEffect(() => {
+    if (state.phase !== 'presenting') {
+      return undefined;
+    }
+    const { round: current, roundKey: rk, settings: current2, micStop } = dataRef.current;
+    micStop();
+    soundService.playPop(current2); // the first syllable escapes as a bubble
+    let cancelled = false;
+    const advance = (): void => {
+      if (cancelled) {
+        return;
+      }
+      cancelled = true;
+      dispatch({ type: 'present-done' });
+    };
+    const speech = speechService.speakSegments(
+      buildLocalizedSegments(
+        [
+          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 },
+          SILLY_ALIEN_PROMPT,
+        ],
+        current2.languageMode,
+        current2.englishVoiceLocale,
+      ),
+      current2,
+      { scope: SPEECH_SCOPE, key: `present:${rk}`, priority: 'prompt' },
+    );
+    void speech.then((result) => {
+      if (settledShouldAdvance(result.status)) {
+        advance();
+      }
+    });
+    // Backstop so a stalled/blocked voice never freezes the round.
+    const safety = window.setTimeout(advance, current2.reducedMotion ? 1600 : 4200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(safety);
+    };
+  }, [state.phase, roundKey]);
+
+  // ── Listening: open mic after the model, generous window, pause when hidden ─
+  useEffect(() => {
+    if (state.phase !== 'listening' || !pageVisible) {
+      return undefined;
+    }
+    const { micStart, micStop } = dataRef.current;
+    let cancelled = false;
+    let timer = 0;
+    void micStart().then((ok) => {
+      if (cancelled) {
+        micStop();
+        return;
+      }
+      if (!ok) {
+        dispatch({ type: 'mic-denied' });
+        return;
+      }
+      timer = window.setTimeout(() => {
+        micStop();
+        dispatch({ type: 'listen-timeout' });
+      }, SILLY_ALIEN_LISTEN_WINDOW_MS);
+    });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      micStop();
+    };
+  }, [state.phase, roundKey, pageVisible]);
+
+  // ── Nudge: supportive replay (never framed as failure), then listen again ───
+  useEffect(() => {
+    if (state.phase !== 'nudge') {
+      return undefined;
+    }
+    const { round: current, settings: current2, roundKey: rk, nudges, micStop } = dataRef.current;
+    micStop();
+    soundService.playRetry(current2);
+    let cancelled = false;
+    const advance = (): void => {
+      if (cancelled) {
+        return;
+      }
+      cancelled = true;
+      dispatch({ type: 'nudge-done' });
+    };
+    const speech = speechService.speakSegments(
+      buildLocalizedSegments(
+        [
+          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 360 },
+          SILLY_ALIEN_RETRY,
+        ],
+        current2.languageMode,
+        current2.englishVoiceLocale,
+      ),
+      current2,
+      { scope: SPEECH_SCOPE, key: `nudge:${rk}:${nudges}`, priority: 'retry', staleAfterSuccess: true },
+    );
+    void speech.then((result) => {
+      if (settledShouldAdvance(result.status)) {
+        advance();
+      }
+    });
+    const safety = window.setTimeout(advance, current2.reducedMotion ? 1400 : 3400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(safety);
+    };
+  }, [state.phase, roundKey, state.nudges]);
+
+  // ── Success: snap the syllable home, model the full word, then celebrate ────
   useEffect(() => {
     if (state.phase !== 'success' || successHandledRef.current) {
       return undefined;
     }
     successHandledRef.current = true;
-    const snapshot = successDataRef.current;
-    snapshot.stop();
+    const snapshot = dataRef.current;
+    snapshot.micStop();
+    soundService.playBoing(snapshot.settings); // spring snap-back
     soundService.playSuccess(snapshot.settings);
     setReplaying(true);
 
@@ -217,39 +414,78 @@ export function SillyAlienGame({
     return () => window.clearTimeout(timer);
   }, [state.phase]);
 
-  const handleListen = useCallback((): void => {
-    if (state.phase === 'success' || replaying) {
-      return;
+  // ── Parent fallback: mic denied/unavailable only. Model the word, allow tap ─
+  useEffect(() => {
+    if (state.phase !== 'parentFallback') {
+      return undefined;
     }
-    soundService.playTap(settings);
-    dispatch({ type: 'begin-listening' });
-    void mic.start().then((ok) => {
-      setMicDenied(!ok);
-    });
-  }, [mic, replaying, settings, state.phase]);
+    const { round: current, settings: current2, roundKey: rk, micStop } = dataRef.current;
+    micStop();
+    void speechService.speakSegments(
+      buildLocalizedSegments(
+        [
+          { he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 380 },
+          SILLY_ALIEN_PROMPT,
+        ],
+        current2.languageMode,
+        current2.englishVoiceLocale,
+      ),
+      current2,
+      { scope: SPEECH_SCOPE, key: `fallback:${rk}`, priority: 'prompt' },
+    );
+    return undefined;
+  }, [state.phase, roundKey]);
 
-  const handleAffirm = useCallback((): void => {
-    if (state.phase === 'success' || replaying) {
-      return;
-    }
-    soundService.playTap(settings);
-    mic.stop();
-    dispatch({ type: 'succeed' });
-  }, [mic, replaying, settings, state.phase]);
-
+  const isLocked = state.phase === 'locked';
+  const isPresenting = state.phase === 'presenting';
   const isListening = state.phase === 'listening';
+  const isNudge = state.phase === 'nudge';
   const isSuccess = state.phase === 'success';
-  const mood: AlienFaceProps['mood'] = isSuccess ? 'happy' : isListening ? 'listening' : 'idle';
-  const bubbleWord = isSuccess || replaying ? round.fullHe : round.brokenHe;
-  const bubbleWordEn = isSuccess || replaying ? round.fullEn : round.brokenEn;
+  const isFallback = state.phase === 'parentFallback';
+
+  const showFull = isSuccess || replaying;
+  const mood: AlienMood = isSuccess
+    ? 'happy'
+    : isListening
+      ? 'listening'
+      : isLocked
+        ? 'asleep'
+        : 'confused';
+  const bubbleWord = showFull ? round.fullHe : round.brokenHe;
+  const bubbleWordEn = showFull ? round.fullEn : round.brokenEn;
   const progress = selectEffortProgress(state);
   const voiceActive = state.currentLevel >= SILLY_ALIEN_LEVEL_THRESHOLD;
+  const syllableLoose = isPresenting || isListening || isNudge;
 
-  const liveStatus = isSuccess
-    ? (englishOnly ? `Yes! ${round.fullEn}` : `כן! ${round.fullHe}`)
-    : isListening
-      ? (englishOnly ? SILLY_ALIEN_LISTENING.en : SILLY_ALIEN_LISTENING.he)
-      : (englishOnly ? round.promptEn : round.promptHe);
+  const alienTapLabel = englishOnly
+    ? isLocked
+      ? 'Wake up the alien'
+      : isFallback
+        ? 'Grown-up: tap the alien to continue'
+        : isListening || isNudge
+          ? 'Tap if you already said it'
+          : 'The alien is talking'
+    : isLocked
+      ? 'להעיר את החייזר'
+      : isFallback
+        ? 'מבוגר: הקישו על החייזר כדי להמשיך'
+        : isListening || isNudge
+          ? 'הקישו אם כבר אמרתם'
+          : 'החייזר מדבר';
+
+  const liveStatus = isLocked
+    ? (englishOnly ? 'Tap the alien to wake it up' : 'הקישו על החייזר כדי להעיר אותו')
+    : isSuccess
+      ? (englishOnly ? `Yes! ${round.fullEn}` : `כן! ${round.fullHe}`)
+      : isListening
+        ? (englishOnly ? SILLY_ALIEN_LISTENING.en : SILLY_ALIEN_LISTENING.he)
+        : isNudge
+          ? (englishOnly ? SILLY_ALIEN_RETRY.en : SILLY_ALIEN_RETRY.he)
+          : isFallback
+            ? (englishOnly
+              ? 'No microphone — a grown-up can tap the alien.'
+              : 'אין מיקרופון — מבוגר יכול להקיש על החייזר.')
+            : (englishOnly ? round.promptEn : round.promptHe);
 
   const surfaceStyle = {
     '--level': state.currentLevel,
@@ -263,8 +499,8 @@ export function SillyAlienGame({
       accentClass={gameMeta.sillyAlien.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={() => void speakPrompt(true)}
-      repeatDisabled={settings.quietMode || !speechStatus.supported}
+      onRepeat={handleRepeat}
+      repeatDisabled={settings.quietMode || !speechStatus.supported || isLocked || !mediaReady}
       repeatSpeaking={speechStatus.speaking}
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
@@ -281,14 +517,37 @@ export function SillyAlienGame({
         ) : undefined
       }
     >
-      <div className="silly-alien-surface" style={surfaceStyle}>
+      <div className="silly-alien-surface" data-phase={state.phase} style={surfaceStyle}>
         <div className="silly-alien-stage">
-          <AlienFace level={state.currentLevel} mood={mood} replaying={replaying} />
-          <div
-            className={`silly-alien-bubble ${isSuccess || replaying ? 'is-full' : ''}`}
-            aria-hidden="true"
+          <button
+            type="button"
+            className={`silly-alien-figure-tap silly-alien-figure-tap--${state.phase}`}
+            onClick={handleAlienTap}
+            aria-label={alienTapLabel}
           >
-            {!isSuccess && !replaying ? (
+            <AlienFace
+              level={state.currentLevel}
+              mood={mood}
+              replaying={replaying}
+              chasing={isPresenting}
+            />
+            <span
+              className={`silly-alien-syllable ${syllableLoose ? 'is-loose' : 'is-home'}`}
+              lang={englishOnly ? 'en' : 'he'}
+              aria-hidden="true"
+            >
+              {round.droppedLetterHe}
+            </span>
+            {isLocked ? (
+              <span className="silly-alien-wake" aria-hidden="true">
+                <span className="silly-alien-wake__ring" />
+                <span className="silly-alien-wake__hand">👆</span>
+              </span>
+            ) : null}
+          </button>
+
+          <div className={`silly-alien-bubble ${showFull ? 'is-full' : ''}`} aria-hidden="true">
+            {!showFull ? (
               <span className="silly-alien-bubble__ghost">{round.droppedLetterHe}</span>
             ) : null}
             <span className="silly-alien-bubble__word" lang={englishOnly ? 'en' : 'he'}>
@@ -306,72 +565,38 @@ export function SillyAlienGame({
         </div>
 
         <div className="silly-alien-controls">
-          {!isListening && !isSuccess ? (
-            <button
-              type="button"
-              className="silly-alien-mic-button"
-              onClick={handleListen}
+          {isListening || isNudge ? (
+            <div
+              className={`silly-alien-reactor ${voiceActive ? 'is-hot' : ''} ${isNudge ? 'is-nudge' : ''}`}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress * 100)}
+              aria-label={englishOnly ? 'Voice effort' : 'עוצמת הקול'}
             >
-              <MicIcon />
-              <span>{englishOnly ? 'Press and speak' : 'לוחצים ומדברים'}</span>
-            </button>
+              <span className="silly-alien-reactor__ring" />
+              <span className="silly-alien-reactor__core" />
+            </div>
           ) : null}
 
-          {isListening ? (
-            <div className="silly-alien-listening" role="group">
-              <div
-                className={`silly-alien-meter ${voiceActive ? 'is-hot' : ''}`}
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(progress * 100)}
-                aria-label={englishOnly ? 'Voice effort' : 'עוצמת הקול'}
-              >
-                <span className="silly-alien-meter__fill" />
-              </div>
-              <p className="silly-alien-listening__label">
-                {englishOnly ? SILLY_ALIEN_LISTENING.en : SILLY_ALIEN_LISTENING.he}
-              </p>
+          {isFallback ? (
+            <div className="silly-alien-fallback" role="group">
               <button
                 type="button"
-                className="silly-alien-affirm"
-                onClick={handleAffirm}
+                className="silly-alien-fallback__button"
+                onClick={handleAlienTap}
               >
-                {englishOnly ? 'I said it!' : 'אמרתי!'}
+                {englishOnly ? 'Help the alien' : 'עוזרים לחייזר'}
               </button>
-              {micDenied ? (
-                <p className="silly-alien-hint">
-                  {englishOnly
-                    ? 'No microphone — tap the button when you say it.'
-                    : 'אין מיקרופון — לוחצים על הכפתור אחרי שאומרים.'}
-                </p>
-              ) : null}
+              <p className="silly-alien-hint">
+                {englishOnly
+                  ? 'No microphone — a grown-up can tap.'
+                  : 'אין מיקרופון — מבוגר יכול להקיש.'}
+              </p>
             </div>
           ) : null}
         </div>
       </div>
     </GameShell>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg
-      className="silly-alien-mic-button__icon"
-      viewBox="0 0 48 48"
-      role="presentation"
-      aria-hidden="true"
-    >
-      <rect x="18" y="6" width="12" height="24" rx="6" fill="currentColor" />
-      <path
-        d="M12 22a12 12 0 0 0 24 0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      <line x1="24" y1="34" x2="24" y2="42" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-      <line x1="16" y1="42" x2="32" y2="42" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-    </svg>
   );
 }
