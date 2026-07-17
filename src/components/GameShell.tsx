@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { HomeIconArt, RestartIconArt } from '../art/controls';
+import { HomeIconArt, RestartIconArt, SpeakerIconArt } from '../art/controls';
 import { PuppyMascotArt } from '../art/mascot';
 import type { LanguageMode } from '../domain/types';
 
@@ -10,7 +10,11 @@ interface GameShellProps {
   onHome: () => void;
   onRestart?: () => void;
   restartDisabled?: boolean;
-  restartLabel: string;
+  restartLabel?: string;
+  onRepeat?: () => void;
+  repeatDisabled?: boolean;
+  repeatSpeaking?: boolean;
+  replayLabel?: string;
   homeLabel: string;
   /** Visually-hidden but screen-reader-announced current task state. */
   liveStatus: string;
@@ -21,10 +25,9 @@ interface GameShellProps {
 }
 
 /**
- * Minimal child game frame: a top rail with exactly two large controls
- * (home/back, restart) and nothing else instructional. The stage below fills
- * the rest of the viewport without page scroll. The caregiver gate never
- * renders inside a game screen.
+ * Minimal child game frame: a top rail with home/back plus one game action.
+ * The stage below fills the rest of the viewport without page scroll.
+ * The caregiver gate never renders inside a game screen.
  */
 export function GameShell({
   ariaLabel,
@@ -34,6 +37,10 @@ export function GameShell({
   onRestart,
   restartDisabled,
   restartLabel,
+  onRepeat,
+  repeatDisabled,
+  repeatSpeaking,
+  replayLabel,
   homeLabel,
   liveStatus,
   languageMode,
@@ -52,7 +59,18 @@ export function GameShell({
         <button className="rail-button rail-button--home" onClick={onHome} type="button" aria-label={homeLabel}>
           <HomeIconArt className="rail-button__icon" />
         </button>
-        {onRestart ? (
+        {onRepeat ? (
+          <button
+            className={`rail-button rail-button--replay ${repeatSpeaking ? 'is-speaking' : ''}`}
+            disabled={repeatDisabled}
+            onClick={onRepeat}
+            type="button"
+            aria-label={replayLabel}
+            aria-pressed={repeatSpeaking}
+          >
+            <SpeakerIconArt className="rail-button__icon" />
+          </button>
+        ) : onRestart ? (
           <button
             className="rail-button rail-button--restart"
             disabled={restartDisabled}

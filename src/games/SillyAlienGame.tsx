@@ -145,6 +145,8 @@ function AlienFace({ level, mood, replaying, chasing }: AlienFaceProps) {
 export function SillyAlienGame({
   domainProgress,
   settings,
+  mediaReady,
+  speechStatus,
   onBack,
   onCompleteRound,
 }: ToddlerGameProps) {
@@ -173,6 +175,7 @@ export function SillyAlienGame({
   const generation = useGenerationToken(mediaScope);
   const replayGenerationRef = useRef<GenerationTokenController | null>(null);
   replayGenerationRef.current ??= new GenerationTokenController();
+  const replayGeneration = replayGenerationRef.current;
   const replayGateRef = useRef<ReplayGate>(CLEAR_REPLAY_GATE);
   const setReplayGate = useCallback((next: ReplayGate): void => {
     replayGateRef.current = next;
@@ -263,6 +266,66 @@ export function SillyAlienGame({
       dispatch({ type: 'succeed' });
     }
   }, [unlock]);
+
+  const handleRepeat = useCallback((): void => {
+    const snapshot = dataRef.current;
+    const {
+      phase,
+      round: current,
+      settings: currentSettings,
+      roundKey: rk,
+      micStop,
+      mediaScope: scope,
+    } = snapshot;
+    micStop();
+    interactionMediaCoordinator.notifyInteraction(scope, 'touch');
+    const replayToken = replayGeneration.issue({
+      ...scope,
+      stepId: `${scope.stepId}:repeat`,
+    });
+    if (phase === 'presenting' || phase === 'listening' || phase === 'nudge') {
+      setReplayGate({ status: 'active', token: replayToken });
+    }
+    const segments = [
+      ...buildLocalizedSegments(
+        [{ he: current.brokenHe, en: current.brokenEn, pauseAfterMs: 420 }],
+        currentSettings.languageMode,
+        currentSettings.englishVoiceLocale,
+      ),
+      ...buildPersonalizedPhraseSegments(SILLY_ALIEN_PROMPT, currentSettings),
+    ];
+    void interactionMediaCoordinator.play({
+      intentId: `silly-alien:repeat:${sessionId}:${rk}`,
+      source: 'touch',
+      scope,
+      audioClass: 'mandatory',
+      settings: currentSettings,
+      units: createInteractionMediaUnits(scope, segments),
+    }).then((outcome) => {
+      if (
+        !replayGeneration.isCurrent(replayToken)
+        || replayGateRef.current.status !== 'active'
+        || replayGateRef.current.token !== replayToken
+      ) {
+        return;
+      }
+      const currentPhase = dataRef.current.phase;
+      setReplayGate(
+        mediaOutcomeAdvances(outcome) || outcome.status === 'errored'
+          ? CLEAR_REPLAY_GATE
+          : { status: 'blocked', token: replayToken },
+      );
+      if (mediaOutcomeAdvances(outcome)) {
+        if (currentPhase === 'presenting') {
+          dispatch({ type: 'present-done' });
+        } else if (currentPhase === 'nudge') {
+          dispatch({ type: 'nudge-done' });
+        }
+      } else if (outcome.status === 'errored') {
+        dispatch({ type: 'mic-denied' });
+      }
+    });
+  }, [replayGeneration, sessionId, setReplayGate]);
 
   const handleBack = useCallback((): void => {
     const snapshot = dataRef.current;
@@ -602,16 +665,6 @@ export function SillyAlienGame({
               ? personalizeChildName(round.promptEn, settings.childName, 'en')
               : personalizeChildName(round.promptHe, settings.childName, 'he'));
 
-  const handleRestart = useCallback((): void => {
-    const snapshot = dataRef.current;
-    snapshot.invalidateGeneration();
-    replayGenerationRef.current?.invalidate();
-    snapshot.micStop();
-    interactionMediaCoordinator.notifyInteraction(snapshot.mediaScope, 'touch');
-    speechService.cancelScope(SPEECH_SCOPE);
-    startNextRound();
-  }, [startNextRound]);
-
   const surfaceStyle = {
     '--level': state.currentLevel,
     '--progress': progress,
@@ -624,8 +677,10 @@ export function SillyAlienGame({
       accentClass={gameMeta.sillyAlien.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={handleBack}
-      onRestart={handleRestart}
-      restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
+      onRepeat={handleRepeat}
+      repeatDisabled={settings.quietMode || !speechStatus.supported || isLocked || !mediaReady}
+      repeatSpeaking={speechStatus.speaking}
+      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={liveStatus}
       successOverlay={
