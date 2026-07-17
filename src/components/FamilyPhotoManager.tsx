@@ -10,6 +10,7 @@ import {
   deleteAllFamilyPhotos,
   deleteFamilyPhoto,
 } from '../services/familyPhotoStorage';
+import { publishFamilyPhotoLibraryChange } from '../services/familyPhotoLibraryEvents';
 import { useFamilyPhotoPreviews } from './useFamilyPhotoPreviews';
 
 interface FamilyPhotoManagerProps {
@@ -21,6 +22,7 @@ function photoErrorMessage(error: unknown): string {
     return {
       'unsupported-file': 'הקובץ שנבחר אינו תמונה נתמכת.',
       'file-too-large': 'התמונה גדולה מדי לעיבוד בטוח במכשיר.',
+      'dimensions-too-large': 'רזולוציית התמונה גבוהה מדי לעיבוד בטוח במכשיר הזה.',
       'decode-failed': 'לא הצלחנו לפתוח את התמונה. אפשר לבחור תמונה אחרת.',
       'invalid-dimensions': 'מידות התמונה אינן נתמכות.',
       'canvas-failed': 'המכשיר לא הצליח להכין עותק פרטי של התמונה.',
@@ -73,25 +75,39 @@ export function FamilyPhotoManager({ onLibraryCountChange }: FamilyPhotoManagerP
     setBusy(true);
     setStatus(null);
     let added = 0;
+    const addedIds: string[] = [];
     let firstError: string | null = null;
-    for (const file of files) {
+    const availableCapacity = Math.max(0, FAMILY_PHOTO_LIBRARY_LIMIT - previews.length);
+    const filesWithinCapacity = files.slice(0, availableCapacity);
+    const selectionExceedsCapacity = filesWithinCapacity.length < files.length;
+    for (const file of filesWithinCapacity) {
       try {
         const converted = await convertFamilyPhoto(file);
-        await addFamilyPhoto({
+        const stored = await addFamilyPhoto({
           blob: converted.blob,
           width: converted.width,
           height: converted.height,
-        });
+        }, { publishChange: false });
         added += 1;
+        addedIds.push(stored.id);
       } catch (error) {
         firstError ??= photoErrorMessage(error);
+        if (error instanceof FamilyPhotoStorageError && error.code === 'library-full') {
+          break;
+        }
       }
+    }
+    if (selectionExceedsCapacity) {
+      firstError ??= photoErrorMessage(new FamilyPhotoStorageError(
+        'library-full',
+        'The selected batch exceeds the available local photo capacity.',
+      ));
+    }
+    if (addedIds.length > 0) {
+      publishFamilyPhotoLibraryChange({ kind: 'added', ids: addedIds });
     }
     if (mountedRef.current) {
       setBusy(false);
-      if (added > 0) {
-        reload();
-      }
       setStatus(
         firstError
           ? `${added > 0 ? `נשמרו ${added} תמונות. ` : ''}${firstError}`
@@ -107,7 +123,6 @@ export function FamilyPhotoManager({ onLibraryCountChange }: FamilyPhotoManagerP
       const deleted = await deleteFamilyPhoto(id);
       if (mountedRef.current) {
         setStatus(deleted ? 'התמונה נמחקה מהמכשיר.' : 'התמונה כבר לא נמצאת במכשיר.');
-        reload();
       }
     } catch (error) {
       if (mountedRef.current) {
@@ -128,7 +143,6 @@ export function FamilyPhotoManager({ onLibraryCountChange }: FamilyPhotoManagerP
       const deleted = await deleteAllFamilyPhotos();
       if (mountedRef.current) {
         setStatus(deleted > 0 ? `נמחקו ${deleted} תמונות מהמכשיר.` : 'ספריית התמונות כבר ריקה.');
-        reload();
       }
     } catch (error) {
       if (mountedRef.current) {

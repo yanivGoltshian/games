@@ -46,6 +46,10 @@ export interface AddFamilyPhotoInput {
   label?: string;
 }
 
+export interface AddFamilyPhotoOptions {
+  publishChange?: boolean;
+}
+
 let databasePromise: Promise<IDBDatabase> | null = null;
 
 function storageError(
@@ -178,7 +182,10 @@ export async function getFamilyPhoto(id: string): Promise<StoredFamilyPhoto | nu
   return (await requestResult(request, 'read-failed', 'The local photo could not be read.')) ?? null;
 }
 
-export async function addFamilyPhoto(input: AddFamilyPhotoInput): Promise<StoredFamilyPhoto> {
+export async function addFamilyPhoto(
+  input: AddFamilyPhotoInput,
+  options: AddFamilyPhotoOptions = {},
+): Promise<StoredFamilyPhoto> {
   const id = await digestPhoto(input.blob);
   const label = normalizedLabel(input.label);
   const record: StoredFamilyPhoto = {
@@ -234,7 +241,9 @@ export async function addFamilyPhoto(input: AddFamilyPhotoInput): Promise<Stored
       };
     };
     transaction.oncomplete = () => {
-      publishFamilyPhotoLibraryChange({ kind: 'added', id });
+      if (options.publishChange !== false) {
+        publishFamilyPhotoLibraryChange({ kind: 'added', ids: [id] });
+      }
       resolve(record);
     };
     transaction.onerror = () => {
@@ -268,9 +277,7 @@ export async function deleteFamilyPhoto(id: string): Promise<boolean> {
       }
     };
     transaction.oncomplete = () => {
-      if (found) {
-        publishFamilyPhotoLibraryChange({ kind: 'deleted', id });
-      }
+      publishFamilyPhotoLibraryChange({ kind: 'deleted', id });
       resolve(found);
     };
     transaction.onerror = () => undefined;
@@ -304,9 +311,7 @@ export async function deleteAllFamilyPhotos(): Promise<number> {
       }
     };
     transaction.oncomplete = () => {
-      if (deletedCount > 0) {
-        publishFamilyPhotoLibraryChange({ kind: 'cleared' });
-      }
+      publishFamilyPhotoLibraryChange({ kind: 'cleared' });
       resolve(deletedCount);
     };
     transaction.onerror = () => undefined;

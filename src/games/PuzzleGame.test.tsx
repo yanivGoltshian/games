@@ -14,6 +14,7 @@ const doubles = vi.hoisted(() => ({
   familyPhotosError: null as Error | null,
   speakSegments: vi.fn(),
   startNextRound: vi.fn(),
+  refreshRoundForCurrentProgress: vi.fn(),
 }));
 
 const builtInRound: PuzzleRound = {
@@ -92,6 +93,7 @@ vi.mock('./useAdaptiveRound', () => ({
     round: builtInRound,
     roundKey: 1,
     startNextRound: doubles.startNextRound,
+    refreshRoundForCurrentProgress: doubles.refreshRoundForCurrentProgress,
   }),
 }));
 
@@ -139,6 +141,7 @@ describe('PuzzleGame family photos', () => {
     doubles.familyPhotosLoading = false;
     doubles.familyPhotosError = null;
     doubles.speakSegments.mockReset();
+    doubles.refreshRoundForCurrentProgress.mockReset();
     doubles.speakSegments.mockResolvedValue({ status: 'completed' });
     container = document.createElement('div');
     document.body.append(container);
@@ -217,6 +220,7 @@ describe('PuzzleGame family photos', () => {
 
     expect(container.querySelector('[data-image-kind="original"]')).not.toBeNull();
     expect(container.querySelector('[data-image-kind="family"]')).toBeNull();
+    expect(doubles.refreshRoundForCurrentProgress).toHaveBeenCalledOnce();
   });
 });
 

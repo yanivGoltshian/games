@@ -9,7 +9,7 @@ import { useFamilyPhotoPreviews, type FamilyPhotoPreview } from './useFamilyPhot
 const doubles = vi.hoisted(() => ({
   listFamilyPhotos: vi.fn(),
   libraryChangeListener: null as ((change:
-    | { kind: 'added'; id: string }
+    | { kind: 'added'; ids: string[] }
     | { kind: 'deleted'; id: string }
     | { kind: 'cleared' }
   ) => void) | null,
@@ -119,6 +119,23 @@ describe('useFamilyPhotoPreviews', () => {
     await act(async () => root.unmount());
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview-3-2');
     root = createRoot(container);
+  });
+
+  it('reuses object URLs for unchanged records during an event reload', async () => {
+    doubles.listFamilyPhotos
+      .mockResolvedValueOnce([storedPhoto('one')])
+      .mockResolvedValueOnce([storedPhoto('one'), storedPhoto('two')]);
+    const onChange = vi.fn();
+
+    await act(async () => root.render(<Harness onChange={onChange} />));
+    await act(async () => doubles.libraryChangeListener?.({
+      kind: 'added',
+      ids: ['two'],
+    }));
+
+    expect(doubles.listFamilyPhotos).toHaveBeenCalledTimes(2);
+    expect(createObjectURL).toHaveBeenCalledTimes(2);
+    expect(revokeObjectURL).not.toHaveBeenCalled();
   });
 
   it('does not create URLs or set preview state after navigation unmounts a pending load', async () => {

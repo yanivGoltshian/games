@@ -3,6 +3,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   FAMILY_PHOTO_MAX_LONG_SIDE,
+  FAMILY_PHOTO_MAX_SOURCE_PIXELS,
   FAMILY_PHOTO_OUTPUT_MIME,
   FAMILY_PHOTO_OUTPUT_QUALITY,
   assertPrivateFamilyPhotoOutput,
@@ -10,6 +11,7 @@ import {
   convertFamilyPhoto,
   type FamilyPhotoConversionEnvironment,
 } from './familyPhotoConversion';
+import type { FamilyPhotoPreflight } from './familyPhotoPreflight';
 
 const CLEAN_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xda, 0x00, 0x02, 0xff, 0xd9]);
 const JPEG_WITH_EXIF = new Uint8Array([
@@ -28,6 +30,7 @@ function conversionEnvironment(
   dispose: ReturnType<typeof vi.fn>;
   drawImage: ReturnType<typeof vi.fn>;
   encode: ReturnType<typeof vi.fn>;
+  decode: ReturnType<typeof vi.fn>;
 } {
   const dispose = vi.fn();
   const drawImage = vi.fn();
@@ -42,14 +45,17 @@ function conversionEnvironment(
     value: vi.fn(() => context),
   });
   const encode = vi.fn(async () => new Blob([output], { type: FAMILY_PHOTO_OUTPUT_MIME }));
+  const preflight: FamilyPhotoPreflight = { format: 'jpeg', width, height };
+  const decode = vi.fn(async () => ({
+    source: document.createElement('img'),
+    width,
+    height,
+    dispose,
+  }));
   return {
     environment: {
-      decode: vi.fn(async () => ({
-        source: document.createElement('img'),
-        width,
-        height,
-        dispose,
-      })),
+      preflight: vi.fn(async () => preflight),
+      decode,
       createCanvas: vi.fn((canvasWidth, canvasHeight) => {
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
@@ -60,6 +66,7 @@ function conversionEnvironment(
     dispose,
     drawImage,
     encode,
+    decode,
   };
 }
 
@@ -71,7 +78,7 @@ describe('familyPhotoConversion', () => {
   });
 
   it('draws decoded pixels into a new JPEG and disposes the original source', async () => {
-    const { environment, dispose, drawImage, encode } = conversionEnvironment(4032, 3024);
+    const { environment, dispose, drawImage, encode, decode } = conversionEnvironment(4032, 3024);
     const source = new File([JPEG_WITH_EXIF], 'synthetic-with-exif.jpg', { type: 'image/jpeg' });
 
     const converted = await convertFamilyPhoto(source, environment);
@@ -80,6 +87,11 @@ describe('familyPhotoConversion', () => {
       width: FAMILY_PHOTO_MAX_LONG_SIDE,
       height: 1200,
       mimeType: FAMILY_PHOTO_OUTPUT_MIME,
+    });
+    expect(decode).toHaveBeenCalledWith(source, {
+      preflight: { format: 'jpeg', width: 4032, height: 3024 },
+      targetWidth: 1600,
+      targetHeight: 1200,
     });
     expect(drawImage).toHaveBeenCalledWith(expect.any(HTMLImageElement), 0, 0, 1600, 1200);
     expect(encode).toHaveBeenCalledWith(
@@ -129,6 +141,17 @@ describe('familyPhotoConversion', () => {
     await expect(convertFamilyPhoto(source, environment)).rejects.toMatchObject({
       code: 'file-too-large',
     });
+    expect(environment.decode).not.toHaveBeenCalled();
+  });
+
+  it('rejects unsafe pixel dimensions before invoking the decode hook', async () => {
+    const { environment } = conversionEnvironment(7000, 7001);
+    const source = new File(['compressed'], 'oversized.jpg', { type: 'image/jpeg' });
+
+    await expect(convertFamilyPhoto(source, environment)).rejects.toMatchObject({
+      code: 'dimensions-too-large',
+    });
+    expect(7000 * 7001).toBeGreaterThan(FAMILY_PHOTO_MAX_SOURCE_PIXELS);
     expect(environment.decode).not.toHaveBeenCalled();
   });
 

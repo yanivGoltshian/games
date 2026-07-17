@@ -72,15 +72,21 @@ export function useFamilyPhotoPreviews(): FamilyPhotoPreviewState & { reload: ()
         }
 
         const nextPreviews: FamilyPhotoPreview[] = [];
+        const createdObjectUrls: string[] = [];
         try {
           photos.forEach((photo) => {
+            const existingObjectUrl = objectUrlsRef.current.get(photo.id);
+            const objectUrl = existingObjectUrl ?? URL.createObjectURL(photo.blob);
+            if (!existingObjectUrl) {
+              createdObjectUrls.push(objectUrl);
+            }
             nextPreviews.push({
               ...photo,
-              objectUrl: URL.createObjectURL(photo.blob),
+              objectUrl,
             });
           });
         } catch (error) {
-          nextPreviews.forEach((preview) => URL.revokeObjectURL(preview.objectUrl));
+          createdObjectUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
           throw new FamilyPhotoStorageError(
             'read-failed',
             'The local photo previews could not be prepared.',
@@ -93,7 +99,11 @@ export function useFamilyPhotoPreviews(): FamilyPhotoPreviewState & { reload: ()
           nextPreviews.map((preview) => [preview.id, preview.objectUrl]),
         );
         setState({ loading: false, previews: nextPreviews, error: null });
-        previousUrls.forEach((url) => URL.revokeObjectURL(url));
+        previousUrls.forEach((url, id) => {
+          if (objectUrlsRef.current.get(id) !== url) {
+            URL.revokeObjectURL(url);
+          }
+        });
       })
       .catch((error: unknown) => {
         if (!active || generationRef.current !== generation) {

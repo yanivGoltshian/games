@@ -17,9 +17,15 @@ export function useAdaptiveRound<TRound>(
   progress: DomainProgress,
   generate: RoundGenerator<TRound>,
   history?: AdaptiveRoundHistory<TRound>,
-): { round: TRound; roundKey: number; startNextRound: (progressOverride?: DomainProgress) => void } {
+): {
+  round: TRound;
+  roundKey: number;
+  startNextRound: (progressOverride?: DomainProgress) => void;
+  refreshRoundForCurrentProgress: () => void;
+} {
   const latestProgress = useRef(progress);
   const roundIndex = useRef(0);
+  const roundProgressSignature = useRef(progressSignature(progress));
   const recentSignatures = useRef<string[]>([]);
   const getSignature = history?.getSignature;
   const historyLimit = Math.max(6, history?.limit ?? 8);
@@ -50,9 +56,31 @@ export function useAdaptiveRound<TRound>(
   const [round, setRound] = useState(() => makeRound(progress, roundIndex.current));
 
   const startNextRound = useCallback((progressOverride?: DomainProgress) => {
+    const currentProgress = progressOverride ?? latestProgress.current;
     roundIndex.current += 1;
-    setRound(makeRound(progressOverride ?? latestProgress.current, roundIndex.current));
+    roundProgressSignature.current = progressSignature(currentProgress);
+    setRound(makeRound(currentProgress, roundIndex.current));
   }, [makeRound]);
 
-  return { round, roundKey: roundIndex.current, startNextRound };
+  const refreshRoundForCurrentProgress = useCallback(() => {
+    const currentProgress = latestProgress.current;
+    const currentSignature = progressSignature(currentProgress);
+    if (roundProgressSignature.current === currentSignature) {
+      return;
+    }
+    roundIndex.current += 1;
+    roundProgressSignature.current = currentSignature;
+    setRound(makeRound(currentProgress, roundIndex.current));
+  }, [makeRound]);
+
+  return {
+    round,
+    roundKey: roundIndex.current,
+    startNextRound,
+    refreshRoundForCurrentProgress,
+  };
+}
+
+function progressSignature(progress: DomainProgress): string {
+  return `${progress.attempts}:${progress.successes}:${progress.level}`;
 }

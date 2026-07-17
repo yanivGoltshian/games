@@ -55,6 +55,7 @@ export function PuzzleGame({
     round: builtInRound,
     roundKey: builtInRoundKey,
     startNextRound,
+    refreshRoundForCurrentProgress,
   } = useAdaptiveRound(
     'puzzle',
     domainProgress,
@@ -214,6 +215,10 @@ export function PuzzleGame({
   const returnToPhotoSelection = useCallback(() => {
     setExperience({ kind: familyPhotos.length > 0 ? 'choose' : 'built-in' });
   }, [familyPhotos.length]);
+  const chooseBuiltInPuzzle = useCallback(() => {
+    refreshRoundForCurrentProgress();
+    setExperience({ kind: 'built-in' });
+  }, [refreshRoundForCurrentProgress]);
 
   const selectionShell = (
     <GameShell
@@ -235,7 +240,7 @@ export function PuzzleGame({
             </button>
             <button
               className="puzzle-photo-choice puzzle-photo-choice--built-in"
-              onClick={() => setExperience({ kind: 'built-in' })}
+              onClick={chooseBuiltInPuzzle}
               type="button"
               aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
             >
@@ -252,7 +257,7 @@ export function PuzzleGame({
           <button
             className="puzzle-photo-choice puzzle-photo-choice--built-in"
             data-puzzle-source="built-in"
-            onClick={() => setExperience({ kind: 'built-in' })}
+            onClick={chooseBuiltInPuzzle}
             type="button"
             aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
           >
