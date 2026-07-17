@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RetryScope } from '../content/retry';
+import type { CommunicationGameScope } from '../domain/communicationGame';
 import { SessionRetryHistory } from '../domain/retry';
 import type { ToddlerSettings } from '../domain/types';
+import {
+  createInteractionMediaUnits,
+  interactionMediaCoordinator,
+} from '../services/interactionMediaCoordinator';
 import { soundService } from '../services/sound';
 import {
   buildLocalizedSegments,
@@ -17,6 +22,10 @@ interface RetryFeedbackOptions {
   scope: string;
   roundKey: string | number;
   settings: ToddlerSettings;
+  coordinatedSpeech?: {
+    intentIdPrefix: string;
+    scope: CommunicationGameScope;
+  };
 }
 
 interface RunRetryOptions {
@@ -28,7 +37,12 @@ interface RunRetryOptions {
   lockUntilComplete?: boolean;
 }
 
-export function useRetryFeedback({ scope, roundKey, settings }: RetryFeedbackOptions) {
+export function useRetryFeedback({
+  scope,
+  roundKey,
+  settings,
+  coordinatedSpeech,
+}: RetryFeedbackOptions) {
   const [retryBusy, setRetryBusy] = useState(false);
   const interactionLockedRef = useRef(false);
   const callIdRef = useRef(0);
@@ -110,10 +124,30 @@ export function useRetryFeedback({ scope, roundKey, settings }: RetryFeedbackOpt
       }, settings);
       const model = buildLocalizedSegments(modelLines, settings.languageMode, settings.englishVoiceLocale);
 
-      const speech = speechService.speakRetrySequence(model, encouragement, settings, {
-        scope,
-        key: 'retry',
-      });
+      const speech = coordinatedSpeech
+        ? (() => {
+            const mediaScope = {
+              ...coordinatedSpeech.scope,
+              stepId: `${coordinatedSpeech.scope.stepId}:${callId}`,
+            };
+            const segments = [...model, ...encouragement];
+            const modelEndIndex = model.length - 1;
+            if (modelEndIndex >= 0 && encouragement.length > 0) {
+              segments[modelEndIndex] = { ...segments[modelEndIndex]!, pauseAfterMs: 260 };
+            }
+            return interactionMediaCoordinator.play({
+              intentId: `${coordinatedSpeech.intentIdPrefix}:${roundKey}:${callId}`,
+              source: 'automatic',
+              scope: mediaScope,
+              audioClass: 'conditional',
+              settings,
+              units: createInteractionMediaUnits(mediaScope, segments),
+            });
+          })()
+        : speechService.speakRetrySequence(model, encouragement, settings, {
+            scope,
+            key: 'retry',
+          });
 
       if (!lockUntilComplete) {
         await minimumVisualTime;
@@ -130,7 +164,7 @@ export function useRetryFeedback({ scope, roundKey, settings }: RetryFeedbackOpt
         setRetryBusy(false);
       }
     },
-    [scope, settings],
+    [coordinatedSpeech, roundKey, scope, settings],
   );
 
   return { retryBusy, runRetry };

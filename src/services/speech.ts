@@ -40,6 +40,8 @@ export interface SpeechRequestOptions {
   scope?: string;
   key?: string;
   priority?: SpeechPriority;
+  /** Called once when the first segment produces a real playback start event. */
+  onStart?: () => void;
   /** Reserved for explicit user replay. Routine prompts must never interrupt. */
   interrupt?: boolean;
   /** Marks feedback that becomes contradictory as soon as the round succeeds. */
@@ -59,6 +61,8 @@ interface QueuedSpeechRequest {
   cancelCurrent: (() => void) | null;
   retryCurrent: (() => void) | null;
   staleAfterSuccess: boolean;
+  started: boolean;
+  onStart: (() => void) | null;
 }
 
 type SpeechActivationState = 'locked' | 'priming' | 'ready';
@@ -529,6 +533,14 @@ export class SpeechService {
     this.active.cancelCurrent?.();
   }
 
+  private markRequestStarted(request: QueuedSpeechRequest): void {
+    if (request.started) {
+      return;
+    }
+    request.started = true;
+    request.onStart?.();
+  }
+
   private supersedeActiveRetryAtBoundary(): void {
     if (!this.active || this.active.priority !== 'retry') {
       return;
@@ -605,6 +617,8 @@ export class SpeechService {
         cancelCurrent: null,
         retryCurrent: null,
         staleAfterSuccess: options.staleAfterSuccess ?? false,
+        started: false,
+        onStart: options.onStart ?? null,
       });
       this.queue.sort((left, right) => (
         PRIORITY_WEIGHT[right.priority] - PRIORITY_WEIGHT[left.priority]
@@ -727,6 +741,7 @@ export class SpeechService {
         started = true;
         clearPrestartGuard();
         request.retryCurrent = null;
+        this.markRequestStarted(request);
         onStart?.();
         this.activeCue = segment.cue ?? null;
         this.notify();
@@ -811,6 +826,7 @@ export class SpeechService {
           if (settled || request.cancelledAs) {
             return;
           }
+          this.markRequestStarted(request);
           this.activeCue = segment.cue ?? null;
           this.notify();
         },

@@ -1,15 +1,30 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CaregiverGate } from './components/CaregiverGate';
 import { CaregiverPanel } from './components/CaregiverPanel';
+import { CommunicationShelf } from './components/CommunicationShelf';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomeScreen } from './components/HomeScreen';
+import {
+  buildCommunicationCaregiverItems,
+  communicationIntegration as defaultCommunicationIntegration,
+  evaluateCommunicationPublicAvailability,
+  type CommunicationIntegrationContract,
+} from './communication/integration';
+import {
+  COMMUNICATION_SHELF_PATH,
+  communicationShelfEntry,
+} from './communication/registry';
 import { applyRoundResult, createInitialProgress } from './domain/progression';
 import { childGreeting, normalizeChildName } from './domain/childName';
 import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
 import { speechService } from './services/speech';
-import { parseHash, type Route } from './routes';
+import {
+  isCommunicationHash,
+  parseHash,
+  resolveRouteForCommunicationAvailability,
+} from './routes';
 import { CountingGame } from './games/CountingGame';
 import { ListeningGame } from './games/ListeningGame';
 import { MemoryGame } from './games/MemoryGame';
@@ -24,22 +39,60 @@ function navigate(path: string) {
   window.location.hash = path;
 }
 
-export default function App() {
+function replaceHashWithoutMedia(path: string) {
+  window.history.replaceState(window.history.state, '', `#${path}`);
+}
+
+export interface AppProps {
+  communication?: CommunicationIntegrationContract;
+}
+
+export default function App({
+  communication = defaultCommunicationIntegration,
+}: AppProps = {}) {
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [progress, setProgress] = useState(() => loadProgress(prefersReducedMotion));
-  const [route, setRoute] = useState<Route>(() => parseHash(typeof window !== 'undefined' ? window.location.hash : '#/'));
+  const [requestedHash, setRequestedHash] = useState(() => (
+    typeof window !== 'undefined' ? window.location.hash || '#/' : '#/'
+  ));
   const [mediaReady, setMediaReady] = useState(false);
   const [caregiverUnlocked, setCaregiverUnlocked] = useState(false);
   const [speechStatus, setSpeechStatus] = useState(() => speechService.getStatus());
+  const requestedRoute = useMemo(() => parseHash(requestedHash), [requestedHash]);
+  const communicationAvailability = useMemo(
+    () => evaluateCommunicationPublicAvailability(communication),
+    [communication],
+  );
+  const route = useMemo(
+    () => resolveRouteForCommunicationAvailability(
+      requestedRoute,
+      communicationAvailability.publicActivityIds,
+    ),
+    [communicationAvailability.publicActivityIds, requestedRoute],
+  );
+  const communicationCaregiverItems = useMemo(
+    () => buildCommunicationCaregiverItems(
+      communication,
+      progress,
+      communicationAvailability.release,
+    ),
+    [communication, communicationAvailability.release, progress],
+  );
 
   useEffect(() => {
     if (!window.location.hash) {
       navigate('/');
     }
-    const handleHashChange = () => setRoute(parseHash(window.location.hash));
+    const handleHashChange = () => setRequestedHash(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  useEffect(() => {
+    if (route.kind !== 'home' || !isCommunicationHash(requestedHash)) return;
+    replaceHashWithoutMedia('/');
+    setRequestedHash('#/');
+  }, [requestedHash, route.kind]);
 
   useEffect(() => {
     saveProgress(progress);
@@ -48,9 +101,13 @@ export default function App() {
   useEffect(() => speechService.subscribe(setSpeechStatus), []);
 
   useEffect(() => {
-    const englishGame = route.kind === 'game' && progress.settings.languageMode === 'en';
-    document.documentElement.lang = englishGame ? 'en' : 'he';
-    document.documentElement.dir = englishGame ? 'ltr' : 'rtl';
+    const englishChildRoute = (
+      route.kind === 'game'
+      || route.kind === 'communication-shelf'
+      || route.kind === 'communication-game'
+    ) && progress.settings.languageMode === 'en';
+    document.documentElement.lang = englishChildRoute ? 'en' : 'he';
+    document.documentElement.dir = englishChildRoute ? 'ltr' : 'rtl';
     document.body.dataset.reducedMotion = progress.settings.reducedMotion ? 'true' : 'false';
   }, [progress.settings.languageMode, progress.settings.reducedMotion, route.kind]);
 
@@ -85,6 +142,16 @@ export default function App() {
     return result.summary;
   };
 
+  const updateCommunicationProgress = (
+    communicationProgress: typeof progress.communication,
+  ) => {
+    setProgress((current) => ({
+      ...current,
+      updatedAt: Date.now(),
+      communication: communicationProgress,
+    }));
+  };
+
   const resetAll = () => {
     const next = createInitialProgress(prefersReducedMotion, Date.now());
     clearProgress();
@@ -101,7 +168,14 @@ export default function App() {
   let content;
   if (route.kind === 'caregiver') {
     content = caregiverUnlocked ? (
-      <CaregiverPanel onBack={() => navigate('/')} onReset={resetAll} onUpdateSettings={updateSettings} progress={progress} />
+      <CaregiverPanel
+        communicationItems={communicationCaregiverItems}
+        communicationReleaseAvailable={communicationAvailability.available}
+        onBack={() => navigate('/')}
+        onReset={resetAll}
+        onUpdateSettings={updateSettings}
+        progress={progress}
+      />
     ) : (
       <main className="page lock-page">
         <section className="lock-card">
@@ -132,16 +206,48 @@ export default function App() {
       sillyAlien: <SillyAlienGame {...gameProps} />,
       syllableTrain: <SyllableTrainGame {...gameProps} />,
     }[route.domain];
+  } else if (route.kind === 'communication-shelf') {
+    content = (
+      <CommunicationShelf
+        activityIds={communicationAvailability.publicActivityIds}
+        languageMode={progress.settings.languageMode}
+        onHome={() => navigate('/')}
+        onSelect={(activityId) => navigate(communicationShelfEntry(activityId).path)}
+        reducedMotion={progress.settings.reducedMotion}
+      />
+    );
+  } else if (route.kind === 'communication-game') {
+    const registration = communication.games[route.activityId];
+    if (!registration) {
+      throw new Error(`Missing communication integration for ${route.activityId}.`);
+    }
+    const CommunicationGame = registration.component;
+    content = (
+      <CommunicationGame
+        activityId={route.activityId}
+        onBackToShelf={() => navigate(COMMUNICATION_SHELF_PATH)}
+        onHome={() => navigate('/')}
+        onProgressChange={updateCommunicationProgress}
+        progress={progress.communication}
+        settings={progress.settings}
+      />
+    );
   } else {
     content = (
       <HomeScreen
+        communicationAvailable={communicationAvailability.available}
+        onOpenCommunication={() => navigate(COMMUNICATION_SHELF_PATH)}
         onOpenGame={(domain) => navigate(`/games/${domain}`)}
         settings={progress.settings}
       />
     );
   }
 
-  const routeKey = route.kind === 'game' ? `game:${route.domain}` : route.kind;
+  const routeKey = route.kind === 'game'
+    ? `game:${route.domain}`
+    : route.kind === 'communication-game'
+      ? `communication:${route.activityId}`
+      : route.kind;
 
   return (
     <div

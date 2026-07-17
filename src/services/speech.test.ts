@@ -619,6 +619,25 @@ describe('SpeechService', () => {
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
+  it('reports the first real playback start exactly once per request', async () => {
+    const onStart = vi.fn();
+    const done = service.speakSegments(
+      [
+        { text: 'כלב', locale: 'he-IL' },
+        { text: 'dog', locale: 'en-US' },
+      ],
+      settings,
+      { onStart },
+    );
+
+    expect(onStart).toHaveBeenCalledOnce();
+    synthesis.finishCurrent();
+    await flush();
+    expect(onStart).toHaveBeenCalledOnce();
+    synthesis.finishCurrent();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
   it('plays retry modeling before encouragement and exposes the active teaching cue', async () => {
     const settings = createInitialSettings();
     const cues: Array<string | null> = [];

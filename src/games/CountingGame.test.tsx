@@ -1,17 +1,25 @@
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress, createInitialSettings } from '../domain/progression';
 import type { CountingRound, ProgressUpdateSummary } from '../domain/types';
+import type { SpeechRequestOptions, SpeechResult } from '../services/speech';
 import { CountingGame } from './CountingGame';
 
 const doubles = vi.hoisted(() => ({
   cancelScope: vi.fn(),
   speakSegments: vi.fn(),
   startNextRound: vi.fn(),
-  runRetry: vi.fn(),
+}));
+
+const soundDouble = vi.hoisted(() => ({
+  playTap: vi.fn(),
+  playRetry: vi.fn(),
+  playSuccess: vi.fn(),
+  playCelebrate: vi.fn(),
+  vibrate: vi.fn(),
 }));
 
 const micDouble = vi.hoisted(() => {
@@ -37,15 +45,25 @@ const testRound: CountingRound = {
   answerEn: 'three apples',
 };
 
+function deferred<Value>() {
+  let resolve!: (value: Value) => void;
+  const promise = new Promise<Value>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 vi.mock('../services/sound', () => ({
-  soundService: {
-    playTap: vi.fn(),
-    playRetry: vi.fn(),
-    playSuccess: vi.fn(),
-  },
+  soundService: soundDouble,
 }));
 
 vi.mock('../services/speech', () => ({
+  buildLocalizedSegments: (lines: Array<{ he: string; en: string }>) => (
+    lines.map((line) => ({ text: line.he, locale: 'he-IL' }))
+  ),
+  buildPersonalizedPhraseSegments: (line: { he: string }) => (
+    [{ text: line.he, locale: 'he-IL' }]
+  ),
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
     cancelScope: doubles.cancelScope,
@@ -59,22 +77,11 @@ vi.mock('../art/objects', () => ({
   ),
 }));
 
-vi.mock('./RoundSuccessOverlay', () => ({
-  RoundSuccessOverlay: () => <div data-testid="success-overlay" />,
-}));
-
 vi.mock('./useAdaptiveRound', () => ({
   useAdaptiveRound: () => ({
     round: testRound,
     roundKey: 'counting-round-1',
     startNextRound: doubles.startNextRound,
-  }),
-}));
-
-vi.mock('./useRetryFeedback', () => ({
-  useRetryFeedback: () => ({
-    retryBusy: false,
-    runRetry: doubles.runRetry,
   }),
 }));
 
@@ -108,14 +115,24 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     vi.useFakeTimers();
     micDouble.supported = true;
     micDouble.start.mockReset();
-    micDouble.start.mockResolvedValue(true);
+    micDouble.start.mockResolvedValue({ status: 'started' });
     micDouble.stop.mockReset();
     doubles.speakSegments.mockReset();
     doubles.cancelScope.mockReset();
     doubles.startNextRound.mockReset();
-    doubles.runRetry.mockReset();
-    doubles.runRetry.mockResolvedValue(undefined);
-    doubles.speakSegments.mockResolvedValue({ requestId: 1, status: 'completed' });
+    for (const fn of Object.values(soundDouble)) {
+      fn.mockReset();
+    }
+    doubles.speakSegments.mockImplementation(
+      (
+        _segments: unknown,
+        _settings: unknown,
+        options: SpeechRequestOptions,
+      ): Promise<SpeechResult> => {
+        options.onStart?.();
+        return Promise.resolve({ requestId: 1, status: 'completed' });
+      },
+    );
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -139,27 +156,32 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     }));
   }
 
-  async function renderGame(onCompleteRound = createCompleteRound()) {
+  async function renderGame(
+    onCompleteRound = createCompleteRound(),
+    mediaReady = false,
+    strictMode = false,
+  ) {
     const progress = createInitialProgress(false, 0);
     const settings = createInitialSettings();
+    const game = (
+      <CountingGame
+        domainProgress={progress.domains.counting}
+        settings={settings}
+        overallStars={0}
+        mediaReady={mediaReady}
+        speechStatus={{
+          supported: true,
+          voiceAvailable: true,
+          speaking: false,
+          activeRequestId: null,
+          activeCue: null,
+        }}
+        onBack={() => undefined}
+        onCompleteRound={onCompleteRound}
+      />
+    );
     await act(async () => {
-      root.render(
-        <CountingGame
-          domainProgress={progress.domains.counting}
-          settings={settings}
-          overallStars={0}
-          mediaReady={false}
-          speechStatus={{
-            supported: true,
-            voiceAvailable: true,
-            speaking: false,
-            activeRequestId: null,
-            activeCue: null,
-          }}
-          onBack={() => undefined}
-          onCompleteRound={onCompleteRound}
-        />,
-      );
+      root.render(strictMode ? <StrictMode>{game}</StrictMode> : game);
     });
     // The mount effect resets mic state (calls stop once); start from a clean slate.
     micDouble.start.mockClear();
@@ -187,6 +209,17 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     expect(container.querySelector('.counting-voice')).toBeNull();
   });
 
+  it('routes the spoken prompt through the shared media coordinator', async () => {
+    await renderGame(createCompleteRound(), true);
+
+    expect(doubles.speakSegments).toHaveBeenCalledOnce();
+    expect(doubles.speakSegments.mock.calls[0]?.[2]).toMatchObject({
+      scope: expect.stringContaining('communication:counting'),
+      priority: 'prompt',
+    });
+    expect(micDouble.start).not.toHaveBeenCalled();
+  });
+
   it('opens the microphone and lights up when the toggle is pressed', async () => {
     await renderGame();
 
@@ -202,6 +235,44 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     const liveToggle = container.querySelector('.counting-voice__toggle');
     expect(liveToggle!.classList.contains('is-live')).toBe(true);
     expect(liveToggle!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps the microphone generation current after StrictMode effect replay', async () => {
+    await renderGame(createCompleteRound(), false, true);
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+    });
+
+    expect(micDouble.start).toHaveBeenCalledOnce();
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('ignores an older microphone start that settles after a newer tap succeeds', async () => {
+    const staleStart = deferred<{ status: 'cancelled' }>();
+    micDouble.start
+      .mockReset()
+      .mockReturnValueOnce(staleStart.promise)
+      .mockResolvedValueOnce({ status: 'started' });
+    await renderGame();
+    const toggle = container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!;
+
+    await act(async () => {
+      toggle.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      toggle.click();
+      await Promise.resolve();
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(2);
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
+
+    await act(async () => {
+      staleStart.resolve({ status: 'cancelled' });
+      await staleStart.promise;
+    });
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('drives the counting glow from the sampled voice level', async () => {
@@ -236,6 +307,21 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     expect(idleToggle!.classList.contains('is-live')).toBe(false);
   });
 
+  it('stops listening and clears the live UI when the app backgrounds', async () => {
+    await renderGame();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+
+    expect(micDouble.stop).toHaveBeenCalled();
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('.counting-cloud')!.getAttribute('data-voice')).toBe('off');
+  });
+
   it('never blocks progression: a correct pick still completes the round while listening', async () => {
     const onCompleteRound = await renderGame();
 
@@ -260,6 +346,227 @@ describe('CountingGame — count-out-loud voice affordance', () => {
         concepts: ['count-3'],
       }),
     );
-    expect(container.querySelector('[data-testid="success-overlay"]')).not.toBeNull();
+    expect(micDouble.stop).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('.success-overlay')).not.toBeNull();
+  });
+
+  it('stops active capture before wrong-answer narration starts', async () => {
+    await renderGame();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+    });
+
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.choice-button--number');
+    await act(async () => {
+      buttons[0]!.click();
+      await Promise.resolve();
+    });
+
+    expect(micDouble.stop).toHaveBeenCalledTimes(1);
+    expect(doubles.speakSegments).toHaveBeenCalledOnce();
+    expect(micDouble.stop.mock.invocationCallOrder[0]).toBeLessThan(
+      doubles.speakSegments.mock.invocationCallOrder[0]!,
+    );
+    expect(doubles.speakSegments.mock.calls[0]?.[2]).toMatchObject({ priority: 'prompt' });
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('invalidates pending permission before answer processing and ignores its late result', async () => {
+    const pendingStart = deferred<{ status: 'started' }>();
+    micDouble.start.mockReset().mockReturnValue(pendingStart.promise);
+    await renderGame();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+      await Promise.resolve();
+    });
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.choice-button--number');
+    await act(async () => {
+      buttons[0]!.click();
+      await Promise.resolve();
+    });
+
+    expect(micDouble.stop).toHaveBeenCalledTimes(1);
+    expect(doubles.speakSegments).toHaveBeenCalledOnce();
+    pendingStart.resolve({ status: 'started' });
+    await act(async () => {
+      await pendingStart.promise;
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('.counting-cloud')!.getAttribute('data-voice')).toBe('off');
+  });
+
+  it('keeps retry narration isolated until true completion plus the 400 ms guard', async () => {
+    const retryPlayback = deferred<SpeechResult>();
+    doubles.speakSegments.mockImplementationOnce(
+      (
+        _segments: unknown,
+        _settings: unknown,
+        options: SpeechRequestOptions,
+      ): Promise<SpeechResult> => {
+        options.onStart?.();
+        return retryPlayback.promise;
+      },
+    );
+    micDouble.start
+      .mockReset()
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValueOnce({ status: 'started' });
+    await renderGame();
+    const voiceToggle = container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!;
+    await act(async () => {
+      voiceToggle.click();
+    });
+    await act(async () => {
+      container.querySelectorAll<HTMLButtonElement>('.choice-button--number')[0]!.click();
+      await Promise.resolve();
+    });
+
+    expect(micDouble.stop).toHaveBeenCalledTimes(1);
+    expect(micDouble.stop.mock.invocationCallOrder[0]).toBeLessThan(
+      doubles.speakSegments.mock.invocationCallOrder[0]!,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(720);
+    });
+    retryPlayback.resolve({ requestId: 2, status: 'completed' });
+    await act(async () => {
+      await retryPlayback.promise;
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      voiceToggle.click();
+      await Promise.resolve();
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(399);
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(3);
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps success narration isolated until true completion plus the 400 ms guard', async () => {
+    const successPlayback = deferred<SpeechResult>();
+    doubles.speakSegments.mockImplementationOnce(
+      (
+        _segments: unknown,
+        _settings: unknown,
+        options: SpeechRequestOptions,
+      ): Promise<SpeechResult> => {
+        options.onStart?.();
+        return successPlayback.promise;
+      },
+    );
+    micDouble.start
+      .mockReset()
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValueOnce({ status: 'started' });
+    await renderGame();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+    });
+    await act(async () => {
+      container.querySelectorAll<HTMLButtonElement>('.choice-button--number')[1]!.click();
+      await Promise.resolve();
+    });
+
+    expect(micDouble.stop).toHaveBeenCalledTimes(1);
+    expect(doubles.speakSegments).toHaveBeenCalledOnce();
+    expect(doubles.speakSegments.mock.calls[0]?.[2]).toMatchObject({ priority: 'label' });
+    expect(micDouble.stop.mock.invocationCallOrder[0]).toBeLessThan(
+      doubles.speakSegments.mock.invocationCallOrder[0]!,
+    );
+
+    successPlayback.resolve({ requestId: 3, status: 'completed' });
+    await act(async () => {
+      await successPlayback.promise;
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector('.success-overlay')!.dispatchEvent(
+        new Event('pointerdown', { bubbles: true }),
+      );
+    });
+    const voiceToggle = container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!;
+    await act(async () => {
+      voiceToggle.click();
+      await Promise.resolve();
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(399);
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(micDouble.start).toHaveBeenCalledTimes(3);
+  });
+
+  it('cancels stale success narration when the overlay advances without reopening capture', async () => {
+    const successPlayback = deferred<SpeechResult>();
+    doubles.speakSegments.mockImplementationOnce(
+      (
+        _segments: unknown,
+        _settings: unknown,
+        options: SpeechRequestOptions,
+      ): Promise<SpeechResult> => {
+        options.onStart?.();
+        return successPlayback.promise;
+      },
+    );
+    await renderGame();
+    await act(async () => {
+      container.querySelectorAll<HTMLButtonElement>('.choice-button--number')[1]!.click();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      container.querySelector('.success-overlay')!.dispatchEvent(
+        new Event('pointerdown', { bubbles: true }),
+      );
+    });
+    expect(doubles.cancelScope).toHaveBeenCalledOnce();
+    expect(micDouble.start).not.toHaveBeenCalled();
+
+    successPlayback.resolve({ requestId: 4, status: 'cancelled' });
+    await act(async () => {
+      await successPlayback.promise;
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(micDouble.start).not.toHaveBeenCalled();
+  });
+
+  it('does not reopen a pending voice request after backgrounding', async () => {
+    const pendingStart = deferred<{ status: 'started' }>();
+    micDouble.start.mockReset().mockReturnValue(pendingStart.promise);
+    await renderGame();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    pendingStart.resolve({ status: 'started' });
+    await act(async () => {
+      await pendingStart.promise;
+      await Promise.resolve();
+    });
+
+    expect(micDouble.stop).toHaveBeenCalled();
+    expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('false');
   });
 });

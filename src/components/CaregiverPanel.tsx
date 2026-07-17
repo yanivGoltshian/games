@@ -1,12 +1,16 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
+import { CommunicationDoorArt } from '../art/communicationShelf';
 import { PORTAL_ART } from '../art/portalRegistry';
 import { gameMeta } from '../content/games';
+import type { CommunicationCaregiverItem } from '../communication/integration';
+import { communicationShelfEntry } from '../communication/registry';
 import type { AppProgress, ToddlerSettings } from '../domain/types';
 import { DOMAIN_KEYS } from '../domain/types';
 import { CHILD_NAME_MAX_LENGTH, normalizeChildName, personalizeChildName } from '../domain/childName';
 import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import { InstallHint } from './InstallHint';
 import { FamilyPhotoManager } from './FamilyPhotoManager';
+import { CORE_HOME_DOMAIN_KEYS } from './homeItems';
 import { ProgressStars } from './ProgressStars';
 
 interface CaregiverPanelProps {
@@ -14,6 +18,8 @@ interface CaregiverPanelProps {
   onBack: () => void;
   onUpdateSettings: (patch: Partial<ToddlerSettings>) => void;
   onReset: () => void;
+  communicationItems?: readonly CommunicationCaregiverItem[];
+  communicationReleaseAvailable?: boolean;
 }
 
 /**
@@ -21,7 +27,21 @@ interface CaregiverPanelProps {
  * notes, and privacy copy live only here, never on the child home or in a
  * game screen.
  */
-export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: CaregiverPanelProps) {
+function lastPlayedLabel(lastPlayedAt: number): string {
+  if (lastPlayedAt <= 0) {
+    return 'טרם שוחק';
+  }
+  return new Intl.DateTimeFormat('he-IL', { dateStyle: 'medium' }).format(lastPlayedAt);
+}
+
+export function CaregiverPanel({
+  progress,
+  onBack,
+  onUpdateSettings,
+  onReset,
+  communicationItems,
+  communicationReleaseAvailable = false,
+}: CaregiverPanelProps) {
   const [confirmReset, setConfirmReset] = useState(false);
   const [childNameDraft, setChildNameDraft] = useState(progress.settings.childName);
 
@@ -141,9 +161,9 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
       <FamilyPhotoManager />
 
       <section className="caregiver-card">
-        <h2>התקדמות לפי תחום</h2>
+        <h2>{communicationReleaseAvailable ? 'משחקי הליבה' : 'התקדמות לפי תחום'}</h2>
         <div className="domain-progress-list">
-          {DOMAIN_KEYS.map((domain) => {
+          {(communicationReleaseAvailable ? CORE_HOME_DOMAIN_KEYS : DOMAIN_KEYS).map((domain) => {
             const item = progress.domains[domain];
             const meta = gameMeta[domain];
             const PortalArt = PORTAL_ART[domain];
@@ -173,6 +193,39 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
           })}
         </div>
       </section>
+
+      {communicationItems ? (
+        <section className="caregiver-card communication-caregiver-group">
+          <h2>משחקי תקשורת</h2>
+          <div className="communication-caregiver-list">
+            {communicationItems.map((item) => {
+              const entry = communicationShelfEntry(item.activityId);
+              return (
+                <article
+                  key={item.activityId}
+                  className="communication-caregiver-item"
+                  data-activity-id={item.activityId}
+                >
+                  <CommunicationDoorArt
+                    activityId={item.activityId}
+                    className="communication-caregiver-item__icon"
+                  />
+                  <div>
+                    <p>{entry.title.he}</p>
+                    <div className="communication-caregiver-item__metrics">
+                      <span>הפעלה אחרונה: {lastPlayedLabel(item.lastPlayedAt)}</span>
+                      <span>מספר הפעלות: {item.sessionsCompleted}</span>
+                      <span>
+                        מוכנות תוכן: {item.readiness === 'ready' ? 'מוכן' : 'עדיין לא מוכן'}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <InstallHint />
 

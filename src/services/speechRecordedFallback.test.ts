@@ -150,6 +150,28 @@ describe('SpeechService recorded fallback', () => {
     await expect(done).resolves.toMatchObject({ status: 'completed' });
   });
 
+  it('reports the first recorded playback start exactly once per request', async () => {
+    service.unlock(createInitialSettings());
+    await flush();
+    const onStart = vi.fn();
+    const done = service.speakSegments(
+      [
+        { text: 'אוטו', locale: 'he-IL' },
+        { text: 'car', locale: 'en-US' },
+      ],
+      createInitialSettings(),
+      { onStart },
+    );
+    await flush();
+
+    expect(onStart).toHaveBeenCalledOnce();
+    backend.complete();
+    await flush();
+    expect(onStart).toHaveBeenCalledOnce();
+    backend.complete();
+    await expect(done).resolves.toMatchObject({ status: 'completed' });
+  });
+
   it('uses generic recorded clips for a custom name without speaking the old name', async () => {
     const settings = {
       ...createInitialSettings(),

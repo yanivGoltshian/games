@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useRef } from 'react';
+import {
+  readAppLifecycleState,
+  subscribeAppLifecycle,
+  type AppLifecycleState,
+} from '../platform/useAppLifecycle';
+import {
+  communicationMicrophoneGuard,
+  type MicrophonePlaybackGuardContract,
+} from '../services/microphonePlaybackGuard';
+import type { GenerationToken } from './useGenerationToken';
 
 type AudioContextCtor = typeof AudioContext;
+export type MicEffortLevel = 0 | 1;
 
-/**
- * Resolves the platform `AudioContext` constructor, tolerating the older
- * `webkitAudioContext` prefix still used by some iOS Safari builds. Returns
- * `null` when the environment has no Web Audio support (e.g. jsdom, or a
- * locked-down browser).
- */
+const COARSE_EFFORT_RMS_THRESHOLD = 0.05;
+
 export function getAudioContextCtor(): AudioContextCtor | null {
   const scope = globalThis as {
     AudioContext?: AudioContextCtor;
@@ -16,12 +23,6 @@ export function getAudioContextCtor(): AudioContextCtor | null {
   return scope.AudioContext ?? scope.webkitAudioContext ?? null;
 }
 
-/**
- * True only when the device can both capture microphone audio and analyse it
- * with the Web Audio API. Used to gate the mic UI so unsupported devices fall
- * back to a simple "tap when you say it" button instead of showing a broken
- * meter.
- */
 export function microphoneSupported(): boolean {
   return (
     typeof navigator !== 'undefined'
@@ -30,101 +31,284 @@ export function microphoneSupported(): boolean {
   );
 }
 
+export type MicStartOutcome =
+  | { status: 'started' }
+  | { status: 'unsupported' }
+  | { status: 'permission-denied' }
+  | { status: 'cancelled' }
+  | { status: 'background' }
+  | { status: 'playback-guarded' }
+  | { status: 'error'; errorName: string };
+
+export interface MicGenerationGuard {
+  token: GenerationToken;
+  isCurrent: (token: GenerationToken) => boolean;
+}
+
+export interface MicEffortOptions {
+  generation?: MicGenerationGuard;
+  playbackGuard?: MicrophonePlaybackGuardContract;
+  subscribeLifecycle?: typeof subscribeAppLifecycle;
+}
+
 export interface MicEffortController {
-  start: () => Promise<boolean>;
+  start: () => Promise<MicStartOutcome>;
   stop: () => void;
   supported: boolean;
 }
 
-/**
- * Opens the microphone and reports a normalised vocal *effort* level every
- * animation frame via `onSample(level, deltaMs)`. It never transcribes speech —
- * it only measures loudness (RMS of the time-domain waveform), which is exactly
- * what we want for a toddler making a big "taaa-puach!" sound. All native
- * resources are torn down on `stop()` and on unmount.
- *
- * Reused across games (Silly Alien, and any activity that wants to reward
- * vocal effort) so the capture/teardown logic lives in exactly one place.
- */
+interface MicAcquisition {
+  generation: number;
+  cancelled: boolean;
+  stream: MediaStream | null;
+  streamStopped: boolean;
+  context: AudioContext | null;
+  contextClosed: boolean;
+  source: MediaStreamAudioSourceNode | null;
+  sourceDisconnected: boolean;
+  analyser: AnalyserNode | null;
+  analyserDisconnected: boolean;
+  rafId: number | null;
+  lastSampleTime: number;
+}
+
+function createAcquisition(generation: number): MicAcquisition {
+  return {
+    generation,
+    cancelled: false,
+    stream: null,
+    streamStopped: false,
+    context: null,
+    contextClosed: false,
+    source: null,
+    sourceDisconnected: false,
+    analyser: null,
+    analyserDisconnected: false,
+    rafId: null,
+    lastSampleTime: 0,
+  };
+}
+
+function stopStream(stream: MediaStream): void {
+  stream.getTracks().forEach((track) => track.stop());
+}
+
+function reportCloseError(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`Unable to close microphone AudioContext: ${message}`);
+}
+
+function closeContext(context: AudioContext): void {
+  void context.close().catch(reportCloseError);
+}
+
+function errorName(error: unknown): string {
+  if (error instanceof DOMException || error instanceof Error) {
+    return error.name || 'Error';
+  }
+  return 'UnknownError';
+}
+
+function classifyStartError(error: unknown): MicStartOutcome {
+  const name = errorName(error);
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') {
+    return { status: 'permission-denied' };
+  }
+  return { status: 'error', errorName: name };
+}
+
 export function useMicEffort(
-  onSample: (level: number, deltaMs: number) => void,
+  onSample: (level: MicEffortLevel, deltaMs: number) => void,
+  options: MicEffortOptions = {},
 ): MicEffortController {
   const onSampleRef = useRef(onSample);
   onSampleRef.current = onSample;
-  const rafRef = useRef<number | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const contextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const lastTimeRef = useRef(0);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+  const lifecycleRef = useRef<AppLifecycleState>(readAppLifecycleState());
+  const acquisitionGenerationRef = useRef(0);
+  const pendingAcquisitionRef = useRef<MicAcquisition | null>(null);
+  const activeAcquisitionRef = useRef<MicAcquisition | null>(null);
+  const playbackGuard = options.playbackGuard ?? communicationMicrophoneGuard;
+  const subscribeLifecycle = options.subscribeLifecycle ?? subscribeAppLifecycle;
   const supported = microphoneSupported();
 
-  const stop = useCallback(() => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+  const releaseAcquisition = useCallback((acquisition: MicAcquisition): void => {
+    acquisition.cancelled = true;
+    if (pendingAcquisitionRef.current === acquisition) {
+      pendingAcquisitionRef.current = null;
     }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+    if (activeAcquisitionRef.current === acquisition) {
+      activeAcquisitionRef.current = null;
     }
-    if (contextRef.current) {
-      void contextRef.current.close().catch(() => undefined);
-      contextRef.current = null;
+
+    if (acquisition.rafId !== null) {
+      cancelAnimationFrame(acquisition.rafId);
+      acquisition.rafId = null;
     }
-    analyserRef.current = null;
+
+    if (acquisition.source && !acquisition.sourceDisconnected) {
+      acquisition.sourceDisconnected = true;
+      acquisition.source.disconnect();
+    }
+    if (acquisition.analyser && !acquisition.analyserDisconnected) {
+      acquisition.analyserDisconnected = true;
+      acquisition.analyser.disconnect();
+    }
+    if (acquisition.stream && !acquisition.streamStopped) {
+      acquisition.streamStopped = true;
+      stopStream(acquisition.stream);
+    }
+    if (acquisition.context && !acquisition.contextClosed) {
+      acquisition.contextClosed = true;
+      closeContext(acquisition.context);
+    }
   }, []);
 
-  const start = useCallback(async (): Promise<boolean> => {
+  const teardown = useCallback((): void => {
+    const pending = pendingAcquisitionRef.current;
+    const active = activeAcquisitionRef.current;
+    if (pending) {
+      releaseAcquisition(pending);
+    }
+    if (active && active !== pending) {
+      releaseAcquisition(active);
+    }
+  }, [releaseAcquisition]);
+
+  const stop = useCallback((): void => {
+    acquisitionGenerationRef.current += 1;
+    teardown();
+  }, [teardown]);
+
+  const currentBlock = useCallback((
+    generation: number,
+    generationGuard: MicGenerationGuard | undefined,
+    guard: MicrophonePlaybackGuardContract,
+  ): MicStartOutcome | null => {
+    if (lifecycleRef.current === 'background') {
+      return { status: 'background' };
+    }
+    if (generation !== acquisitionGenerationRef.current) {
+      return { status: 'cancelled' };
+    }
+    if (generationGuard && !generationGuard.isCurrent(generationGuard.token)) {
+      return { status: 'cancelled' };
+    }
+    if (!guard.microphoneAllowed()) {
+      return { status: 'playback-guarded' };
+    }
+    return null;
+  }, []);
+
+  const start = useCallback(async (): Promise<MicStartOutcome> => {
     const Ctor = getAudioContextCtor();
     if (!supported || !Ctor) {
-      return false;
+      return { status: 'unsupported' };
     }
+
+    const generation = acquisitionGenerationRef.current + 1;
+    acquisitionGenerationRef.current = generation;
+    teardown();
+    const generationGuard = optionsRef.current.generation;
+    const guard = optionsRef.current.playbackGuard ?? communicationMicrophoneGuard;
+    const initialBlock = currentBlock(generation, generationGuard, guard);
+    if (initialBlock) {
+      return initialBlock;
+    }
+
+    const acquisition = createAcquisition(generation);
+    pendingAcquisitionRef.current = acquisition;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const context = new Ctor();
-      contextRef.current = context;
-      if (context.state === 'suspended') {
-        await context.resume().catch(() => undefined);
+      acquisition.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (error: unknown) {
+      releaseAcquisition(acquisition);
+      return currentBlock(generation, generationGuard, guard) ?? classifyStartError(error);
+    }
+
+    const postPermissionBlock = currentBlock(generation, generationGuard, guard);
+    if (postPermissionBlock) {
+      releaseAcquisition(acquisition);
+      return postPermissionBlock;
+    }
+
+    try {
+      acquisition.context = new Ctor();
+      if (acquisition.context.state === 'suspended') {
+        await acquisition.context.resume();
       }
-      const source = context.createMediaStreamSource(stream);
-      const analyser = context.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.65;
-      source.connect(analyser);
-      analyserRef.current = analyser;
 
-      const waveform = new Uint8Array(analyser.fftSize);
-      lastTimeRef.current = performance.now();
+      const postResumeBlock = currentBlock(generation, generationGuard, guard);
+      if (postResumeBlock) {
+        releaseAcquisition(acquisition);
+        return postResumeBlock;
+      }
 
+      if (acquisition.cancelled || pendingAcquisitionRef.current !== acquisition) {
+        releaseAcquisition(acquisition);
+        return { status: 'cancelled' };
+      }
+
+      acquisition.source = acquisition.context.createMediaStreamSource(acquisition.stream);
+      acquisition.analyser = acquisition.context.createAnalyser();
+      acquisition.analyser.fftSize = 1024;
+      acquisition.analyser.smoothingTimeConstant = 0.65;
+      acquisition.source.connect(acquisition.analyser);
+
+      pendingAcquisitionRef.current = null;
+      activeAcquisitionRef.current = acquisition;
+
+      const waveform = new Uint8Array(acquisition.analyser.fftSize);
+      acquisition.lastSampleTime = performance.now();
       const loop = (): void => {
-        const node = analyserRef.current;
-        if (!node) {
+        const node = acquisition.analyser;
+        if (
+          !node
+          || acquisition.cancelled
+          || activeAcquisitionRef.current !== acquisition
+          || acquisition.generation !== acquisitionGenerationRef.current
+        ) {
           return;
         }
         node.getByteTimeDomainData(waveform);
         let sumSquares = 0;
-        for (let i = 0; i < waveform.length; i += 1) {
-          const centered = (waveform[i]! - 128) / 128;
+        for (const sample of waveform) {
+          const centered = (sample - 128) / 128;
           sumSquares += centered * centered;
         }
         const rms = Math.sqrt(sumSquares / waveform.length);
-        // Toddler speech tends to sit around 0.05–0.35 RMS; lift it into a
-        // friendlier 0..1 range so the visuals feel responsive.
-        const level = Math.min(1, rms * 2.4);
+        const level: MicEffortLevel = rms >= COARSE_EFFORT_RMS_THRESHOLD ? 1 : 0;
         const now = performance.now();
-        const deltaMs = now - lastTimeRef.current;
-        lastTimeRef.current = now;
+        const deltaMs = now - acquisition.lastSampleTime;
+        acquisition.lastSampleTime = now;
         onSampleRef.current(level, deltaMs);
-        rafRef.current = requestAnimationFrame(loop);
+        acquisition.rafId = requestAnimationFrame(loop);
       };
-      rafRef.current = requestAnimationFrame(loop);
-      return true;
-    } catch {
-      stop();
-      return false;
+      acquisition.rafId = requestAnimationFrame(loop);
+      return { status: 'started' };
+    } catch (error: unknown) {
+      releaseAcquisition(acquisition);
+      return currentBlock(generation, generationGuard, guard) ?? classifyStartError(error);
     }
-  }, [stop, supported]);
+  }, [currentBlock, releaseAcquisition, supported, teardown]);
+
+  useEffect(() => subscribeLifecycle((state) => {
+    lifecycleRef.current = state;
+    if (state === 'background') {
+      stop();
+    }
+  }), [stop, subscribeLifecycle]);
+
+  useEffect(() => playbackGuard.subscribe((snapshot) => {
+    if (!snapshot.microphoneAllowed) {
+      stop();
+    }
+  }), [playbackGuard, stop]);
+
+  const generationToken = options.generation?.token;
+  useEffect(() => {
+    stop();
+  }, [generationToken, stop]);
 
   useEffect(() => stop, [stop]);
 

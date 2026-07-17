@@ -10,10 +10,11 @@ import type {
   ToddlerSettings,
 } from './types';
 import { DEFAULT_CHILD_NAME } from './childName';
+import { createInitialCommunicationProgress } from './communicationProgress';
 import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
 import { DOMAIN_KEYS } from './types';
 
-export const STORAGE_SCHEMA_VERSION = 5;
+export const STORAGE_SCHEMA_VERSION = 6;
 export const RECENT_RESULT_LIMIT = 5;
 const LEVEL_THRESHOLDS = [0, 0.42, 0.62, 1] as const;
 
@@ -67,6 +68,7 @@ export function createInitialProgress(prefersReducedMotion = false, now = Date.n
     totalStars: 0,
     settings: createInitialSettings(prefersReducedMotion),
     domains: Object.fromEntries(DOMAIN_KEYS.map((domain) => [domain, createInitialDomainProgress()])) as AppProgress['domains'],
+    communication: createInitialCommunicationProgress(),
   };
 }
 

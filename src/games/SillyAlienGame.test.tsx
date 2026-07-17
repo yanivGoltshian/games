@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress, createInitialSettings } from '../domain/progression';
 import type { ProgressUpdateSummary, SillyAlienRound } from '../domain/types';
+import type { SpeechRequestOptions, SpeechResult } from '../services/speech';
 import { SillyAlienGame } from './SillyAlienGame';
 
 // ── Test doubles ────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ import { SillyAlienGame } from './SillyAlienGame';
 // are faked so the hands-free flow can be driven deterministically.
 
 const speech = vi.hoisted(() => ({
+  cancelScope: vi.fn(),
   speakSegments: vi.fn(),
 }));
 
@@ -61,6 +63,7 @@ vi.mock('../services/speech', () => ({
   buildPersonalizedPhraseSegments: (line: unknown) => [line],
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
+    cancelScope: speech.cancelScope,
     speakSegments: speech.speakSegments,
   },
 }));
@@ -108,6 +111,7 @@ describe('SillyAlienGame (hands-free)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
 
+    speech.cancelScope.mockReset();
     speech.speakSegments.mockReset();
     speech.speakSegments.mockResolvedValue({ requestId: 1, status: 'completed' });
 
@@ -119,7 +123,7 @@ describe('SillyAlienGame (hands-free)', () => {
     }
 
     mic.start.mockReset();
-    mic.start.mockResolvedValue(true);
+    mic.start.mockResolvedValue({ status: 'started' });
     mic.stop.mockReset();
     mic.supported = true;
     mic.onSample = null;
@@ -128,6 +132,25 @@ describe('SillyAlienGame (hands-free)', () => {
     document.body.append(container);
     root = createRoot(container);
   });
+
+  function deferred<Value>() {
+    let resolve!: (value: Value) => void;
+    const promise = new Promise<Value>((resolvePromise) => {
+      resolve = resolvePromise;
+    });
+    return { promise, resolve };
+  }
+
+  function startControlledPlayback(playback: ReturnType<typeof deferred<SpeechResult>>) {
+    return (
+      _segments: unknown,
+      _settings: unknown,
+      options: SpeechRequestOptions,
+    ): Promise<SpeechResult> => {
+      options.onStart?.();
+      return playback.promise;
+    };
+  }
 
   afterEach(async () => {
     await act(async () => root.unmount());
@@ -147,29 +170,35 @@ describe('SillyAlienGame (hands-free)', () => {
     }));
   }
 
-  async function renderGame(onCompleteRound = createCompleteRound(), childName?: string) {
+  async function renderGame(
+    onCompleteRound = createCompleteRound(),
+    childName?: string,
+    strictMode = false,
+    mediaReady = false,
+  ) {
     const progress = createInitialProgress(false, 0);
     const settings = childName
       ? { ...createInitialSettings(), childName }
       : createInitialSettings();
+    const game = (
+      <SillyAlienGame
+        domainProgress={progress.domains.sillyAlien}
+        settings={settings}
+        overallStars={0}
+        mediaReady={mediaReady}
+        speechStatus={{
+          supported: true,
+          voiceAvailable: true,
+          speaking: false,
+          activeRequestId: null,
+          activeCue: null,
+        }}
+        onBack={() => undefined}
+        onCompleteRound={onCompleteRound}
+      />
+    );
     await act(async () => {
-      root.render(
-        <SillyAlienGame
-          domainProgress={progress.domains.sillyAlien}
-          settings={settings}
-          overallStars={0}
-          mediaReady={false}
-          speechStatus={{
-            supported: true,
-            voiceAvailable: true,
-            speaking: false,
-            activeRequestId: null,
-            activeCue: null,
-          }}
-          onBack={() => undefined}
-          onCompleteRound={onCompleteRound}
-        />,
-      );
+      root.render(strictMode ? <StrictMode>{game}</StrictMode> : game);
     });
     return onCompleteRound;
   }
@@ -240,10 +269,452 @@ describe('SillyAlienGame (hands-free)', () => {
     expect(meter!.classList.contains('silly-alien-reactor')).toBe(true);
   });
 
+  it('keeps the hands-free generation current after StrictMode effect replay', async () => {
+    await renderGame(createCompleteRound(), undefined, true);
+
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+
+    expect(phase()).toBe('listening');
+    expect(mic.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('opens presentation listening only at true completion plus the 400 ms guard', async () => {
+    const presentation = deferred<SpeechResult>();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(presentation));
+    mic.start.mockReset();
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+    await renderGame();
+
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('presenting');
+    expect(mic.start).toHaveBeenCalledTimes(1);
+    expect(speech.speakSegments.mock.calls[0]?.[2]).toMatchObject({ priority: 'label' });
+
+    presentation.resolve({ requestId: 1, status: 'completed' });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(mic.start).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(399);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps listening closed for a mandatory replay queued during presentation', async () => {
+    const presentation = deferred<SpeechResult>();
+    const replay = deferred<SpeechResult>();
+    speech.speakSegments
+      .mockImplementationOnce(startControlledPlayback(presentation))
+      .mockImplementationOnce(startControlledPlayback(replay));
+    mic.start.mockReset();
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+    await renderGame(createCompleteRound(), undefined, false, true);
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('presenting');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--replay')!.click();
+    });
+    expect(speech.speakSegments).toHaveBeenCalledTimes(1);
+
+    presentation.resolve({ requestId: 1, status: 'completed' });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(speech.speakSegments).toHaveBeenCalledTimes(2);
+    expect(mic.start).toHaveBeenCalledTimes(1);
+
+    replay.resolve({ requestId: 2, status: 'completed' });
+    await settle();
+    expect(mic.start).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(399);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps a queued replay owned until deferred playback starts and truly completes', async () => {
+    const presentation = deferred<SpeechResult>();
+    const replay = deferred<SpeechResult>();
+    let startReplay: (() => void) | null = null;
+    speech.speakSegments
+      .mockImplementationOnce(startControlledPlayback(presentation))
+      .mockImplementationOnce((
+        _segments: unknown,
+        _settings: unknown,
+        options: SpeechRequestOptions,
+      ) => {
+        startReplay = () => options.onStart?.();
+        return replay.promise;
+      });
+    mic.start.mockReset();
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+    await renderGame(createCompleteRound(), undefined, false, true);
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--replay')!.click();
+    });
+
+    presentation.resolve({ requestId: 1, status: 'completed' });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(startReplay).not.toBeNull();
+    expect(mic.start).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      startReplay!();
+      replay.resolve({ requestId: 2, status: 'completed' });
+      await replay.promise;
+    });
+    await settle();
+    expect(mic.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(399);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+  });
+
+  it('lets only the newest queued replay release listening ownership', async () => {
+    const presentation = deferred<SpeechResult>();
+    const newestReplay = deferred<SpeechResult>();
+    speech.speakSegments
+      .mockImplementationOnce(startControlledPlayback(presentation))
+      .mockImplementationOnce(startControlledPlayback(newestReplay));
+    mic.start.mockReset();
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+    await renderGame(createCompleteRound(), undefined, false, true);
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    const replayButton = container.querySelector<HTMLButtonElement>('.rail-button--replay')!;
+    await act(async () => {
+      replayButton.click();
+      replayButton.click();
+      await Promise.resolve();
+    });
+
+    presentation.resolve({ requestId: 1, status: 'completed' });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(speech.speakSegments).toHaveBeenCalledTimes(2);
+    expect(mic.start).toHaveBeenCalledTimes(1);
+
+    newestReplay.resolve({ requestId: 3, status: 'completed' });
+    await settle();
+    expect(mic.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+  });
+
+  it('completes a replay requested during nudge and resumes only after its guard', async () => {
+    await renderGame(createCompleteRound(), undefined, false, true);
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('listening');
+
+    const nudge = deferred<SpeechResult>();
+    const replay = deferred<SpeechResult>();
+    speech.speakSegments
+      .mockImplementationOnce(startControlledPlayback(nudge))
+      .mockImplementationOnce(startControlledPlayback(replay));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(12_000);
+    });
+    expect(phase()).toBe('nudge');
+    mic.start
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--replay')!.click();
+    });
+    nudge.resolve({ requestId: 2, status: 'cancelled' });
+    await settle();
+    expect(speech.speakSegments).toHaveBeenCalledTimes(3);
+    expect(phase()).toBe('nudge');
+
+    replay.resolve({ requestId: 3, status: 'completed' });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(mic.start).toHaveBeenCalledTimes(3);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(399);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(4);
+  });
+
+  it('releases a cancelled replay without reopening and a newer replay can recover', async () => {
+    const presentation = deferred<SpeechResult>();
+    const cancelledReplay = deferred<SpeechResult>();
+    const recoveryReplay = deferred<SpeechResult>();
+    speech.speakSegments
+      .mockImplementationOnce(startControlledPlayback(presentation))
+      .mockImplementationOnce(startControlledPlayback(cancelledReplay))
+      .mockImplementationOnce(startControlledPlayback(recoveryReplay));
+    mic.start.mockReset();
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+    await renderGame(createCompleteRound(), undefined, false, true);
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    const replayButton = container.querySelector<HTMLButtonElement>('.rail-button--replay')!;
+    await act(async () => {
+      replayButton.click();
+    });
+    presentation.resolve({ requestId: 1, status: 'completed' });
+    await settle();
+    expect(phase()).toBe('listening');
+
+    cancelledReplay.resolve({ requestId: 2, status: 'cancelled' });
+    await settle();
+    expect(mic.start).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      replayButton.click();
+    });
+    recoveryReplay.resolve({ requestId: 3, status: 'completed' });
+    await settle();
+    expect(mic.start).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps a background-cancelled replay closed after foreground return', async () => {
+    const replay = deferred<SpeechResult>();
+    await renderGame(createCompleteRound(), undefined, false, true);
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(replay));
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--replay')!.click();
+    });
+    const startsBeforeBackground = mic.start.mock.calls.length;
+
+    await act(async () => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    replay.resolve({ requestId: 2, status: 'cancelled' });
+    await settle();
+    await act(async () => {
+      window.dispatchEvent(new Event('pageshow'));
+      await vi.advanceTimersByTimeAsync(400);
+    });
+
+    expect(mic.start).toHaveBeenCalledTimes(startsBeforeBackground);
+  });
+
+  it('routes a current replay error to fallback without reopening listening', async () => {
+    const replay = deferred<SpeechResult>();
+    await renderGame(createCompleteRound(), undefined, false, true);
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(replay));
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.rail-button--replay')!.click();
+    });
+    const startsBeforeError = mic.start.mock.calls.length;
+
+    replay.resolve({ requestId: 2, status: 'error' });
+    await settle();
+    expect(phase()).toBe('parentFallback');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(startsBeforeError);
+  });
+
+  it('opens nudge listening only at true completion plus the 400 ms guard', async () => {
+    await renderGame();
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(mic.start).toHaveBeenCalledTimes(2);
+
+    const nudge = deferred<SpeechResult>();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(nudge));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(12_000);
+    });
+    expect(phase()).toBe('nudge');
+    expect(speech.speakSegments.mock.calls.at(-1)?.[2]).toMatchObject({ priority: 'prompt' });
+    mic.start.mockResolvedValueOnce({ status: 'playback-guarded' });
+
+    nudge.resolve({ requestId: 2, status: 'completed' });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(mic.start).toHaveBeenCalledTimes(3);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(399);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(4);
+  });
+
+  it('never reopens after presentation is cancelled by backgrounding', async () => {
+    const presentation = deferred<SpeechResult>();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(presentation));
+    await renderGame();
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('presenting');
+
+    await act(async () => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    expect(speech.cancelScope).toHaveBeenCalled();
+    presentation.resolve({ requestId: 1, status: 'cancelled' });
+    await settle();
+
+    expect(phase()).toBe('presenting');
+    expect(mic.start).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      window.dispatchEvent(new Event('pageshow'));
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes a presentation playback error to fallback without reopening the mic', async () => {
+    const presentation = deferred<SpeechResult>();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(presentation));
+    await renderGame();
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+
+    presentation.resolve({ requestId: 1, status: 'error' });
+    await settle();
+    expect(phase()).toBe('parentFallback');
+    expect(mic.start).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a completed presentation callback from a stale round', async () => {
+    const stalePresentation = deferred<SpeechResult>();
+    speech.speakSegments
+      .mockImplementationOnce(startControlledPlayback(stalePresentation))
+      .mockResolvedValueOnce({ requestId: 2, status: 'cancelled' });
+    await renderGame();
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('presenting');
+
+    round.roundKey = 'silly-round-2';
+    await renderGame();
+    await settle();
+    stalePresentation.resolve({ requestId: 1, status: 'completed' });
+    await settle();
+
+    expect(phase()).toBe('presenting');
+    expect(mic.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels a stale nudge on touch and never restarts listening', async () => {
+    await renderGame();
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    const nudge = deferred<SpeechResult>();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(nudge));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(12_000);
+    });
+    expect(phase()).toBe('nudge');
+
+    await act(async () => {
+      wakeTap();
+    });
+    expect(speech.cancelScope).toHaveBeenCalled();
+    nudge.resolve({ requestId: 2, status: 'cancelled' });
+    await settle();
+
+    expect(phase()).toBe('success');
+    expect(mic.start).toHaveBeenCalledTimes(2);
+  });
+
   it('personalizes the modeled prompt with the configured child name', async () => {
     // Hold the model open on the presenting phase so the personalized prompt
     // stays visible instead of racing into listening.
-    speech.speakSegments.mockReturnValue(new Promise<never>(() => undefined));
+    const model = deferred<SpeechResult>();
+    speech.speakSegments.mockReturnValue(model.promise);
     await renderGame(createCompleteRound(), 'נוֹעָה');
 
     await act(async () => {
@@ -254,6 +725,9 @@ describe('SillyAlienGame (hands-free)', () => {
     expect(phase()).toBe('presenting');
     expect(container.textContent).toContain('נוֹעָה');
     expect(container.textContent).not.toContain('שון');
+
+    model.resolve({ requestId: 1, status: 'completed' });
+    await settle();
   });
 
   it('completes a round from vocal effort alone and reveals the full word', async () => {
@@ -321,7 +795,7 @@ describe('SillyAlienGame (hands-free)', () => {
   });
 
   it('falls back to a single-tap grown-up control when the mic is denied at unlock', async () => {
-    mic.start.mockResolvedValue(false);
+    mic.start.mockResolvedValue({ status: 'permission-denied' });
     const onCompleteRound = await renderGame();
 
     await act(async () => {
@@ -345,10 +819,25 @@ describe('SillyAlienGame (hands-free)', () => {
     expect(phase()).toBe('success');
   });
 
+  it('keeps a transient unlock cancellation retryable', async () => {
+    mic.start.mockResolvedValue({ status: 'background' });
+    await renderGame();
+
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+
+    expect(phase()).toBe('locked');
+    expect(container.querySelector('.silly-alien-fallback__button')).toBeNull();
+  });
+
   it('routes to the parent fallback when the mic fails as listening begins', async () => {
     // Permission granted on the unlock probe, but the real capture fails.
     mic.start.mockReset();
-    mic.start.mockResolvedValueOnce(true).mockResolvedValue(false);
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValue({ status: 'permission-denied' });
     await renderGame();
 
     await act(async () => {
@@ -358,6 +847,28 @@ describe('SillyAlienGame (hands-free)', () => {
 
     expect(phase()).toBe('parentFallback');
     expect(container.querySelector('.silly-alien-fallback__button')).not.toBeNull();
+  });
+
+  it('retries a transient playback guard without routing to fallback', async () => {
+    mic.start.mockReset();
+    mic.start
+      .mockResolvedValueOnce({ status: 'started' })
+      .mockResolvedValueOnce({ status: 'playback-guarded' })
+      .mockResolvedValue({ status: 'started' });
+    await renderGame();
+
+    await act(async () => {
+      wakeTap();
+    });
+    await settle();
+    expect(phase()).toBe('listening');
+    expect(container.querySelector('.silly-alien-fallback__button')).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mic.start).toHaveBeenCalledTimes(3);
+    expect(container.querySelector('.silly-alien-fallback__button')).toBeNull();
   });
 
   it('stops microphone capture while modeling and again when it celebrates', async () => {

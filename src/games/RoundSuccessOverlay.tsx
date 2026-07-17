@@ -35,6 +35,9 @@ export function RoundSuccessOverlay({
       seed={celebration.seed}
       targetSegments={celebration.targetSegments}
       {...(celebration.beforeSpeech ? { beforeSpeech: celebration.beforeSpeech } : {})}
+      {...(celebration.coordinatedSpeech
+        ? { coordinatedSpeech: celebration.coordinatedSpeech }
+        : {})}
       tier={celebration.tier}
       recommendation={celebration.recommendation}
       {...(celebration.celebrationVariant

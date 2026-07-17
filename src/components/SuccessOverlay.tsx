@@ -9,9 +9,14 @@ import {
 import { CelebrationArt } from '../art/celebrations';
 import { LEVEL_UP_SPEECH } from '../content/levelUpSpeech';
 import { REAL_WORLD_PAUSE_EN, REAL_WORLD_PAUSE_HE, type PraiseTier } from '../content/praise';
+import type { CommunicationGameScope } from '../domain/communicationGame';
 import type { LevelRecommendation, ToddlerSettings } from '../domain/types';
 import { selectCelebrationVariant, type CelebrationVariant } from '../games/celebrationVariants';
 import { selectPraiseSegments } from '../games/praiseSpeech';
+import {
+  createInteractionMediaUnits,
+  interactionMediaCoordinator,
+} from '../services/interactionMediaCoordinator';
 import { soundService } from '../services/sound';
 import {
   buildPersonalizedPhraseSegments,
@@ -30,6 +35,10 @@ export interface SuccessOverlayProps {
   targetSegments: SpeechSegment[];
   /** Existing target narration that must finish before the success sequence starts. */
   beforeSpeech?: Promise<SpeechResult>;
+  coordinatedSpeech?: {
+    intentId: string;
+    scope: CommunicationGameScope;
+  };
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;
   celebrationVariant?: CelebrationVariant;
@@ -55,6 +64,7 @@ export function SuccessOverlay({
   seed,
   targetSegments,
   beforeSpeech,
+  coordinatedSpeech,
   tier,
   recommendation,
   celebrationVariant: celebrationVariantOverride,
@@ -89,10 +99,17 @@ export function SuccessOverlay({
     }
     advancedRef.current = true;
     if (interruptSpeech) {
-      speechService.cancelScope(scope, 'navigation');
+      if (coordinatedSpeech) {
+        interactionMediaCoordinator.notifyInteraction(
+          coordinatedSpeech.scope,
+          'round-replacement',
+        );
+      } else {
+        speechService.cancelScope(scope, 'navigation');
+      }
     }
     advanceRef.current();
-  }, [scope]);
+  }, [coordinatedSpeech, scope]);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,17 +129,34 @@ export function SuccessOverlay({
       if (cancelled) {
         return;
       }
-      await speechService.speakSuccessSequence(
-        targetSegments,
-        recommendation
-          ? [...recommendationSegments, ...extraSegments]
-          : [...praise.segments, ...extraSegments],
-        settings,
-        {
-          scope,
-          key: `success:${seed}`,
-        },
-      );
+      const conclusionSegments = recommendation
+        ? [...recommendationSegments, ...extraSegments]
+        : [...praise.segments, ...extraSegments];
+      if (coordinatedSpeech) {
+        const segments = [...targetSegments, ...conclusionSegments];
+        const targetEndIndex = targetSegments.length - 1;
+        if (targetEndIndex >= 0 && conclusionSegments.length > 0) {
+          segments[targetEndIndex] = { ...segments[targetEndIndex]!, pauseAfterMs: 280 };
+        }
+        await interactionMediaCoordinator.play({
+          intentId: coordinatedSpeech.intentId,
+          source: 'automatic',
+          scope: coordinatedSpeech.scope,
+          audioClass: 'mandatory',
+          settings,
+          units: createInteractionMediaUnits(coordinatedSpeech.scope, segments),
+        });
+      } else {
+        await speechService.speakSuccessSequence(
+          targetSegments,
+          conclusionSegments,
+          settings,
+          {
+            scope,
+            key: `success:${seed}`,
+          },
+        );
+      }
       if (cancelled) {
         return;
       }
@@ -143,6 +177,7 @@ export function SuccessOverlay({
   }, [
     advanceOnce,
     beforeSpeech,
+    coordinatedSpeech,
     extraSegments,
     praise.segments,
     recommendation,

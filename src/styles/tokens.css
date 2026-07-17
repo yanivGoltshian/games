@@ -72,6 +72,7 @@
 
   /* Hit targets */
   --hit-target-min: 64px;
+  --hit-target-primary: 88px;
   --hit-target-portal: min(78vw, 560px);
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
 import { getCountingQuantityPhrase, type CountingConceptId } from '../content/countingQuantity';
@@ -11,12 +11,20 @@ import {
   getCountingRoundSignature,
 } from '../domain/rounds';
 import { soundService } from '../services/sound';
+import {
+  createInteractionMediaUnits,
+  interactionMediaCoordinator,
+  type InteractionMediaOutcome,
+} from '../services/interactionMediaCoordinator';
 import { buildPhraseSegments, speechService } from '../services/speech';
+import { DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS } from '../services/microphonePlaybackGuard';
+import { useAppLifecycle } from '../platform/useAppLifecycle';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useMicEffort } from './useMicEffort';
 import { useRetryFeedback } from './useRetryFeedback';
+import { useGenerationToken } from './useGenerationToken';
 
 const WIGGLE_MS = 520;
 const SPEECH_SCOPE = 'game:counting';
@@ -39,6 +47,8 @@ export function CountingGame({
   const [hintedValue, setHintedValue] = useState<number | null>(null);
   const [voiceOn, setVoiceOn] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
+  const lifecycle = useAppLifecycle();
+  const sessionId = useId();
 
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'counting',
@@ -46,39 +56,125 @@ export function CountingGame({
     generateCountingRound,
     { getSignature: getCountingRoundSignature, limit: 8 },
   );
-  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
   const countingConceptId = round.countingConceptId as CountingConceptId;
   const layout = useMemo(() => getCountingLayout(round.targetCount), [round.targetCount]);
   const visualOnlyFeedback = settings.quietMode || !speechStatus.supported;
+  const mediaScope = useMemo(() => ({
+    activityId: 'counting',
+    sessionId,
+    roundId: String(roundKey),
+    stepId: 'prompt',
+  }), [roundKey, sessionId]);
+  const generation = useGenerationToken(mediaScope);
+  const retryMedia = useMemo(() => ({
+    intentIdPrefix: `counting:retry:${sessionId}`,
+    scope: {
+      ...mediaScope,
+      stepId: 'retry',
+    },
+  }), [mediaScope, sessionId]);
+  const { retryBusy, runRetry } = useRetryFeedback({
+    scope: SPEECH_SCOPE,
+    roundKey,
+    settings,
+    coordinatedSpeech: retryMedia,
+  });
 
-  const mic = useMicEffort((level) => setVoiceLevel(level));
+  const mic = useMicEffort((level) => setVoiceLevel(level), {
+    generation: {
+      token: generation.token,
+      isCurrent: generation.isCurrent,
+    },
+  });
   const { start: startMic, stop: stopMic, supported: micSupported } = mic;
+  const activePromptRef = useRef<Promise<InteractionMediaOutcome> | null>(null);
+  const voiceRequestRef = useRef(0);
+  const closeVoiceCapture = useCallback((): void => {
+    voiceRequestRef.current += 1;
+    stopMic();
+    setVoiceOn(false);
+    setVoiceLevel(0);
+  }, [stopMic]);
   const toggleVoice = useCallback(() => {
+    const requestId = voiceRequestRef.current + 1;
+    voiceRequestRef.current = requestId;
     if (voiceOn) {
       stopMic();
       setVoiceOn(false);
       setVoiceLevel(0);
       return;
     }
-    void startMic().then((granted) => {
-      setVoiceOn(granted);
-      if (!granted) {
+    const token = generation.token;
+    interactionMediaCoordinator.notifyInteraction(mediaScope, 'touch');
+    void (async () => {
+      await activePromptRef.current;
+      if (
+        requestId !== voiceRequestRef.current
+        || !generation.isCurrent(token)
+      ) {
+        return;
+      }
+      let outcome = await startMic();
+      if (
+        requestId !== voiceRequestRef.current
+        || !generation.isCurrent(token)
+      ) {
+        return;
+      }
+      if (outcome.status === 'playback-guarded') {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS);
+        });
+        if (
+          requestId !== voiceRequestRef.current
+          || !generation.isCurrent(token)
+        ) {
+          return;
+        }
+        outcome = await startMic();
+        if (
+          requestId !== voiceRequestRef.current
+          || !generation.isCurrent(token)
+        ) {
+          return;
+        }
+      }
+      const started = outcome.status === 'started';
+      setVoiceOn(started);
+      if (!started) {
         setVoiceLevel(0);
       }
-    });
-  }, [startMic, stopMic, voiceOn]);
+    })();
+  }, [generation, mediaScope, startMic, stopMic, voiceOn]);
+
+  useEffect(() => {
+    if (lifecycle === 'background') {
+      closeVoiceCapture();
+    }
+  }, [closeVoiceCapture, lifecycle]);
 
   const speakPrompt = useCallback(async (interrupt = false): Promise<void> => {
+    closeVoiceCapture();
     const segments = buildPhraseSegments(round.promptHe, round.promptEn, settings.languageMode, settings.englishVoiceLocale);
-    await speechService.speakSegments(segments, settings, {
-      scope: SPEECH_SCOPE,
-      key: `prompt:${roundKey}`,
-      priority: interrupt ? 'replay' : 'prompt',
-      interrupt,
+    if (interrupt) {
+      interactionMediaCoordinator.notifyInteraction(mediaScope, 'touch');
+    }
+    const playback = interactionMediaCoordinator.play({
+      intentId: `counting:prompt:${sessionId}:${roundKey}:${interrupt ? 'repeat' : 'automatic'}`,
+      source: interrupt ? 'touch' : 'automatic',
+      scope: mediaScope,
+      audioClass: interrupt ? 'mandatory' : 'conditional',
+      settings,
+      units: createInteractionMediaUnits(mediaScope, segments),
     });
-  }, [round.promptEn, round.promptHe, roundKey, settings]);
+    activePromptRef.current = playback;
+    await playback;
+    if (activePromptRef.current === playback) {
+      activePromptRef.current = null;
+    }
+  }, [closeVoiceCapture, mediaScope, round.promptEn, round.promptHe, roundKey, sessionId, settings]);
   const speakPromptRef = useRef(speakPrompt);
   speakPromptRef.current = speakPrompt;
 
@@ -87,19 +183,41 @@ export function CountingGame({
     setCelebration(null);
     setWiggleValue(null);
     setHintedValue(null);
-    stopMic();
-    setVoiceOn(false);
-    setVoiceLevel(0);
+    closeVoiceCapture();
     if (mediaReady) {
       void speakPromptRef.current();
     }
-  }, [mediaReady, roundKey, stopMic]);
+  }, [closeVoiceCapture, mediaReady, roundKey]);
+
+  const handleBack = useCallback((): void => {
+    closeVoiceCapture();
+    generation.invalidate();
+    interactionMediaCoordinator.notifyInteraction(mediaScope, 'exit');
+    onBack();
+  }, [closeVoiceCapture, generation, mediaScope, onBack]);
+
+  const cleanupRef = useRef({
+    mediaScope,
+    stopMic,
+  });
+  cleanupRef.current = {
+    mediaScope,
+    stopMic,
+  };
+  useEffect(() => () => {
+    const cleanup = cleanupRef.current;
+    voiceRequestRef.current += 1;
+    cleanup.stopMic();
+    interactionMediaCoordinator.notifyInteraction(cleanup.mediaScope, 'exit');
+  }, []);
 
   const handlePick = (value: number) => {
     if (celebration || retryBusy) {
       return;
     }
 
+    closeVoiceCapture();
+    interactionMediaCoordinator.notifyInteraction(mediaScope, 'touch');
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
 
@@ -111,6 +229,13 @@ export function CountingGame({
       setCelebration({
         seed: `counting-${round.targetCount}-${nextAttempts}`,
         targetSegments: buildPhraseSegments(quantityHe, quantityEn, settings.languageMode, settings.englishVoiceLocale),
+        coordinatedSpeech: {
+          intentId: `counting:success:${sessionId}:${roundKey}:${nextAttempts}`,
+          scope: {
+            ...mediaScope,
+            stepId: `success:${nextAttempts}`,
+          },
+        },
         tier: summary.milestone ? 'milestone' : 'standard',
         recommendation: summary.recommendation,
       });
@@ -136,8 +261,11 @@ export function CountingGame({
       languageMode={settings.languageMode}
       accentClass={gameMeta.counting.accentClass}
       reducedMotion={settings.reducedMotion}
-      onHome={onBack}
+      onHome={handleBack}
       onRestart={() => {
+        closeVoiceCapture();
+        generation.invalidate();
+        interactionMediaCoordinator.notifyInteraction(mediaScope, 'touch');
         speechService.cancelScope(SPEECH_SCOPE);
         startNextRound();
       }}
