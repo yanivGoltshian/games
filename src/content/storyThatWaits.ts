@@ -139,10 +139,10 @@ export const STORY_THAT_WAITS_STORIES = [
         utterances: {
           'he-IL': {
             locale: 'he-IL',
-            sentence: 'ברווז דוחף את הכדור.',
+            sentence: 'ברווז נוגע בכדור.',
             recordingKey: 'story-that-waits/v1/he-IL/duck-and-ball/page-2',
-            recordedLookupText: 'ברווז דוחף את הכדור.',
-            accessibilityLabel: 'ברווז וכדור, עמוד 2 מתוך 4. ברווז דוחף את הכדור.',
+            recordedLookupText: 'ברווז נוגע בכדור.',
+            accessibilityLabel: 'ברווז וכדור, עמוד 2 מתוך 4. ברווז נוגע בכדור.',
           },
           'en-US': {
             locale: 'en-US',
@@ -519,10 +519,10 @@ export const STORY_THAT_WAITS_STORIES = [
           },
           'en-GB': {
             locale: 'en-GB',
-            sentence: 'The bus waits beside the flower.',
+            sentence: 'The bus rests beside the flower.',
             recordingKey: 'story-that-waits/v1/en-GB/bus-to-tree-and-flower/page-4',
-            recordedLookupText: 'The bus waits beside the flower.',
-            accessibilityLabel: 'Bus, Tree, and Flower, page 4 of 4. The bus waits beside the flower.',
+            recordedLookupText: 'The bus rests beside the flower.',
+            accessibilityLabel: 'Bus, Tree, and Flower, page 4 of 4. The bus rests beside the flower.',
           },
         },
       },
@@ -586,10 +586,10 @@ export const STORY_THAT_WAITS_STORIES = [
         utterances: {
           'he-IL': {
             locale: 'he-IL',
-            sentence: 'חתול דוחף את הנעל.',
+            sentence: 'חתול מזיז את הנעל.',
             recordingKey: 'story-that-waits/v1/he-IL/cat-finds-shoe-and-cup/page-2',
-            recordedLookupText: 'חתול דוחף את הנעל.',
-            accessibilityLabel: 'חתול, נעל וכוס, עמוד 2 מתוך 4. חתול דוחף את הנעל.',
+            recordedLookupText: 'חתול מזיז את הנעל.',
+            accessibilityLabel: 'חתול, נעל וכוס, עמוד 2 מתוך 4. חתול מזיז את הנעל.',
           },
           'en-US': {
             locale: 'en-US',

@@ -153,6 +153,28 @@ describe('Story That Waits content pack', () => {
     expect(busPageTwo?.utterances['en-GB'].sentence).toBe('The bus stops beside the tree.');
   });
 
+  it('keeps the independently reviewed sentence revisions bound to their stable recording keys', () => {
+    const duckPageTwo = getStoryThatWaitsStory('duck-and-ball').pages[1];
+    const busPageFour = getStoryThatWaitsStory('bus-to-tree-and-flower').pages[3];
+    const catPageTwo = getStoryThatWaitsStory('cat-finds-shoe-and-cup').pages[1];
+
+    expect(duckPageTwo?.utterances['he-IL']).toMatchObject({
+      sentence: 'ברווז נוגע בכדור.',
+      recordedLookupText: 'ברווז נוגע בכדור.',
+      recordingKey: 'story-that-waits/v1/he-IL/duck-and-ball/page-2',
+    });
+    expect(busPageFour?.utterances['en-GB']).toMatchObject({
+      sentence: 'The bus rests beside the flower.',
+      recordedLookupText: 'The bus rests beside the flower.',
+      recordingKey: 'story-that-waits/v1/en-GB/bus-to-tree-and-flower/page-4',
+    });
+    expect(catPageTwo?.utterances['he-IL']).toMatchObject({
+      sentence: 'חתול מזיז את הנעל.',
+      recordedLookupText: 'חתול מזיז את הנעל.',
+      recordingKey: 'story-that-waits/v1/he-IL/cat-finds-shoe-and-cup/page-2',
+    });
+  });
+
   it('builds exact content requirements for manifest lookup text and approved images', () => {
     const requirements = createStoryThatWaitsContentRequirements(
       'cat-finds-shoe-and-cup',
@@ -166,7 +188,7 @@ describe('Story That Waits content pack', () => {
     expect(requirements.scope.activityId).toBe('story-that-waits:cat-finds-shoe-and-cup');
     expect(requirements.recordingKeys).toEqual([
       'חתול רואה נעל.',
-      'חתול דוחף את הנעל.',
+      'חתול מזיז את הנעל.',
       'חתול מוצא כוס.',
       'חתול יושב ליד הכוס.',
     ]);
@@ -215,6 +237,7 @@ describe('Story That Waits content pack', () => {
       ];
       expect(productionText, `missing pointed production text for ${requirement.recordedLookupText}`)
         .toBeTruthy();
+      expect(hasNiqqud(requirement.recordedLookupText)).toBe(false);
       expect(getHebrewPronunciation(requirement.recordedLookupText)).toBe(productionText);
       expect(stripNiqqud(productionText).normalize('NFC'))
         .toBe(getHebrewPronunciationSkeleton(requirement.recordedLookupText));
@@ -233,16 +256,39 @@ describe('Story That Waits content pack', () => {
       'utf8',
     );
     const rows = inventory.trimEnd().split('\n');
+    const inventoryRows = rows.slice(1).map((row) => row.split(',', 10));
+    const requirements = collectStoryThatWaitsRecordingRequirements();
 
     expect(rows).toHaveLength(49);
     expect(rows[0]).toContain('hebrewProductionText');
     expect(rows[0]).toContain('hebrewReviewStatus');
-    for (const [lookupText, productionText] of Object.entries(
-      STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
-    )) {
-      const row = rows.find((candidate) => candidate.includes(`,${lookupText},`));
-      expect(row, `missing inventory row for ${lookupText}`).toBeDefined();
-      expect(row).toContain(`,${productionText},pending-human-review,`);
+    expect(inventoryRows).toHaveLength(48);
+    expect(new Set(inventoryRows.map((row) => row[1])).size).toBe(48);
+
+    for (const requirement of requirements) {
+      const row = inventoryRows.find((candidate) => candidate[1] === requirement.recordingKey);
+      expect(row, `missing inventory row for ${requirement.recordingKey}`).toBeDefined();
+      expect(row?.slice(0, 8)).toEqual([
+        requirement.locale,
+        requirement.recordingKey,
+        requirement.recordedLookupText,
+        requirement.storyId,
+        requirement.pageId,
+        requirement.actionKind,
+        requirement.artIds.join('|'),
+        'pending',
+      ]);
+      if (requirement.locale === 'he-IL') {
+        expect(row?.[8]).toBe(
+          STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS[
+            requirement.recordedLookupText as keyof typeof STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS
+          ],
+        );
+        expect(row?.[9]).toBe('pending-human-review');
+      } else {
+        expect(row?.[8]).toBe('');
+        expect(row?.[9]).toBe('not-applicable');
+      }
     }
   });
 });
