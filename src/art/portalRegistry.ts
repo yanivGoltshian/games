@@ -6,6 +6,7 @@ import {
   MemoryPortalArt,
   NumberPairsPortalArt,
   PuzzlePortalArt,
+  SillyAlienPortalArt,
   SortingPortalArt,
 } from './portals';
 
@@ -16,4 +17,5 @@ export const PORTAL_ART: Record<DomainKey, (props: ArtProps) => React.JSX.Elemen
   puzzle: PuzzlePortalArt,
   memory: MemoryPortalArt,
   numberPairs: NumberPairsPortalArt,
+  sillyAlien: SillyAlienPortalArt,
 };

@@ -1,4 +1,4 @@
-export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs'] as const;
+export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien'] as const;
 
 export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';
@@ -214,6 +214,18 @@ export interface NumberPairsRound {
   selectedValues: number[];
   topRow: number[];
   bottomRow: number[];
+  promptHe: string;
+  promptEn: string;
+  signature: string;
+}
+
+export interface SillyAlienRound {
+  conceptId: string;
+  fullHe: string;
+  fullEn: string;
+  brokenHe: string;
+  brokenEn: string;
+  droppedLetterHe: string;
   promptHe: string;
   promptEn: string;
   signature: string;

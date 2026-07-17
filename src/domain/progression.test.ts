@@ -10,7 +10,7 @@ import {
 import { DOMAIN_KEYS } from './types';
 
 describe('progression', () => {
-  it('keeps number pairs as the sixth and final domain', () => {
+  it('keeps number pairs as the sixth domain and silly alien as the last', () => {
     expect(DOMAIN_KEYS).toEqual([
       'listening',
       'counting',
@@ -18,6 +18,7 @@ describe('progression', () => {
       'puzzle',
       'memory',
       'numberPairs',
+      'sillyAlien',
     ]);
   });
 
@@ -147,7 +148,7 @@ describe('progression', () => {
     expect(history.at(-1)?.completedAt).toBe(1009);
   });
 
-  it('automatically applies adaptive behavior for all six domains', () => {
+  it('automatically applies adaptive behavior for all seven domains', () => {
     for (const domain of DOMAIN_KEYS) {
       let progress = createInitialProgress(false, 1000);
       const roundsToAdvance = domain === 'puzzle' ? 2 : 3;

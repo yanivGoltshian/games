@@ -301,6 +301,7 @@ option {
 .accent-puzzle { --card-accent: var(--color-plum-soft); }
 .accent-memory { --card-accent: var(--color-leaf-soft); }
 .accent-number-pairs { --card-accent: oklch(93% 0.055 183); }
+.accent-silly-alien { --card-accent: oklch(93% 0.06 300); }
 
 /* -------------------------------------------------------------------- */
 /* Game shell: minimal top rail + full-height stage                     */
@@ -1447,10 +1448,313 @@ select {
 }
 
 /* -------------------------------------------------------------------- */
-/* Reduced motion: OS preference or caregiver setting                    */
+/* Silly Alien: goofy alien + microphone effort + spring reveal         */
 /* -------------------------------------------------------------------- */
 
-@media (prefers-reduced-motion: reduce) {
+.silly-alien-surface {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 720px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(var(--space-3), 3dvh, var(--space-5));
+  padding-block: clamp(var(--space-2), 2dvh, var(--space-4));
+}
+
+.silly-alien-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(var(--space-2), 2dvh, var(--space-4));
+}
+
+.silly-alien-figure {
+  --level: 0;
+  position: relative;
+  width: clamp(180px, 42vw, 260px);
+  aspect-ratio: 1 / 1.1;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 100%;
+  animation: silly-alien-bob 3.4s ease-in-out infinite;
+}
+
+.silly-alien-figure__glow {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: radial-gradient(circle, oklch(88% 0.16 155 / 0.9), transparent 68%);
+  opacity: calc(0.18 + var(--level) * 0.72);
+  transform: scale(calc(0.86 + var(--level) * 0.5));
+  filter: blur(6px);
+  transition: opacity 90ms linear, transform 90ms linear;
+  z-index: 0;
+}
+
+.silly-alien-figure__svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: visible;
+  filter: drop-shadow(0 14px 26px oklch(45% 0.09 300 / 0.28));
+}
+
+.silly-alien-figure__pupil {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(calc(1 + var(--level) * 0.55));
+  transition: transform 80ms ease-out;
+}
+
+.silly-alien-figure__bulb {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(calc(1 + var(--level) * 0.6));
+  opacity: calc(0.65 + var(--level) * 0.35);
+  animation: silly-alien-antenna 2.6s ease-in-out infinite;
+}
+
+.silly-alien-figure__mouth {
+  transform-box: fill-box;
+  transform-origin: 50% 40%;
+  transform: scaleY(calc(0.7 + var(--level) * 1.1));
+  transition: transform 80ms ease-out, d 120ms ease-out;
+}
+
+.silly-alien-figure--idle .silly-alien-figure__mouth {
+  d: path('M80 160 Q92 150 100 160 Q108 170 120 160');
+}
+
+.silly-alien-figure--happy .silly-alien-figure__mouth {
+  d: path('M74 152 Q100 190 126 152');
+  fill: #ff7ea8;
+  stroke: #ff7ea8;
+}
+
+.silly-alien-figure--happy {
+  animation: silly-alien-happy-bounce 0.6s ease-in-out;
+}
+
+.silly-alien-figure.is-replaying {
+  animation: silly-alien-spring 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.silly-alien-bubble {
+  position: relative;
+  min-width: clamp(140px, 40vw, 240px);
+  padding: clamp(var(--space-2), 2vw, var(--space-3)) clamp(var(--space-3), 4vw, var(--space-5));
+  border-radius: var(--radius-xl);
+  background: oklch(100% 0 0 / 0.92);
+  border: 3px solid var(--card-accent, oklch(90% 0.05 300));
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+}
+
+.silly-alien-bubble::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -14px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  border-inline: 12px solid transparent;
+  border-block-end: 14px solid var(--card-accent, oklch(90% 0.05 300));
+}
+
+.silly-alien-bubble__word {
+  font-size: clamp(2.2rem, 9vw, 3.6rem);
+  font-weight: 800;
+  color: var(--color-ink, #2a2350);
+  letter-spacing: 0.02em;
+}
+
+.silly-alien-bubble.is-full .silly-alien-bubble__word {
+  animation: silly-alien-word-pop 0.5s ease-out;
+}
+
+.silly-alien-bubble__ghost {
+  font-size: clamp(2.2rem, 9vw, 3.6rem);
+  font-weight: 800;
+  color: var(--card-accent, oklch(72% 0.12 300));
+  opacity: 0.5;
+  animation: silly-alien-ghost 1.6s ease-in-out infinite;
+}
+
+.silly-alien-object {
+  display: grid;
+  place-items: center;
+}
+
+.silly-alien-object__art {
+  width: clamp(96px, 22vw, 150px);
+  height: clamp(96px, 22vw, 150px);
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px oklch(45% 0.06 300 / 0.22));
+}
+
+.silly-alien-controls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: clamp(120px, 20dvh, 180px);
+  justify-content: center;
+}
+
+.silly-alien-mic-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: clamp(var(--space-3), 3vw, var(--space-4)) clamp(var(--space-4), 6vw, var(--space-6));
+  border: none;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(160deg, oklch(72% 0.16 300), oklch(64% 0.17 320));
+  color: oklch(100% 0 0);
+  font-size: clamp(1.1rem, 3.4vw, 1.5rem);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 30px oklch(55% 0.15 310 / 0.34);
+  animation: silly-alien-mic-pulse 1.8s ease-in-out infinite;
+}
+
+.silly-alien-mic-button:active {
+  transform: scale(0.96);
+}
+
+.silly-alien-mic-button:focus-visible {
+  outline: 4px solid oklch(70% 0.15 300);
+  outline-offset: 4px;
+}
+
+.silly-alien-mic-button__icon {
+  width: clamp(46px, 10vw, 68px);
+  height: clamp(46px, 10vw, 68px);
+}
+
+.silly-alien-listening {
+  width: min(100%, 440px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.silly-alien-meter {
+  width: 100%;
+  height: clamp(20px, 4vw, 30px);
+  border-radius: 999px;
+  background: oklch(94% 0.02 300);
+  border: 3px solid oklch(100% 0 0 / 0.75);
+  box-shadow: var(--shadow-inset-ring);
+  overflow: hidden;
+}
+
+.silly-alien-meter__fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--progress, 0) * 100%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, oklch(82% 0.15 150), oklch(72% 0.17 155));
+  transition: width 110ms ease-out;
+}
+
+.silly-alien-meter.is-hot .silly-alien-meter__fill {
+  background: linear-gradient(90deg, oklch(84% 0.16 120), oklch(74% 0.18 145));
+  animation: silly-alien-meter-glow 0.5s ease-in-out infinite alternate;
+}
+
+.silly-alien-listening__label {
+  margin: 0;
+  font-size: clamp(1.05rem, 3.2vw, 1.4rem);
+  font-weight: 700;
+  color: var(--color-ink, #2a2350);
+}
+
+.silly-alien-affirm {
+  padding: var(--space-2) clamp(var(--space-4), 6vw, var(--space-5));
+  border: 3px solid oklch(74% 0.13 300);
+  border-radius: 999px;
+  background: oklch(100% 0 0 / 0.9);
+  color: oklch(46% 0.12 305);
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.silly-alien-affirm:active {
+  transform: scale(0.96);
+}
+
+.silly-alien-affirm:focus-visible {
+  outline: 4px solid oklch(70% 0.15 300);
+  outline-offset: 3px;
+}
+
+.silly-alien-hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+}
+
+@keyframes silly-alien-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@keyframes silly-alien-antenna {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.12) translateY(-2px); }
+}
+
+@keyframes silly-alien-mic-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 14px 30px oklch(55% 0.15 310 / 0.34); }
+  50% { transform: scale(1.06); box-shadow: 0 18px 40px oklch(60% 0.17 310 / 0.5); }
+}
+
+@keyframes silly-alien-meter-glow {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.18); }
+}
+
+@keyframes silly-alien-ghost {
+  0%, 100% { opacity: 0.32; transform: translateY(0); }
+  50% { opacity: 0.6; transform: translateY(-4px); }
+}
+
+@keyframes silly-alien-word-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes silly-alien-happy-bounce {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-14px); }
+  60% { transform: translateY(-4px); }
+}
+
+/* Pacing & stretching: alien springs tall on the first syllable, then snaps
+   back down on release — the physical embodiment of "taaa---puach". */
+@keyframes silly-alien-spring {
+  0% { transform: scaleY(1) scaleX(1); }
+  28% { transform: scaleY(1.42) scaleX(0.82); }
+  55% { transform: scaleY(1.32) scaleX(0.88); }
+  72% { transform: scaleY(0.78) scaleX(1.2); }
+  86% { transform: scaleY(1.08) scaleX(0.96); }
+  100% { transform: scaleY(1) scaleX(1); }
+}
+
+
   .memory-card__inner,
   .draggable-chip,
   .puzzle-piece,
@@ -1473,7 +1777,9 @@ select {
   .puppy-mascot--milestone,
   .confetti-piece,
   .celebration-art,
-  .celebration-art * {
+  .celebration-art *,
+  .silly-alien-surface,
+  .silly-alien-surface * {
     transition: none !important;
     animation: none !important;
   }
@@ -1501,7 +1807,9 @@ body[data-reduced-motion='true'] .puppy-mascot--happy,
 body[data-reduced-motion='true'] .puppy-mascot--milestone,
 body[data-reduced-motion='true'] .confetti-piece,
 body[data-reduced-motion='true'] .celebration-art,
-body[data-reduced-motion='true'] .celebration-art * {
+body[data-reduced-motion='true'] .celebration-art *,
+body[data-reduced-motion='true'] .silly-alien-surface,
+body[data-reduced-motion='true'] .silly-alien-surface * {
   transition: none !important;
   animation: none !important;
 }

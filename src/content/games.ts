@@ -45,4 +45,10 @@ export const gameMeta: Record<DomainKey, GameMeta> = {
     accentClass: 'accent-number-pairs',
     colorToken: 'aqua',
   },
+  sillyAlien: {
+    title: 'החייזר המבולבל',
+    subtitle: 'עוזרים לחייזר שבלע את ההברה הראשונה — אומרים את המילה בקול',
+    accentClass: 'accent-silly-alien',
+    colorToken: 'alien',
+  },
 };

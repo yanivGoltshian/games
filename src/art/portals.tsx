@@ -220,3 +220,50 @@ export function NumberPairsPortalArt({ label, className }: ArtProps) {
     </svg>
   );
 }
+
+export function SillyAlienPortalArt({ label, className }: ArtProps) {
+  const ids = useArtIds('bg', 'body', 'glow');
+  return (
+    <svg viewBox="0 0 320 320" className={className} {...artA11yProps('portal-silly-alien', label)}>
+      <BackgroundBlob id={ids.bg} from="#e4d7ff" to="#8f6bff" />
+      <defs>
+        <radialGradient id={ids.body} cx="42%" cy="34%" r="72%">
+          <stop offset="0%" stopColor="#c8ff9a" />
+          <stop offset="100%" stopColor="#5fce6a" />
+        </radialGradient>
+        <radialGradient id={ids.glow} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff6a8" />
+          <stop offset="100%" stopColor="#fff6a8" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* antenna + glowing bulb */}
+      <path d="M160 96 Q150 60 176 44" fill="none" stroke="#3f9a4d" strokeWidth="9" strokeLinecap="round" />
+      <circle cx="182" cy="40" r="20" fill={`url(#${ids.glow})`} />
+      <circle cx="182" cy="40" r="10" fill="#fff08a" stroke="#f6c945" strokeWidth="3" />
+      {/* head / body blob */}
+      <path
+        d="M160 104 C214 104 244 146 244 190 C244 236 208 262 160 262 C112 262 76 236 76 190 C76 146 106 104 160 104 Z"
+        fill={`url(#${ids.body})`}
+        stroke="#3f9a4d"
+        strokeWidth="5"
+      />
+      {/* two big friendly eyes */}
+      <ellipse cx="132" cy="180" rx="26" ry="30" fill="#ffffff" />
+      <ellipse cx="188" cy="180" rx="26" ry="30" fill="#ffffff" />
+      <circle cx="136" cy="186" r="12" fill="#2c2140" />
+      <circle cx="184" cy="186" r="12" fill="#2c2140" />
+      <circle cx="140" cy="181" r="4" fill="#ffffff" />
+      <circle cx="188" cy="181" r="4" fill="#ffffff" />
+      {/* little "oo" mouth — mid-mumble */}
+      <ellipse cx="160" cy="226" rx="15" ry="18" fill="#3a7d3f" />
+      <ellipse cx="160" cy="222" rx="8" ry="9" fill="#8be08f" />
+      {/* rosy cheeks */}
+      <circle cx="104" cy="212" r="10" fill="#ff9ecf" opacity="0.6" />
+      <circle cx="216" cy="212" r="10" fill="#ff9ecf" opacity="0.6" />
+      {/* dropped-sound dots drifting off */}
+      <circle cx="256" cy="150" r="7" fill="#ffffff" opacity="0.85" />
+      <circle cx="276" cy="130" r="4.5" fill="#ffffff" opacity="0.7" />
+      <circle cx="290" cy="116" r="3" fill="#ffffff" opacity="0.5" />
+    </svg>
+  );
+}

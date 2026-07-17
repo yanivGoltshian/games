@@ -13,6 +13,7 @@ import { ListeningGame } from './games/ListeningGame';
 import { MemoryGame } from './games/MemoryGame';
 import { NumberPairsGame } from './games/NumberPairsGame';
 import { PuzzleGame } from './games/PuzzleGame';
+import { SillyAlienGame } from './games/SillyAlienGame';
 import { SortingGame } from './games/SortingGame';
 
 function navigate(path: string) {
@@ -117,6 +118,7 @@ export default function App() {
       puzzle: <PuzzleGame {...gameProps} />,
       memory: <MemoryGame {...gameProps} />,
       numberPairs: <NumberPairsGame {...gameProps} />,
+      sillyAlien: <SillyAlienGame {...gameProps} />,
     }[route.domain];
   } else {
     content = <HomeScreen onOpenGame={(domain) => navigate(`/games/${domain}`)} />;

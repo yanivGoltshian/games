@@ -6,6 +6,11 @@ import {
   sortingItems,
 } from '../content/concepts';
 import { getCountingQuestion } from '../content/countingQuantity';
+import {
+  SILLY_ALIEN_PROMPT,
+  SILLY_ALIEN_WORDS,
+  requireSillyAlienWord,
+} from '../content/sillyAlien';
 import { buildPracticeWeights, createInitialConceptStat } from './progression';
 import { createSeededRandom, pickWeightedUnique } from './rng';
 import type {
@@ -17,6 +22,7 @@ import type {
   NumberPairsRound,
   PuzzleRound,
   ShapeId,
+  SillyAlienRound,
   SortingRound,
   SortingRule,
 } from './types';
@@ -24,6 +30,7 @@ import type {
 export const NUMBER_WORDS_HE = ['אפס', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר'];
 export const NUMBER_WORDS_EN = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 export const NUMBER_PAIRS_GENERATION_ATTEMPTS = 32;
+export const SILLY_ALIEN_GENERATION_ATTEMPTS = 32;
 export const LEARNING_ROUND_GENERATION_ATTEMPTS = 32;
 
 const learningStages: string[][] = ([1, 2, 3] as const).map((level) => learningConcepts
@@ -397,4 +404,47 @@ export function generateNumberPairsRound(
 
 export function conceptMasteryFor(domain: DomainProgress, conceptId: string): number {
   return domain.concepts[conceptId]?.mastery ?? createInitialConceptStat().mastery;
+}
+
+export function getSillyAlienRoundSignature(round: Pick<SillyAlienRound, 'conceptId'>): string {
+  return round.conceptId;
+}
+
+function createSillyAlienCandidate(domain: DomainProgress, seed: string | number): SillyAlienRound {
+  const random = createSeededRandom(seed);
+  const conceptIds = SILLY_ALIEN_WORDS.map((word) => word.conceptId);
+  const weights = buildPracticeWeights(domain, conceptIds);
+  const conceptId = pickWeightedUnique(conceptIds, weights, 1, random)[0]!;
+  const word = requireSillyAlienWord(conceptId);
+
+  return {
+    conceptId,
+    fullHe: word.he,
+    fullEn: word.en,
+    brokenHe: word.brokenHe,
+    brokenEn: word.brokenEn,
+    droppedLetterHe: word.droppedLetterHe,
+    promptHe: SILLY_ALIEN_PROMPT.he,
+    promptEn: SILLY_ALIEN_PROMPT.en,
+    signature: conceptId,
+  };
+}
+
+export function generateSillyAlienRound(
+  domain: DomainProgress,
+  seed: string | number,
+  recentSignatures: readonly string[] = [],
+): SillyAlienRound {
+  const history = new Set(recentSignatures);
+  let fallback: SillyAlienRound | null = null;
+
+  for (let attempt = 0; attempt < SILLY_ALIEN_GENERATION_ATTEMPTS; attempt += 1) {
+    const candidate = createSillyAlienCandidate(domain, `${String(seed)}:silly-alien:${attempt}`);
+    fallback ??= candidate;
+    if (!history.has(candidate.signature)) {
+      return candidate;
+    }
+  }
+
+  return fallback!;
 }
