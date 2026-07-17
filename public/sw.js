@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v18';
+const CACHE_NAME = 'sean-learning-adventure-v19';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -69,6 +69,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
   if (url.origin !== self.location.origin) {
     return;
   }

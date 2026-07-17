@@ -180,6 +180,9 @@ export interface PuzzleScene {
   } | {
     kind: 'concept';
     conceptId: string;
+  } | {
+    kind: 'family';
+    href: string;
   };
 }
 

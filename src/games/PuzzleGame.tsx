@@ -1,8 +1,11 @@
 import { createRef, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
+import { sceneImageHref } from '../art/puzzleScenes';
 import { GameShell } from '../components/GameShell';
 import { PuzzlePieceArt } from '../components/puzzle/PuzzlePieceArt';
+import { useFamilyPhotoPreviews } from '../components/useFamilyPhotoPreviews';
 import { useMeasuredSize } from '../components/useMeasuredSize';
 import { type DragItemState, useToddlerDrag } from '../components/drag/useToddlerDrag';
+import { puzzleScenes } from '../content/concepts';
 import { gameMeta } from '../content/games';
 import { buildPuzzleMissModelLine } from '../content/feedbackSpeech';
 import { generatePuzzleRound, getPuzzleRoundSignature } from '../domain/rounds';
@@ -10,11 +13,18 @@ import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
+import { createFamilyPhotoRound } from './familyPuzzle';
 import { computePuzzleLayout } from './puzzleGeometry';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
 const SPEECH_SCOPE = 'game:puzzle';
+
+type PuzzleExperience =
+  | { kind: 'deciding' }
+  | { kind: 'choose' }
+  | { kind: 'built-in' }
+  | { kind: 'family'; photoId: string };
 
 export function PuzzleGame({
   domainProgress,
@@ -30,22 +40,63 @@ export function PuzzleGame({
   const [hintSlotId, setHintSlotId] = useState<string | null>(null);
   const [items, setItems] = useState<Record<string, DragItemState>>({});
   const [solvedIds, setSolvedIds] = useState<string[]>([]);
+  const [experience, setExperience] = useState<PuzzleExperience>({ kind: 'deciding' });
   const surfaceRef = useRef<HTMLDivElement>(null);
-  const size = useMeasuredSize(surfaceRef);
+  const playing = experience.kind === 'built-in' || experience.kind === 'family';
+  const size = useMeasuredSize(surfaceRef, playing);
+  const {
+    previews: familyPhotos,
+    loading: familyPhotosLoading,
+    error: familyPhotosError,
+    reload: reloadFamilyPhotos,
+  } = useFamilyPhotoPreviews();
 
-  const { round, roundKey, startNextRound } = useAdaptiveRound(
+  const {
+    round: builtInRound,
+    roundKey: builtInRoundKey,
+    startNextRound,
+    refreshRoundForCurrentProgress,
+  } = useAdaptiveRound(
     'puzzle',
     domainProgress,
     generatePuzzleRound,
     { getSignature: getPuzzleRoundSignature, limit: 8 },
   );
+  const selectedFamilyPhoto = experience.kind === 'family'
+    ? familyPhotos.find((photo) => photo.id === experience.photoId) ?? null
+    : null;
+  const familyRound = useMemo(
+    () => selectedFamilyPhoto
+      ? createFamilyPhotoRound(domainProgress.level, selectedFamilyPhoto.objectUrl)
+      : null,
+    [domainProgress.level, selectedFamilyPhoto],
+  );
+  const round = familyRound ?? builtInRound;
+  const roundKey = experience.kind === 'family'
+    ? `family:${experience.photoId}`
+    : `built-in:${builtInRoundKey}`;
   const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
-  const prompt = englishOnly ? round.promptEn : round.promptHe;
+  const prompt = playing
+    ? (englishOnly ? round.promptEn : round.promptHe)
+    : (englishOnly ? 'Choose a picture puzzle' : 'בוחרים פאזל תמונה');
   const zoneRefs = useMemo(
     () => Object.fromEntries(round.pieces.map((piece) => [piece.id, createRef<HTMLButtonElement>()])) as Record<string, RefObject<HTMLButtonElement | null>>,
     [round],
   );
+
+  useEffect(() => {
+    if (experience.kind !== 'deciding' || familyPhotosLoading || familyPhotosError) {
+      return;
+    }
+    setExperience({ kind: familyPhotos.length > 0 ? 'choose' : 'built-in' });
+  }, [experience.kind, familyPhotos.length, familyPhotosError, familyPhotosLoading]);
+
+  useEffect(() => {
+    if (experience.kind === 'family' && !selectedFamilyPhoto && !familyPhotosLoading) {
+      setExperience({ kind: familyPhotos.length > 0 ? 'choose' : 'built-in' });
+    }
+  }, [experience.kind, familyPhotos.length, familyPhotosLoading, selectedFamilyPhoto]);
 
   const layout = useMemo(
     () => computePuzzleLayout(size.width, size.height, round.rows, round.cols, round.pieces.length),
@@ -96,17 +147,17 @@ export function PuzzleGame({
     setMisses(0);
     setCelebration(null);
     setHintSlotId(null);
-    if (mediaReady) {
+    if (mediaReady && playing) {
       void speakPromptRef.current();
     }
-  }, [mediaReady, roundKey]);
+  }, [mediaReady, playing, roundKey]);
 
   const { bindItem, bindZone, selectedId, draggingId, hoverZoneId, wigglingId } = useToddlerDrag({
     surfaceRef,
     items,
     setItems,
     zones: zoneRefs,
-    disabled: retryBusy,
+    disabled: retryBusy || !playing,
     onDrop: (itemId, zoneId) => {
       if (retryBusy) {
         return false;
@@ -145,7 +196,11 @@ export function PuzzleGame({
       soundService.playSuccess(settings);
 
       if (nextSolved.length === round.pieces.length) {
-        const summary = onCompleteRound({ attempts: nextAttempts, requiredActions: round.pieces.length, concepts: [round.scene.id] });
+        const summary = onCompleteRound({
+          attempts: nextAttempts,
+          requiredActions: round.pieces.length,
+          concepts: [round.scene.image.kind === 'family' ? 'family-photo' : round.scene.id],
+        });
         setCelebration({
           seed: `puzzle-${round.scene.id}-${nextAttempts}`,
           targetSegments: buildPhraseSegments(round.scene.titleHe, round.scene.titleEn, settings.languageMode, settings.englishVoiceLocale),
@@ -156,6 +211,78 @@ export function PuzzleGame({
       return true;
     },
   });
+
+  const returnToPhotoSelection = useCallback(() => {
+    setExperience({ kind: familyPhotos.length > 0 ? 'choose' : 'built-in' });
+  }, [familyPhotos.length]);
+  const chooseBuiltInPuzzle = useCallback(() => {
+    refreshRoundForCurrentProgress();
+    setExperience({ kind: 'built-in' });
+  }, [refreshRoundForCurrentProgress]);
+
+  const selectionShell = (
+    <GameShell
+      ariaLabel={gameMeta.puzzle.title}
+      languageMode={settings.languageMode}
+      accentClass={gameMeta.puzzle.accentClass}
+      reducedMotion={settings.reducedMotion}
+      onHome={onBack}
+      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
+      homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
+      liveStatus={prompt}
+    >
+      {familyPhotosError ? (
+        <div className="family-puzzle-state" role="alert">
+          <p>{englishOnly ? 'The local photo library is unavailable.' : 'ספריית התמונות המקומית אינה זמינה.'}</p>
+          <div className="family-puzzle-state__actions">
+            <button className="secondary-button" onClick={reloadFamilyPhotos} type="button">
+              {englishOnly ? 'Try again' : 'לנסות שוב'}
+            </button>
+            <button
+              className="puzzle-photo-choice puzzle-photo-choice--built-in"
+              onClick={chooseBuiltInPuzzle}
+              type="button"
+              aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
+            >
+              <img alt="" aria-hidden="true" src={sceneImageHref(puzzleScenes[0]!)} />
+            </button>
+          </div>
+        </div>
+      ) : familyPhotosLoading || experience.kind === 'deciding' ? (
+        <div className="family-puzzle-state" aria-live="polite">
+          <p>{englishOnly ? 'Preparing local pictures…' : 'מכינים את התמונות המקומיות…'}</p>
+        </div>
+      ) : (
+        <div className="puzzle-photo-selection" aria-label={prompt}>
+          <button
+            className="puzzle-photo-choice puzzle-photo-choice--built-in"
+            data-puzzle-source="built-in"
+            onClick={chooseBuiltInPuzzle}
+            type="button"
+            aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
+          >
+            <img alt="" aria-hidden="true" src={sceneImageHref(puzzleScenes[0]!)} />
+          </button>
+          {familyPhotos.map((photo, index) => (
+            <button
+              className="puzzle-photo-choice"
+              data-family-photo-choice={photo.id}
+              key={photo.id}
+              onClick={() => setExperience({ kind: 'family', photoId: photo.id })}
+              type="button"
+              aria-label={englishOnly ? `Family photo ${index + 1}` : `תמונה משפחתית ${index + 1}`}
+            >
+              <img alt="" aria-hidden="true" src={photo.objectUrl} />
+            </button>
+          ))}
+        </div>
+      )}
+    </GameShell>
+  );
+
+  if (!playing) {
+    return selectionShell;
+  }
 
   return (
     <GameShell
@@ -178,7 +305,7 @@ export function PuzzleGame({
             settings={settings}
             scope={SPEECH_SCOPE}
             onDismiss={() => setCelebration(null)}
-            startNextRound={startNextRound}
+            startNextRound={experience.kind === 'family' ? returnToPhotoSelection : startNextRound}
           />
         ) : undefined
       }
