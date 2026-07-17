@@ -137,10 +137,11 @@ export function CountingGame({
       accentClass={gameMeta.counting.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={() => void speakPrompt(true)}
-      repeatDisabled={settings.quietMode || !speechStatus.supported}
-      repeatSpeaking={speechStatus.speaking}
-      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
+      onRestart={() => {
+        speechService.cancelScope(SPEECH_SCOPE);
+        startNextRound();
+      }}
+      restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
       retryActive={retryBusy}

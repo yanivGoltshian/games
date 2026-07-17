@@ -13,7 +13,7 @@ import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import { RoundSuccessOverlay } from './RoundSuccessOverlay';
-import { createFamilyPhotoRound } from './familyPuzzle';
+import { createFamilyPhotoRound, nextPuzzleLevel, type PuzzleLevel } from './familyPuzzle';
 import { computePuzzleLayout } from './puzzleGeometry';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
@@ -41,6 +41,9 @@ export function PuzzleGame({
   const [items, setItems] = useState<Record<string, DragItemState>>({});
   const [solvedIds, setSolvedIds] = useState<string[]>([]);
   const [experience, setExperience] = useState<PuzzleExperience>({ kind: 'deciding' });
+  const [puzzleLevel, setPuzzleLevel] = useState<PuzzleLevel>(1);
+  const [arrangementIndex, setArrangementIndex] = useState(0);
+  const pendingPuzzleLevelRef = useRef<PuzzleLevel>(1);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const playing = experience.kind === 'built-in' || experience.kind === 'family';
   const size = useMeasuredSize(surfaceRef, playing);
@@ -51,14 +54,17 @@ export function PuzzleGame({
     reload: reloadFamilyPhotos,
   } = useFamilyPhotoPreviews();
 
+  const puzzleProgress = useMemo(
+    () => ({ ...domainProgress, level: puzzleLevel }),
+    [domainProgress, puzzleLevel],
+  );
   const {
     round: builtInRound,
     roundKey: builtInRoundKey,
     startNextRound,
-    refreshRoundForCurrentProgress,
   } = useAdaptiveRound(
     'puzzle',
-    domainProgress,
+    puzzleProgress,
     generatePuzzleRound,
     { getSignature: getPuzzleRoundSignature, limit: 8 },
   );
@@ -67,14 +73,15 @@ export function PuzzleGame({
     : null;
   const familyRound = useMemo(
     () => selectedFamilyPhoto
-      ? createFamilyPhotoRound(domainProgress.level, selectedFamilyPhoto.objectUrl)
+      ? createFamilyPhotoRound(puzzleLevel, selectedFamilyPhoto.objectUrl)
       : null,
-    [domainProgress.level, selectedFamilyPhoto],
+    [puzzleLevel, selectedFamilyPhoto],
   );
   const round = familyRound ?? builtInRound;
   const roundKey = experience.kind === 'family'
-    ? `family:${experience.photoId}`
+    ? `family:${experience.photoId}:${puzzleLevel}:${arrangementIndex}`
     : `built-in:${builtInRoundKey}`;
+  const itemsRoundKeyRef = useRef(roundKey);
   const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = playing
@@ -84,6 +91,13 @@ export function PuzzleGame({
     () => Object.fromEntries(round.pieces.map((piece) => [piece.id, createRef<HTMLButtonElement>()])) as Record<string, RefObject<HTMLButtonElement | null>>,
     [round],
   );
+  const loosePieces = useMemo(() => {
+    if (round.pieces.length < 2) {
+      return round.pieces;
+    }
+    const shift = arrangementIndex % round.pieces.length;
+    return [...round.pieces.slice(shift), ...round.pieces.slice(0, shift)];
+  }, [arrangementIndex, round.pieces]);
 
   useEffect(() => {
     if (experience.kind !== 'deciding' || familyPhotosLoading || familyPhotosError) {
@@ -119,9 +133,11 @@ export function PuzzleGame({
     if (layout.boardSize <= 0) {
       return;
     }
+    const preservePlacedPieces = itemsRoundKeyRef.current === roundKey;
+    itemsRoundKeyRef.current = roundKey;
     setItems((current) => Object.fromEntries(
-      round.pieces.map((piece, index) => {
-        const previous = current[piece.id];
+      loosePieces.map((piece, index) => {
+        const previous = preservePlacedPieces ? current[piece.id] : undefined;
         const home = layout.homes[index]!;
         const snappedX = layout.boardX + piece.col * layout.pieceWidth;
         const snappedY = layout.boardY + piece.row * layout.pieceHeight;
@@ -139,7 +155,7 @@ export function PuzzleGame({
         ];
       }),
     ));
-  }, [layout, round.pieces]);
+  }, [layout, loosePieces, roundKey]);
 
   useEffect(() => {
     setSolvedIds([]);
@@ -147,10 +163,11 @@ export function PuzzleGame({
     setMisses(0);
     setCelebration(null);
     setHintSlotId(null);
+    pendingPuzzleLevelRef.current = puzzleLevel;
     if (mediaReady && playing) {
       void speakPromptRef.current();
     }
-  }, [mediaReady, playing, roundKey]);
+  }, [mediaReady, playing, puzzleLevel, roundKey]);
 
   const { bindItem, bindZone, selectedId, draggingId, hoverZoneId, wigglingId } = useToddlerDrag({
     surfaceRef,
@@ -196,6 +213,7 @@ export function PuzzleGame({
       soundService.playSuccess(settings);
 
       if (nextSolved.length === round.pieces.length) {
+        pendingPuzzleLevelRef.current = nextPuzzleLevel(puzzleLevel);
         const summary = onCompleteRound({
           attempts: nextAttempts,
           requiredActions: round.pieces.length,
@@ -212,13 +230,27 @@ export function PuzzleGame({
     },
   });
 
-  const returnToPhotoSelection = useCallback(() => {
-    setExperience({ kind: familyPhotos.length > 0 ? 'choose' : 'built-in' });
-  }, [familyPhotos.length]);
   const chooseBuiltInPuzzle = useCallback(() => {
-    refreshRoundForCurrentProgress();
+    startNextRound(puzzleProgress);
     setExperience({ kind: 'built-in' });
-  }, [refreshRoundForCurrentProgress]);
+  }, [puzzleProgress, startNextRound]);
+  const startNextPuzzle = useCallback(() => {
+    const nextLevel = pendingPuzzleLevelRef.current;
+    setPuzzleLevel(nextLevel);
+    setArrangementIndex((current) => current + 1);
+    if (experience.kind === 'built-in') {
+      startNextRound({ ...domainProgress, level: nextLevel });
+    }
+  }, [domainProgress, experience.kind, startNextRound]);
+  const restartPuzzle = useCallback(() => {
+    speechService.cancelScope(SPEECH_SCOPE);
+    setCelebration(null);
+    pendingPuzzleLevelRef.current = puzzleLevel;
+    setArrangementIndex((current) => current + 1);
+    if (experience.kind === 'built-in') {
+      startNextRound({ ...domainProgress, level: puzzleLevel });
+    }
+  }, [domainProgress, experience.kind, puzzleLevel, startNextRound]);
 
   const selectionShell = (
     <GameShell
@@ -227,7 +259,7 @@ export function PuzzleGame({
       accentClass={gameMeta.puzzle.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
+      restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
     >
@@ -291,10 +323,8 @@ export function PuzzleGame({
       accentClass={gameMeta.puzzle.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={() => void speakPrompt(true)}
-      repeatDisabled={settings.quietMode || !speechStatus.supported}
-      repeatSpeaking={speechStatus.speaking}
-      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
+      onRestart={restartPuzzle}
+      restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
       retryActive={retryBusy}
@@ -305,7 +335,7 @@ export function PuzzleGame({
             settings={settings}
             scope={SPEECH_SCOPE}
             onDismiss={() => setCelebration(null)}
-            startNextRound={experience.kind === 'family' ? returnToPhotoSelection : startNextRound}
+            startNextRound={startNextPuzzle}
           />
         ) : undefined
       }
@@ -344,7 +374,7 @@ export function PuzzleGame({
           ))}
         </div>
 
-        {round.pieces.map((piece) => {
+        {loosePieces.map((piece) => {
           const state = items[piece.id];
           if (!state) {
             return null;

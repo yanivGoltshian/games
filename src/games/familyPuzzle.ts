@@ -5,8 +5,14 @@ export const FAMILY_PHOTO_PROMPT_EN = "Let's do it again.";
 export const FAMILY_PHOTO_SUCCESS_HE = 'יופי!';
 export const FAMILY_PHOTO_SUCCESS_EN = 'Great!';
 
+export type PuzzleLevel = DomainProgress['level'];
+
+export function nextPuzzleLevel(level: PuzzleLevel): PuzzleLevel {
+  return level === 1 ? 2 : 3;
+}
+
 export function createFamilyPhotoRound(
-  level: DomainProgress['level'],
+  level: PuzzleLevel,
   objectUrl: string,
 ): PuzzleRound {
   const [rows, cols] = level === 1 ? [1, 2] : level === 2 ? [2, 2] : [3, 3];

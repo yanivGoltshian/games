@@ -55,7 +55,6 @@ export function SyllableTrainGame({
   domainProgress,
   settings,
   mediaReady,
-  speechStatus,
   onBack,
   onCompleteRound,
 }: ToddlerGameProps) {
@@ -71,24 +70,6 @@ export function SyllableTrainGame({
 
   const englishOnly = settings.languageMode === 'en';
   const dragStartRef = useRef<number | null>(null);
-
-  const speakWord = useCallback(async (interrupt = false): Promise<void> => {
-    await speechService.speakSegments(
-      buildPhraseSegments(
-        round.plainHe,
-        round.fullEn,
-        settings.languageMode,
-        settings.englishVoiceLocale,
-      ),
-      settings,
-      {
-        scope: SPEECH_SCOPE,
-        key: `word:${roundKey}`,
-        priority: interrupt ? 'replay' : 'label',
-        interrupt,
-      },
-    );
-  }, [round.plainHe, round.fullEn, roundKey, settings]);
 
   // The engine's first-syllable cue is an emphatic sound + visual pulse rather
   // than spoken audio, because isolated syllables are not in the manifest.
@@ -231,10 +212,11 @@ export function SyllableTrainGame({
       accentClass={gameMeta.syllableTrain.accentClass}
       reducedMotion={settings.reducedMotion}
       onHome={onBack}
-      onRepeat={() => void speakWord(true)}
-      repeatDisabled={settings.quietMode || !speechStatus.supported}
-      repeatSpeaking={speechStatus.speaking}
-      replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
+      onRestart={() => {
+        speechService.cancelScope(SPEECH_SCOPE);
+        startNextRound();
+      }}
+      restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={liveStatus}
       successOverlay={

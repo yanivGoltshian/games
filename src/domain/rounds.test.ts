@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { REALISTIC_CONCEPT_IDS } from '../art/conceptAssets';
 import { ORIGINAL_PUZZLE_SCENE_IDS, sceneImageHref } from '../art/puzzleScenes';
-import { conceptPuzzleScenes, learningConcepts } from '../content/concepts';
+import { conceptPuzzleScenes, learningConcepts, originalPuzzleScenes } from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
 import { createInitialDomainProgress } from './progression';
 import {
@@ -174,6 +174,18 @@ describe('round generation', () => {
     expect(round.pieces).toHaveLength(round.rows * round.cols);
   });
 
+  it('uses only the original narrative scenes for default puzzles', () => {
+    const domain = createInitialDomainProgress();
+    domain.level = 3;
+    const originalIds = new Set(originalPuzzleScenes.map((scene) => scene.id));
+    const generatedIds = new Set(
+      Array.from({ length: 80 }, (_, index) => generatePuzzleRound(domain, `narrative-puzzle-${index}`).scene.id),
+    );
+
+    expect([...generatedIds].every((sceneId) => originalIds.has(sceneId))).toBe(true);
+    expect(generatedIds).toEqual(originalIds);
+  });
+
   it('creates matching memory pairs', () => {
     const domain = createInitialDomainProgress();
     const round = generateMemoryRound(domain, 'memory');
@@ -247,32 +259,29 @@ describe('round generation', () => {
   });
 
   describe('expanded concept coverage and anti-repetition', () => {
-    it('covers all 14 approved concepts in listening, memory, counting, and object puzzles', () => {
+    it('covers all 14 approved concepts in listening, memory, and counting', () => {
       const domain = createInitialDomainProgress();
       domain.level = 3;
       const listening = new Set<string>();
       const memory = new Set<string>();
       const counting = new Set<string>();
-      const puzzles = new Set<string>();
 
       for (let index = 0; index < 1_200; index += 1) {
         const listeningRound = generateListeningRound(domain, `coverage-listening-${index}`);
         listening.add(listeningRound.targetId);
         generateMemoryRound(domain, `coverage-memory-${index}`).pairConceptIds.forEach((id) => memory.add(id));
         counting.add(generateCountingRound(domain, `coverage-counting-${index}`).countingConceptId);
-        const puzzleScene = generatePuzzleRound(domain, `coverage-puzzle-${index}`).scene;
-        if (puzzleScene.image.kind === 'concept') {
-          puzzles.add(puzzleScene.image.conceptId);
-        }
       }
 
       for (const conceptId of NEW_CONCEPT_IDS) {
         expect(listening).toContain(conceptId);
         expect(memory).toContain(conceptId);
         expect(counting).toContain(conceptId);
-        expect(puzzles).toContain(conceptId);
       }
       expect(conceptPuzzleScenes).toHaveLength(NEW_CONCEPT_IDS.length);
+      expect(conceptPuzzleScenes.map((scene) => (
+        scene.image.kind === 'concept' ? scene.image.conceptId : null
+      ))).toEqual(NEW_CONCEPT_IDS);
     });
 
     it('is deterministic for identical seeds and recent-round histories', () => {
