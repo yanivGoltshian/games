@@ -105,4 +105,26 @@ describe('CaregiverPanel child name', () => {
 
     expect(onUpdateSettings).toHaveBeenCalledWith({ childName: 'שון' });
   });
+
+  it('shows and preserves the explicit UK child narration voice', async () => {
+    const progress = createInitialProgress(false, 1);
+    progress.settings.englishVoiceLocale = 'en-GB';
+    await act(async () => {
+      root.render(
+        <CaregiverPanel
+          progress={progress}
+          onBack={() => undefined}
+          onReset={() => undefined}
+          onUpdateSettings={() => undefined}
+        />,
+      );
+    });
+
+    const voiceSelect = [...container.querySelectorAll('select')]
+      .find((select) => select.querySelector('option[value="en-US"]'));
+
+    expect(voiceSelect?.value).toBe('en-GB');
+    expect(voiceSelect?.selectedOptions[0]?.textContent).toContain('Maisie');
+    expect(container.textContent).toContain('Azure אינו מסווג קול ילד עברי');
+  });
 });

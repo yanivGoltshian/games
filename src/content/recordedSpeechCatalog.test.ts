@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { collectRecordedSpeechCatalog } from './recordedSpeechCatalog';
 import { learningConcepts } from './concepts';
+import { RECORDED_NARRATION_VOICE_NAMES } from '../domain/narrationVoice';
 import {
   getHebrewPronunciationSkeleton,
   hasNiqqud,
@@ -10,6 +11,8 @@ import {
 } from './hebrewPronunciation';
 
 interface Manifest {
+  version: number;
+  voices: Record<string, string>;
   entries: Record<string, {
     src: string;
     offset: number;
@@ -27,6 +30,8 @@ describe('recorded speech asset coverage', () => {
     const catalog = collectRecordedSpeechCatalog();
     const expectedKeys = catalog.map(({ locale, text }) => `${locale}\u0000${text}`);
 
+    expect(manifest.version).toBe(2);
+    expect(manifest.voices).toEqual(RECORDED_NARRATION_VOICE_NAMES);
     expect(Object.keys(manifest.entries).sort()).toEqual(expectedKeys.sort());
     expect(new Set(Object.values(manifest.entries).map((entry) => entry.src))).toEqual(
       new Set(['/speech/he-IL.mp3', '/speech/en-US.mp3', '/speech/en-GB.mp3']),
@@ -40,7 +45,7 @@ describe('recorded speech asset coverage', () => {
   it('pre-caches the manifest and all three sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
-    expect(serviceWorker).toContain("sean-learning-adventure-v17");
+    expect(serviceWorker).toContain("sean-learning-adventure-v18");
     expect(serviceWorker).toContain("'/speech/manifest.json'");
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");

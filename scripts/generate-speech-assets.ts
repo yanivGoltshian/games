@@ -12,6 +12,7 @@ import { join, resolve } from 'node:path';
 import { collectRecordedSpeechCatalog } from '../src/content/recordedSpeechCatalog.js';
 import type { RecordedSpeechCatalogEntry } from '../src/content/recordedSpeechCatalog.js';
 import type { SpeechLocale } from '../src/domain/types.js';
+import { RECORDED_NARRATION_VOICE_NAMES } from '../src/domain/narrationVoice.js';
 import {
   buildSpeechSsml,
   NEURAL_VOICES,
@@ -37,6 +38,7 @@ interface ManifestClip {
 
 interface RecordedSpeechManifest {
   version: number;
+  voices: Record<SpeechLocale, string>;
   entries: Record<string, ManifestClip>;
 }
 
@@ -364,7 +366,11 @@ async function main(): Promise<void> {
     (grouped[entry.locale] ??= []).push(entry);
   }
   const regenerateMatch = process.env.AZURE_SPEECH_REGENERATE_MATCH?.trim();
-  let manifest: RecordedSpeechManifest = { version: 1, entries: {} };
+  let manifest: RecordedSpeechManifest = {
+    version: 2,
+    voices: { ...RECORDED_NARRATION_VOICE_NAMES },
+    entries: {},
+  };
 
   mkdirSync(outputDirectory, { recursive: true });
   if (regenerateMatch) {
@@ -379,7 +385,8 @@ async function main(): Promise<void> {
       throw new Error(`No Hebrew speech entries match: ${regenerateMatch}`);
     }
     manifest = {
-      version: existingManifest.version,
+      version: 2,
+      voices: { ...RECORDED_NARRATION_VOICE_NAMES },
       entries: { ...existingManifest.entries },
     };
     console.log(

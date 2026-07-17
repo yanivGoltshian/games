@@ -4,6 +4,7 @@ import { gameMeta } from '../content/games';
 import type { AppProgress, ToddlerSettings } from '../domain/types';
 import { DOMAIN_KEYS } from '../domain/types';
 import { CHILD_NAME_MAX_LENGTH, normalizeChildName, personalizeChildName } from '../domain/childName';
+import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import { InstallHint } from './InstallHint';
 import { ProgressStars } from './ProgressStars';
 
@@ -82,14 +83,18 @@ export function CaregiverPanel({ progress, onBack, onUpdateSettings, onReset }: 
           </label>
 
           <label>
-            <span>מבטא באנגלית</span>
+            <span>קול הקראה באנגלית / English narration voice</span>
             <select
               value={progress.settings.englishVoiceLocale}
               onChange={(event) => onUpdateSettings({ englishVoiceLocale: event.target.value as ToddlerSettings['englishVoiceLocale'] })}
             >
-              <option value="en-US">English (US)</option>
-              <option value="en-GB">English (UK)</option>
+              <option value="en-US">{NARRATION_VOICE_PROFILES['en-US'].parentLabel}</option>
+              <option value="en-GB">{NARRATION_VOICE_PROFILES['en-GB'].parentLabel}</option>
             </select>
+            <small>
+              באייפד שני הקולות באנגלית הם קולות ילדה מוקלטים. בעברית נעשה שימוש בקול Hila
+              המאושר; Azure אינו מסווג קול ילד עברי במערך הקולות הזמין.
+            </small>
           </label>
 
           <label className="range-control">

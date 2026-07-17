@@ -1,5 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
+  "voices": {
+    "he-IL": "he-IL-HilaNeural",
+    "en-US": "en-US-AnaNeural",
+    "en-GB": "en-GB-MaisieNeural"
+  },
   "entries": {
     "he-IL\u0000אוטו": {
       "src": "/speech/he-IL.mp3",

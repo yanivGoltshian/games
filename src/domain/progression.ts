@@ -10,6 +10,7 @@ import type {
   ToddlerSettings,
 } from './types';
 import { DEFAULT_CHILD_NAME } from './childName';
+import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
 import { DOMAIN_KEYS } from './types';
 
 export const STORAGE_SCHEMA_VERSION = 5;
@@ -24,7 +25,7 @@ export function createInitialSettings(prefersReducedMotion = false): ToddlerSett
   return {
     childName: DEFAULT_CHILD_NAME,
     languageMode: 'he',
-    englishVoiceLocale: 'en-US',
+    englishVoiceLocale: DEFAULT_ENGLISH_VOICE_LOCALE,
     soundLevel: 0.7,
     reducedMotion: prefersReducedMotion,
     quietMode: false,

@@ -5,6 +5,7 @@ import {
   isDefaultChildName,
   personalizeChildName,
 } from '../domain/childName';
+import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import {
   recordedSpeechPlayer,
   type RecordedSpeechBackend,
@@ -71,9 +72,9 @@ const PRIORITY_WEIGHT: Record<SpeechPriority, number> = {
 };
 
 const PREFERRED_VOICE_NAMES: Record<SpeechLocale, readonly string[]> = {
-  'he-IL': ['carmit', 'carmel', 'hila'],
-  'en-US': ['samantha', 'ava', 'allison', 'susan'],
-  'en-GB': ['daniel', 'serena', 'martha'],
+  'he-IL': NARRATION_VOICE_PROFILES['he-IL'].webSpeechNameHints,
+  'en-US': NARRATION_VOICE_PROFILES['en-US'].webSpeechNameHints,
+  'en-GB': NARRATION_VOICE_PROFILES['en-GB'].webSpeechNameHints,
 };
 
 const UTTERANCE_GUARD_BASE_MS = 8_000;

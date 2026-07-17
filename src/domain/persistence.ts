@@ -5,6 +5,7 @@ import {
   STORAGE_SCHEMA_VERSION,
 } from './progression';
 import { normalizeChildName } from './childName';
+import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
 import type {
   AppProgress,
   ConceptStat,
@@ -60,7 +61,9 @@ function sanitizeSettings(input: unknown, prefersReducedMotion: boolean): Toddle
   }
 
   const languageMode = input.languageMode === 'en' || input.languageMode === 'bilingual' ? input.languageMode : 'he';
-  const englishVoiceLocale = input.englishVoiceLocale === 'en-GB' ? 'en-GB' : 'en-US';
+  const englishVoiceLocale = input.englishVoiceLocale === 'en-GB'
+    ? 'en-GB'
+    : DEFAULT_ENGLISH_VOICE_LOCALE;
   const soundLevel = Math.min(1, Math.max(0, asNumber(input.soundLevel, defaults.soundLevel)));
   const reducedMotion = typeof input.reducedMotion === 'boolean' ? input.reducedMotion : defaults.reducedMotion;
   const quietMode = typeof input.quietMode === 'boolean' ? input.quietMode : defaults.quietMode;

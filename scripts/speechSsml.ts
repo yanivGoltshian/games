@@ -1,4 +1,5 @@
 import type { SpeechLocale } from '../src/domain/types.js';
+import { NARRATION_VOICE_PROFILES } from '../src/domain/narrationVoice.js';
 
 export interface SpeechEnvironment {
   resourceId: string;
@@ -13,17 +14,17 @@ export interface NeuralVoice {
 
 export const NEURAL_VOICES: Readonly<Record<SpeechLocale, NeuralVoice>> = {
   'he-IL': {
-    name: 'he-IL-HilaNeural',
+    name: NARRATION_VOICE_PROFILES['he-IL'].azureName,
     rate: '-8%',
     pitch: '+3%',
   },
   'en-US': {
-    name: 'en-US-AnaNeural',
+    name: NARRATION_VOICE_PROFILES['en-US'].azureName,
     rate: '-8%',
     pitch: '+3%',
   },
   'en-GB': {
-    name: 'en-GB-MaisieNeural',
+    name: NARRATION_VOICE_PROFILES['en-GB'].azureName,
     rate: '-8%',
     pitch: '+3%',
   },
