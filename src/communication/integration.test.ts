@@ -189,6 +189,32 @@ describe('communication integration selectors', () => {
     });
   });
 
+  it('fails an activity closed instead of throwing when its readiness map is omitted', () => {
+    const release = readyRelease(['peek', 'phone']);
+    const readiness: Partial<CommunicationReleaseReadiness> = {
+      ...release.readiness,
+    };
+    delete readiness.phone;
+    const result = evaluateCommunicationPublicAvailability({
+      release: {
+        ...release,
+        readiness: readiness as CommunicationReleaseReadiness,
+      },
+      games: {
+        peek: { component: EmptyGame },
+        phone: { component: EmptyGame },
+      },
+    });
+
+    expect(result.publicActivityIds).toEqual(['peek']);
+    expect(result.activities.find(({ activityId }) => activityId === 'phone')).toMatchObject({
+      publiclyAvailable: false,
+      explicitlyEnabled: true,
+      componentRegistered: true,
+      contentReady: false,
+    });
+  });
+
   it('returns only fixed-order caregiver-safe readiness and permitted metrics', () => {
     const contract = integration(['phone'], ['phone']);
     contract.games.phone!.selectCaregiverMetrics = () => ({
