@@ -13,8 +13,13 @@ interface RecordedSpeechManifest {
 }
 
 interface RecordedPlayback {
-  source: AudioBufferSourceNode;
+  sources: AudioBufferSourceNode[];
   finish: () => void;
+}
+
+export interface RecordedSpeechStretch {
+  leadSeconds: number;
+  playbackRate: number;
 }
 
 export interface RecordedSpeechPlayOptions {
@@ -22,6 +27,7 @@ export interface RecordedSpeechPlayOptions {
   locale: SpeechLocale;
   volume: number;
   onStart: () => void;
+  stretch?: RecordedSpeechStretch;
 }
 
 export interface RecordedSpeechBackend {
@@ -119,12 +125,27 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     }
 
     await new Promise<void>((resolve, reject) => {
-      const source = context.createBufferSource();
       const gain = context.createGain();
-      source.buffer = buffer;
       gain.gain.value = Math.min(1, Math.max(0, options.volume));
-      source.connect(gain);
       gain.connect(context.destination);
+      const createSource = (playbackRate = 1): AudioBufferSourceNode => {
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.playbackRate.value = playbackRate;
+        source.connect(gain);
+        return source;
+      };
+      const stretch = options.stretch;
+      const canStretch = stretch && clip.duration > 0.24;
+      const playbackRate = canStretch
+        ? Math.min(0.85, Math.max(0.25, stretch.playbackRate))
+        : 1;
+      const leadDuration = canStretch
+        ? Math.min(Math.max(0.08, stretch.leadSeconds), clip.duration * 0.45)
+        : 0;
+      const sources = canStretch
+        ? [createSource(playbackRate), createSource()]
+        : [createSource()];
 
       let finished = false;
       const finish = () => {
@@ -132,19 +153,38 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
           return;
         }
         finished = true;
-        if (this.activePlayback?.source === source) {
+        if (this.activePlayback === playback) {
           this.activePlayback = null;
         }
         resolve();
       };
-      source.onended = finish;
-      this.activePlayback = { source, finish };
+      const playback: RecordedPlayback = { sources, finish };
+      sources.at(-1)!.onended = finish;
+      this.activePlayback = playback;
+      const startedSources: AudioBufferSourceNode[] = [];
 
       try {
-        source.start(0, clip.offset, clip.duration);
+        if (canStretch) {
+          const startAt = context.currentTime;
+          sources[0]!.start(startAt, clip.offset, leadDuration);
+          startedSources.push(sources[0]!);
+          sources[1]!.start(
+            startAt + leadDuration / playbackRate,
+            clip.offset + leadDuration,
+            clip.duration - leadDuration,
+          );
+          startedSources.push(sources[1]!);
+        } else {
+          sources[0]!.start(0, clip.offset, clip.duration);
+          startedSources.push(sources[0]!);
+        }
         options.onStart();
       } catch (error) {
         this.activePlayback = null;
+        startedSources.forEach((source) => {
+          source.onended = null;
+          source.stop();
+        });
         reject(error);
       }
     });
@@ -157,9 +197,11 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
       return;
     }
     this.activePlayback = null;
-    playback.source.onended = null;
+    playback.sources.forEach((source) => {
+      source.onended = null;
+    });
     try {
-      playback.source.stop();
+      playback.sources.forEach((source) => source.stop());
     } finally {
       playback.finish();
     }

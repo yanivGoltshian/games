@@ -42,8 +42,8 @@ export const SILLY_ALIEN_WORDS: readonly SillyAlienWord[] = [
 
 /** Alien is embarrassed it dropped the sound. */
 export const SILLY_ALIEN_INTRO: LocalizedSpeechLine = {
-  he: 'אוי, שוב התבלבלתי!',
-  en: 'Oops, I got confused again!',
+  he: 'אוי, התבלבלתי!',
+  en: 'Oops, I got confused!',
 };
 
 /** Narrator hands the fix to Sean. */

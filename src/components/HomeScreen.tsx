@@ -10,7 +10,7 @@ interface HomeScreenProps {
 }
 
 /**
- * Child home: all seven stable-identity activity portals are visible together.
+ * Child home: all stable-identity activity portals are visible together.
  * No swipe knowledge, reading, progress dashboard, or caregiver copy is
  * required to discover and launch an activity.
  */

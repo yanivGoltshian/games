@@ -3,6 +3,7 @@ import { HEBREW_UNLOCK_PRIMER } from '../content/hebrewPronunciation';
 import {
   recordedSpeechPlayer,
   type RecordedSpeechBackend,
+  type RecordedSpeechStretch,
 } from './recordedSpeech';
 
 export interface SpeechSegment {
@@ -10,6 +11,8 @@ export interface SpeechSegment {
   locale: SpeechLocale;
   pauseAfterMs?: number;
   cue?: string;
+  recordedText?: string;
+  stretch?: RecordedSpeechStretch;
 }
 
 export interface SpeechStatus {
@@ -788,7 +791,7 @@ export class SpeechService {
         finish(request.cancelledAs ?? 'cancelled');
       };
       void this.recordedSpeech.play({
-        text: segment.text,
+        text: segment.recordedText ?? segment.text,
         locale: segment.locale,
         volume: request.settings.soundLevel,
         onStart: () => {
@@ -798,6 +801,7 @@ export class SpeechService {
           this.activeCue = segment.cue ?? null;
           this.notify();
         },
+        ...(segment.stretch ? { stretch: segment.stretch } : {}),
       }).then(
         () => finish(request.cancelledAs ?? 'completed'),
         () => finish(request.cancelledAs ?? 'error'),
