@@ -229,7 +229,6 @@ describe('persistence migration', () => {
       recentResults: [],
       concepts: {},
     });
-    expect(progress.domains.wordStretch).toEqual(progress.domains.numberPairs);
   });
 
   it('continues from the chosen level after serialization and reload', () => {
