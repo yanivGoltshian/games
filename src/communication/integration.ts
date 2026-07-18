@@ -7,6 +7,12 @@ import {
   WORD_TRAIN_CONTENT_VERSION,
   WORD_TRAIN_INSTALLED_CONTENT,
 } from '../content/syllableTrain';
+import {
+  STORY_THAT_WAITS_STORY_IDS,
+  STORY_THAT_WAITS_VERSION,
+  type StoryThatWaitsLocale,
+  type StoryThatWaitsStoryId,
+} from '../content/storyThatWaits';
 import type { CommunicationActivityId } from '../domain/communicationGame';
 import {
   createInitialCommunicationProgress,
@@ -25,6 +31,7 @@ import type {
 import type { SpeechStatus } from '../services/speech';
 import { SyllableTrainGame } from '../games/SyllableTrainGame';
 import type { WordTrainMetrics } from '../games/wordTrainMetrics';
+import { StoryThatWaitsGame } from '../games/StoryThatWaitsGame';
 import { COMMUNICATION_SHELF_REGISTRY } from './registry';
 import {
   evaluateCommunicationRelease,
@@ -170,18 +177,36 @@ const TRAIN_RELEASE_READINESS = Object.freeze({
   }),
 } satisfies CommunicationLocaleReadiness);
 
+const STORY_RELEASE_READINESS = Object.freeze({
+  'he-IL': Object.freeze({
+    status: 'ready',
+    contentVersion: STORY_THAT_WAITS_VERSION,
+    locale: 'he-IL',
+  }),
+  'en-US': Object.freeze({
+    status: 'ready',
+    contentVersion: STORY_THAT_WAITS_VERSION,
+    locale: 'en-US',
+  }),
+  'en-GB': Object.freeze({
+    status: 'ready',
+    contentVersion: STORY_THAT_WAITS_VERSION,
+    locale: 'en-GB',
+  }),
+} satisfies CommunicationLocaleReadiness);
+
 const PROGRESSIVE_COMMUNICATION_RELEASE: CommunicationReleaseConfiguration = Object.freeze({
   explicitlyEnabled: Object.freeze({
     peek: true,
     train: true,
     phone: false,
-    story: false,
+    story: true,
   }),
   readiness: Object.freeze({
     peek: PEEK_RELEASE_READINESS,
     train: TRAIN_RELEASE_READINESS,
     phone: Object.freeze({}),
-    story: Object.freeze({}),
+    story: STORY_RELEASE_READINESS,
   }),
 });
 
@@ -230,6 +255,7 @@ function TrainCommunicationGame({
       latestProgressRef.current = result.progress;
       onProgressChange(result.progress);
     }
+
   }, [onProgressChange]);
 
   return createElement(SyllableTrainGame, {
@@ -241,6 +267,32 @@ function TrainCommunicationGame({
     onBack: onBackToShelf,
     onCompleteRound: onCompleteSyllableTrainRound,
     onCommunicationMetrics: handleCommunicationMetrics,
+  });
+}
+
+function storyLocale(settings: ToddlerSettings): StoryThatWaitsLocale {
+  return settings.languageMode === 'he' ? 'he-IL' : settings.englishVoiceLocale;
+}
+
+function selectStoryThatWaitsStoryId(progress: CommunicationProgress): StoryThatWaitsStoryId {
+  return STORY_THAT_WAITS_STORY_IDS[
+    progress.sessionsCompleted % STORY_THAT_WAITS_STORY_IDS.length
+  ]!;
+}
+
+function StoryCommunicationGame({
+  settings,
+  progress,
+  onProgressChange,
+  onBackToShelf,
+}: CommunicationGameHostProps) {
+  return createElement(StoryThatWaitsGame, {
+    storyId: selectStoryThatWaitsStoryId(progress),
+    locale: storyLocale(settings),
+    settings,
+    onExit: onBackToShelf,
+    initialProgress: progress,
+    onProgressChange,
   });
 }
 
@@ -325,6 +377,26 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
           progress,
           'train',
           WORD_TRAIN_CONTENT_VERSION,
+        ).sessionsCompleted,
+      }),
+    }),
+    story: Object.freeze({
+      component: StoryCommunicationGame,
+      selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
+        progress,
+        'story',
+        STORY_THAT_WAITS_VERSION,
+      ),
+      selectCaregiverMetrics: (progress: AppProgress) => ({
+        lastPlayedAt: selectCommunicationActivityProgress(
+          progress,
+          'story',
+          STORY_THAT_WAITS_VERSION,
+        ).lastPlayedAt,
+        sessionsCompleted: selectCommunicationActivityProgress(
+          progress,
+          'story',
+          STORY_THAT_WAITS_VERSION,
         ).sessionsCompleted,
       }),
     }),

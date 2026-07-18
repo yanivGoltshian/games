@@ -4,8 +4,8 @@ import {
   type CommunicationGameScope,
 } from '../domain/communicationGame';
 import { createInitialSettings } from '../domain/progression';
-import { recordedSpeechPlayer } from './recordedSpeech';
 import { storyThatWaitsMediaCoordinator } from './storyThatWaitsMedia';
+import { storyThatWaitsRecordedSpeechPlayer } from './storyThatWaitsRecordedSpeech';
 
 const scope: CommunicationGameScope = {
   activityId: 'story-that-waits',
@@ -34,9 +34,9 @@ describe('Story That Waits production media wiring', () => {
     vi.stubGlobal('SpeechSynthesisUtterance', vi.fn(() => {
       throw new Error('Runtime synthesis must never be constructed.');
     }));
-    vi.spyOn(recordedSpeechPlayer, 'isEnabled').mockReturnValue(false);
-    vi.spyOn(recordedSpeechPlayer, 'unlock').mockResolvedValue();
-    const recordedPlay = vi.spyOn(recordedSpeechPlayer, 'play').mockImplementation(async (options) => {
+    vi.spyOn(storyThatWaitsRecordedSpeechPlayer, 'isEnabled').mockReturnValue(false);
+    vi.spyOn(storyThatWaitsRecordedSpeechPlayer, 'unlock').mockResolvedValue();
+    const recordedPlay = vi.spyOn(storyThatWaitsRecordedSpeechPlayer, 'play').mockImplementation(async (options) => {
       options.onStart();
     });
 
@@ -56,7 +56,7 @@ describe('Story That Waits production media wiring', () => {
     });
 
     expect(outcome).toMatchObject({ status: 'completed' });
-    expect(recordedSpeechPlayer.isEnabled).not.toHaveBeenCalled();
+    expect(storyThatWaitsRecordedSpeechPlayer.isEnabled).not.toHaveBeenCalled();
     expect(recordedPlay).toHaveBeenCalledWith(expect.objectContaining({
       text: 'The bus rests beside the flower.',
       locale: 'en-GB',

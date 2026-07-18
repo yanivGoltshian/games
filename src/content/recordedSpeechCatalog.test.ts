@@ -45,7 +45,7 @@ describe('recorded speech asset coverage', () => {
   it('pre-caches the manifest and all three sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
-    expect(serviceWorker).toContain("sean-learning-adventure-v22");
+    expect(serviceWorker).toContain("sean-learning-adventure-v23");
     expect(serviceWorker).toContain("'/speech/manifest.json'");
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");

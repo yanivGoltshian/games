@@ -38,6 +38,7 @@ import {
   type CommunicationAssetReadiness,
   type CommunicationContentRequirements,
 } from '../services/communicationAssetReadiness';
+import { storyThatWaitsRecordedSpeechPlayer } from '../services/storyThatWaitsRecordedSpeech';
 import {
   type InteractionCancellationReason,
   type InteractionMediaOutcome,
@@ -176,12 +177,16 @@ function readinessDiagnostic(result: Extract<CommunicationAssetReadiness, { stat
 async function defaultReadinessCheck(
   requirements: CommunicationContentRequirements,
 ): Promise<CommunicationAssetReadiness> {
-  return communicationAssetReadiness.validate(requirements, {
-    contentVersion: requirements.contentVersion,
-    images: requirements.images.filter(
-      (image) => image.kind === 'id' && hasRealisticConceptAsset(image.value),
-    ),
-  });
+  return communicationAssetReadiness.validate(
+    requirements,
+    {
+      contentVersion: requirements.contentVersion,
+      images: requirements.images.filter(
+        (image) => image.kind === 'id' && hasRealisticConceptAsset(image.value),
+      ),
+    },
+    () => storyThatWaitsRecordedSpeechPlayer.getManifest(),
+  );
 }
 
 async function queryPreauthorizedMicrophonePermission(): Promise<StoryThatWaitsMicrophonePermission> {

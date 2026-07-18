@@ -28,7 +28,14 @@ describe('communication shelf registry', () => {
       expect.objectContaining({
         activityId: 'story',
         path: '/communication/story-that-waits',
-        title: expect.objectContaining({ en: 'Story That Waits' }),
+        title: {
+          he: 'סִפּוּר שֶׁמְּחַכֶּה',
+          en: 'Story That Waits',
+        },
+        description: {
+          he: 'גְּעוּ בַּסֵּפֶר',
+          en: 'Touch the book',
+        },
       }),
     ]);
   });

@@ -122,11 +122,14 @@ export function CommunicationShelf({
       <ul className="communication-shelf__doors" data-door-count={entries.length}>
         {entries.map((entry) => {
           const title = english ? entry.title.en : entry.title.he;
+          const description = 'description' in entry
+            ? (english ? entry.description.en : entry.description.he)
+            : null;
           const pressed = pressedActivity === entry.activityId;
           return (
             <li key={entry.activityId} className="communication-shelf__door-slot">
               <button
-                aria-label={title}
+                aria-label={description ? `${title}. ${description}` : title}
                 className={`communication-door communication-door--${entry.palette}${pressed ? ' is-pressed' : ''}`}
                 data-activity-id={entry.activityId}
                 onClick={(event) => handleClick(event, entry.activityId)}

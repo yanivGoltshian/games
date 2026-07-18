@@ -1,4 +1,5 @@
 import type { CommunicationActivityId } from '../domain/communicationGame';
+import { STORY_THAT_WAITS_SHELF_METADATA } from '../content/storyThatWaits';
 
 export const COMMUNICATION_SHELF_PATH = '/communication' as const;
 
@@ -10,6 +11,10 @@ export interface CommunicationShelfEntry {
   path: `/communication/${string}`;
   palette: CommunicationDoorPalette;
   title: {
+    he: string;
+    en: string;
+  };
+  description?: {
     he: string;
     en: string;
   };
@@ -52,8 +57,12 @@ export const COMMUNICATION_SHELF_REGISTRY = [
     path: '/communication/story-that-waits',
     palette: 'honey',
     title: {
-      he: 'סיפור שמחכה',
+      he: STORY_THAT_WAITS_SHELF_METADATA['he-IL'].title,
       en: 'Story That Waits',
+    },
+    description: {
+      he: STORY_THAT_WAITS_SHELF_METADATA['he-IL'].description,
+      en: STORY_THAT_WAITS_SHELF_METADATA['en-US'].description,
     },
   },
 ] as const satisfies readonly CommunicationShelfEntry[];
