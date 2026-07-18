@@ -287,4 +287,30 @@ describe('communication integration selectors', () => {
     ]);
     expect(JSON.stringify(items)).not.toMatch(/url|asset|recording|transcript|accuracy|completion/i);
   });
+
+  it('uses shared caregiver-safe communication progress for the released Train item', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communication: {
+        version: 1 as const,
+        contentVersion: 'word-train-v2',
+        sessionsCompleted: 3,
+        roundsSeen: 6,
+        recentContentIds: ['ball', 'apple'],
+        lastPlayedAt: 456,
+      },
+    };
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      progress,
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.find((item) => item.activityId === 'train')).toEqual({
+      activityId: 'train',
+      lastPlayedAt: 456,
+      sessionsCompleted: 3,
+      readiness: 'ready',
+    });
+  });
 });

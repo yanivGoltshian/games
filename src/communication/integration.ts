@@ -1,13 +1,18 @@
-import { createElement, type ComponentType } from 'react';
+import { createElement, useCallback, useRef, type ComponentType } from 'react';
 import {
   PeekAndDiscoverGame,
   PEEK_AND_DISCOVER_INSTALLED_CONTENT,
 } from '../games/peekAndDiscover';
 import {
+  WORD_TRAIN_CONTENT_VERSION,
   WORD_TRAIN_INSTALLED_CONTENT,
 } from '../content/syllableTrain';
 import type { CommunicationActivityId } from '../domain/communicationGame';
-import type { CommunicationProgress } from '../domain/communicationProgress';
+import {
+  recordCommunicationRound,
+  recordCommunicationSessionCompleted,
+  type CommunicationProgress,
+} from '../domain/communicationProgress';
 import type {
   AppProgress,
   DomainProgress,
@@ -17,6 +22,7 @@ import type {
 } from '../domain/types';
 import type { SpeechStatus } from '../services/speech';
 import { SyllableTrainGame } from '../games/SyllableTrainGame';
+import type { WordTrainMetrics } from '../games/wordTrainMetrics';
 import { COMMUNICATION_SHELF_REGISTRY } from './registry';
 import {
   evaluateCommunicationRelease,
@@ -146,10 +152,48 @@ function TrainCommunicationGame({
   overallStars,
   mediaReady,
   speechStatus,
+  progress,
   syllableTrainDomainProgress,
   onCompleteSyllableTrainRound,
+  onProgressChange,
   onBackToShelf,
 }: CommunicationGameHostProps) {
+  const latestProgressRef = useRef(progress);
+  latestProgressRef.current = progress;
+  const persistedMetricsRef = useRef({
+    sessions: 0,
+    trainsSeen: 0,
+  });
+  const handleCommunicationMetrics = useCallback((metrics: Readonly<WordTrainMetrics>): void => {
+    const persisted = persistedMetricsRef.current;
+    let nextProgress = latestProgressRef.current;
+    const newTrainCount = Math.max(0, metrics.trainsSeen - persisted.trainsSeen);
+    const newContentIds = metrics.recentContentIds.slice(-newTrainCount);
+    for (const contentId of newContentIds) {
+      nextProgress = recordCommunicationRound(
+        nextProgress,
+        WORD_TRAIN_CONTENT_VERSION,
+        contentId,
+      );
+    }
+    const newSessionCount = Math.max(0, metrics.sessions - persisted.sessions);
+    for (let index = 0; index < newSessionCount; index += 1) {
+      nextProgress = recordCommunicationSessionCompleted(
+        nextProgress,
+        WORD_TRAIN_CONTENT_VERSION,
+      );
+    }
+
+    persistedMetricsRef.current = {
+      sessions: Math.max(persisted.sessions, metrics.sessions),
+      trainsSeen: Math.max(persisted.trainsSeen, metrics.trainsSeen),
+    };
+    if (nextProgress !== latestProgressRef.current) {
+      latestProgressRef.current = nextProgress;
+      onProgressChange(nextProgress);
+    }
+  }, [onProgressChange]);
+
   return createElement(SyllableTrainGame, {
     domainProgress: syllableTrainDomainProgress,
     settings,
@@ -158,6 +202,7 @@ function TrainCommunicationGame({
     speechStatus,
     onBack: onBackToShelf,
     onCompleteRound: onCompleteSyllableTrainRound,
+    onCommunicationMetrics: handleCommunicationMetrics,
   });
 }
 
@@ -174,8 +219,8 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
     train: Object.freeze({
       component: TrainCommunicationGame,
       selectCaregiverMetrics: (progress: AppProgress) => ({
-        lastPlayedAt: progress.domains.syllableTrain.lastPracticedAt,
-        sessionsCompleted: progress.domains.syllableTrain.completedRounds,
+        lastPlayedAt: progress.communication.lastPlayedAt,
+        sessionsCompleted: progress.communication.sessionsCompleted,
       }),
     }),
   }),
