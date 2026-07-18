@@ -31,6 +31,58 @@ import {
   type CommunicationReleaseEvaluation,
 } from './release';
 
+interface PersistedWordTrainMetricCounts {
+  sessions: number;
+  trainsSeen: number;
+}
+
+export function applyWordTrainCommunicationMetrics(
+  progress: CommunicationProgress,
+  persisted: Readonly<PersistedWordTrainMetricCounts>,
+  metrics: Readonly<WordTrainMetrics>,
+  playedAt = Date.now(),
+): {
+  progress: CommunicationProgress;
+  persisted: PersistedWordTrainMetricCounts;
+} {
+  let nextProgress = progress;
+  let persistedTrainsSeen = persisted.trainsSeen;
+  const newTrainCount = Math.max(0, metrics.trainsSeen - persisted.trainsSeen);
+  const newContentIds = metrics.recentContentIds.slice(-newTrainCount);
+  for (const contentId of newContentIds) {
+    if (
+      nextProgress.contentVersion === WORD_TRAIN_CONTENT_VERSION
+      && nextProgress.recentContentIds.includes(contentId)
+    ) {
+      continue;
+    }
+    nextProgress = recordCommunicationRound(
+      nextProgress,
+      WORD_TRAIN_CONTENT_VERSION,
+      contentId,
+      playedAt,
+    );
+    persistedTrainsSeen += 1;
+  }
+
+  const newSessionCount = Math.max(0, metrics.sessions - persisted.sessions);
+  for (let index = 0; index < newSessionCount; index += 1) {
+    nextProgress = recordCommunicationSessionCompleted(
+      nextProgress,
+      WORD_TRAIN_CONTENT_VERSION,
+      playedAt,
+    );
+  }
+
+  return {
+    progress: nextProgress,
+    persisted: {
+      sessions: Math.max(persisted.sessions, metrics.sessions),
+      trainsSeen: persistedTrainsSeen,
+    },
+  };
+}
+
 export interface CommunicationGameHostProps {
   activityId: CommunicationActivityId;
   settings: ToddlerSettings;
@@ -165,32 +217,15 @@ function TrainCommunicationGame({
     trainsSeen: 0,
   });
   const handleCommunicationMetrics = useCallback((metrics: Readonly<WordTrainMetrics>): void => {
-    const persisted = persistedMetricsRef.current;
-    let nextProgress = latestProgressRef.current;
-    const newTrainCount = Math.max(0, metrics.trainsSeen - persisted.trainsSeen);
-    const newContentIds = metrics.recentContentIds.slice(-newTrainCount);
-    for (const contentId of newContentIds) {
-      nextProgress = recordCommunicationRound(
-        nextProgress,
-        WORD_TRAIN_CONTENT_VERSION,
-        contentId,
-      );
-    }
-    const newSessionCount = Math.max(0, metrics.sessions - persisted.sessions);
-    for (let index = 0; index < newSessionCount; index += 1) {
-      nextProgress = recordCommunicationSessionCompleted(
-        nextProgress,
-        WORD_TRAIN_CONTENT_VERSION,
-      );
-    }
-
-    persistedMetricsRef.current = {
-      sessions: Math.max(persisted.sessions, metrics.sessions),
-      trainsSeen: Math.max(persisted.trainsSeen, metrics.trainsSeen),
-    };
-    if (nextProgress !== latestProgressRef.current) {
-      latestProgressRef.current = nextProgress;
-      onProgressChange(nextProgress);
+    const result = applyWordTrainCommunicationMetrics(
+      latestProgressRef.current,
+      persistedMetricsRef.current,
+      metrics,
+    );
+    persistedMetricsRef.current = result.persisted;
+    if (result.progress !== latestProgressRef.current) {
+      latestProgressRef.current = result.progress;
+      onProgressChange(result.progress);
     }
   }, [onProgressChange]);
 

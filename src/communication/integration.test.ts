@@ -3,12 +3,18 @@ import {
   COMMUNICATION_ACTIVITY_IDS,
   type CommunicationActivityId,
 } from '../domain/communicationGame';
+import { createInitialCommunicationProgress } from '../domain/communicationProgress';
 import { createInitialProgress } from '../domain/progression';
 import type { SpeechLocale } from '../domain/types';
 import type { CommunicationAssetReadiness } from '../services/communicationAssetReadiness';
 import { PEEK_AND_DISCOVER_INSTALLED_CONTENT } from '../games/peekAndDiscover';
-import { WORD_TRAIN_INSTALLED_CONTENT } from '../content/syllableTrain';
 import {
+  WORD_TRAIN_CONTENT_VERSION,
+  WORD_TRAIN_INSTALLED_CONTENT,
+} from '../content/syllableTrain';
+import { INITIAL_WORD_TRAIN_METRICS } from '../games/wordTrainMetrics';
+import {
+  applyWordTrainCommunicationMetrics,
   buildCommunicationCaregiverItems,
   communicationIntegration,
   evaluateCommunicationPublicAvailability,
@@ -312,5 +318,81 @@ describe('communication integration selectors', () => {
       sessionsCompleted: 3,
       readiness: 'ready',
     });
+  });
+
+  it('recovers Train communication progress when content ids arrive after trainsSeen', () => {
+    let result = applyWordTrainCommunicationMetrics(
+      createInitialCommunicationProgress(null),
+      { sessions: 0, trainsSeen: 0 },
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: [],
+      },
+      100,
+    );
+
+    expect(result.progress).toMatchObject({
+      contentVersion: null,
+      roundsSeen: 0,
+      recentContentIds: [],
+      lastPlayedAt: 0,
+    });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 0 });
+
+    result = applyWordTrainCommunicationMetrics(
+      result.progress,
+      result.persisted,
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: ['ball'],
+      },
+      101,
+    );
+
+    expect(result.progress).toMatchObject({
+      contentVersion: WORD_TRAIN_CONTENT_VERSION,
+      roundsSeen: 1,
+      recentContentIds: ['ball'],
+      lastPlayedAt: 101,
+    });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1 });
+
+    result = applyWordTrainCommunicationMetrics(
+      result.progress,
+      result.persisted,
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 2,
+        recentContentIds: ['ball'],
+      },
+      102,
+    );
+
+    expect(result.progress).toMatchObject({
+      roundsSeen: 1,
+      recentContentIds: ['ball'],
+      lastPlayedAt: 101,
+    });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1 });
+
+    result = applyWordTrainCommunicationMetrics(
+      result.progress,
+      result.persisted,
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 2,
+        recentContentIds: ['ball', 'apple'],
+      },
+      103,
+    );
+
+    expect(result.progress).toMatchObject({
+      roundsSeen: 2,
+      recentContentIds: ['ball', 'apple'],
+      lastPlayedAt: 103,
+    });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 2 });
   });
 });
