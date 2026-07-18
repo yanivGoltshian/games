@@ -9,6 +9,7 @@ import {
 } from '../content/syllableTrain';
 import type { CommunicationActivityId } from '../domain/communicationGame';
 import {
+  createInitialCommunicationProgress,
   recordCommunicationRound,
   recordCommunicationSessionCompleted,
   type CommunicationProgress,
@@ -102,6 +103,7 @@ export type CommunicationCaregiverMetrics = Pick<
 
 export interface CommunicationGameRegistration {
   component: ComponentType<CommunicationGameHostProps>;
+  selectProgress?: (progress: AppProgress) => CommunicationProgress;
   selectCaregiverMetrics?: (progress: AppProgress) => CommunicationCaregiverMetrics;
 }
 
@@ -240,21 +242,62 @@ function TrainCommunicationGame({
   });
 }
 
+function selectCommunicationActivityProgress(
+  progress: AppProgress,
+  activityId: CommunicationActivityId,
+  contentVersion: string,
+): CommunicationProgress {
+  const activityProgress = progress.communicationActivities?.[activityId];
+  if (activityProgress) {
+    return activityProgress;
+  }
+  if (progress.communication.contentVersion === contentVersion) {
+    return progress.communication;
+  }
+  return createInitialCommunicationProgress(contentVersion);
+}
+
 export const communicationIntegration: CommunicationIntegrationContract = Object.freeze({
   release: PROGRESSIVE_COMMUNICATION_RELEASE,
   games: Object.freeze({
     peek: Object.freeze({
       component: PeekCommunicationGame,
+      selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
+        progress,
+        'peek',
+        PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+      ),
       selectCaregiverMetrics: (progress: AppProgress) => ({
-        lastPlayedAt: progress.communication.lastPlayedAt,
-        sessionsCompleted: progress.communication.sessionsCompleted,
+        lastPlayedAt: selectCommunicationActivityProgress(
+          progress,
+          'peek',
+          PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+        ).lastPlayedAt,
+        sessionsCompleted: selectCommunicationActivityProgress(
+          progress,
+          'peek',
+          PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+        ).sessionsCompleted,
       }),
     }),
     train: Object.freeze({
       component: TrainCommunicationGame,
+      selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
+        progress,
+        'train',
+        WORD_TRAIN_CONTENT_VERSION,
+      ),
       selectCaregiverMetrics: (progress: AppProgress) => ({
-        lastPlayedAt: progress.communication.lastPlayedAt,
-        sessionsCompleted: progress.communication.sessionsCompleted,
+        lastPlayedAt: selectCommunicationActivityProgress(
+          progress,
+          'train',
+          WORD_TRAIN_CONTENT_VERSION,
+        ).lastPlayedAt,
+        sessionsCompleted: selectCommunicationActivityProgress(
+          progress,
+          'train',
+          WORD_TRAIN_CONTENT_VERSION,
+        ).sessionsCompleted,
       }),
     }),
   }),

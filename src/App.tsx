@@ -16,6 +16,7 @@ import {
 } from './communication/registry';
 import { applyRoundResult, createInitialProgress } from './domain/progression';
 import { childGreeting, normalizeChildName } from './domain/childName';
+import type { CommunicationActivityId } from './domain/communicationGame';
 import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
@@ -142,13 +143,17 @@ export default function App({
     return result.summary;
   };
 
-  const updateCommunicationProgress = (
+  const updateCommunicationProgress = (activityId: CommunicationActivityId) => (
     communicationProgress: typeof progress.communication,
   ) => {
     setProgress((current) => ({
       ...current,
       updatedAt: Date.now(),
       communication: communicationProgress,
+      communicationActivities: {
+        ...current.communicationActivities,
+        [activityId]: communicationProgress,
+      },
     }));
   };
 
@@ -222,6 +227,7 @@ export default function App({
       throw new Error(`Missing communication integration for ${route.activityId}.`);
     }
     const CommunicationGame = registration.component;
+    const communicationProgress = registration.selectProgress?.(progress) ?? progress.communication;
     content = (
       <CommunicationGame
         activityId={route.activityId}
@@ -229,9 +235,9 @@ export default function App({
         onBackToShelf={() => navigate(COMMUNICATION_SHELF_PATH)}
         onCompleteSyllableTrainRound={completeRound('syllableTrain')}
         onHome={() => navigate('/')}
-        onProgressChange={updateCommunicationProgress}
+        onProgressChange={updateCommunicationProgress(route.activityId)}
         overallStars={progress.totalStars}
-        progress={progress.communication}
+        progress={communicationProgress}
         settings={progress.settings}
         speechStatus={speechStatus}
         syllableTrainDomainProgress={progress.domains.syllableTrain}

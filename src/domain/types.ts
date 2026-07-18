@@ -1,4 +1,5 @@
 import type { CommunicationProgress } from './communicationProgress';
+import type { CommunicationActivityId } from './communicationGame';
 
 export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'syllableTrain'] as const;
 
@@ -65,6 +66,7 @@ export interface DomainProgress {
 }
 
 export type DomainProgressMap = Record<DomainKey, DomainProgress>;
+export type CommunicationActivityProgressMap = Partial<Record<CommunicationActivityId, CommunicationProgress>>;
 
 export interface AppProgress {
   version: number;
@@ -73,6 +75,7 @@ export interface AppProgress {
   settings: ToddlerSettings;
   domains: DomainProgressMap;
   communication: CommunicationProgress;
+  communicationActivities?: CommunicationActivityProgressMap;
 }
 
 export interface RecordedRound {

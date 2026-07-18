@@ -294,7 +294,7 @@ describe('communication integration selectors', () => {
     expect(JSON.stringify(items)).not.toMatch(/url|asset|recording|transcript|accuracy|completion/i);
   });
 
-  it('uses shared caregiver-safe communication progress for the released Train item', () => {
+  it('uses legacy matching communication progress for the released Train item', () => {
     const progress = {
       ...createInitialProgress(false, 1),
       communication: {
@@ -317,6 +317,76 @@ describe('communication integration selectors', () => {
       lastPlayedAt: 456,
       sessionsCompleted: 3,
       readiness: 'ready',
+    });
+  });
+
+  it('keeps Peek and Train caregiver metrics scoped to their own progress', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communicationActivities: {
+        peek: {
+          version: 1 as const,
+          contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+          sessionsCompleted: 2,
+          roundsSeen: 4,
+          recentContentIds: ['peek-ball'],
+          lastPlayedAt: 111,
+        },
+        train: {
+          version: 1 as const,
+          contentVersion: WORD_TRAIN_CONTENT_VERSION,
+          sessionsCompleted: 3,
+          roundsSeen: 6,
+          recentContentIds: ['ball', 'apple'],
+          lastPlayedAt: 222,
+        },
+      },
+    };
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      progress,
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.find((item) => item.activityId === 'peek')).toEqual({
+      activityId: 'peek',
+      lastPlayedAt: 111,
+      sessionsCompleted: 2,
+      readiness: 'ready',
+    });
+    expect(items.find((item) => item.activityId === 'train')).toEqual({
+      activityId: 'train',
+      lastPlayedAt: 222,
+      sessionsCompleted: 3,
+      readiness: 'ready',
+    });
+  });
+
+  it('does not fall back to another activity when legacy content versions differ', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communication: {
+        version: 1 as const,
+        contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+        sessionsCompleted: 2,
+        roundsSeen: 4,
+        recentContentIds: ['peek-ball'],
+        lastPlayedAt: 111,
+      },
+    };
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      progress,
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.find((item) => item.activityId === 'peek')).toMatchObject({
+      lastPlayedAt: 111,
+      sessionsCompleted: 2,
+    });
+    expect(items.find((item) => item.activityId === 'train')).toMatchObject({
+      lastPlayedAt: 0,
+      sessionsCompleted: 0,
     });
   });
 
