@@ -3,14 +3,22 @@ import {
   COMMUNICATION_ACTIVITY_IDS,
   type CommunicationActivityId,
 } from '../domain/communicationGame';
+import { createInitialCommunicationProgress } from '../domain/communicationProgress';
 import { createInitialProgress } from '../domain/progression';
 import type { SpeechLocale } from '../domain/types';
 import type { CommunicationAssetReadiness } from '../services/communicationAssetReadiness';
 import { PEEK_AND_DISCOVER_INSTALLED_CONTENT } from '../games/peekAndDiscover';
 import {
+  WORD_TRAIN_CONTENT_VERSION,
+  WORD_TRAIN_INSTALLED_CONTENT,
+} from '../content/syllableTrain';
+import { INITIAL_WORD_TRAIN_METRICS } from '../games/wordTrainMetrics';
+import {
+  applyWordTrainCommunicationMetrics,
   buildCommunicationCaregiverItems,
   communicationIntegration,
   evaluateCommunicationPublicAvailability,
+  seedLegacyCommunicationActivities,
   type CommunicationIntegrationContract,
 } from './integration';
 import {
@@ -70,16 +78,16 @@ function integration(
 }
 
 describe('communication integration selectors', () => {
-  it('publishes only the production Peek door with exact installed locale readiness', () => {
+  it('publishes only the production Peek and Train doors with exact installed locale readiness', () => {
     const result = evaluateCommunicationPublicAvailability(communicationIntegration);
 
     expect(communicationIntegration.release.explicitlyEnabled).toEqual({
       peek: true,
-      train: false,
+      train: true,
       phone: false,
       story: false,
     });
-    expect(Object.keys(communicationIntegration.games)).toEqual(['peek']);
+    expect(Object.keys(communicationIntegration.games)).toEqual(['peek', 'train']);
     expect(communicationIntegration.release.readiness.peek).toEqual({
       'he-IL': {
         status: 'ready',
@@ -97,8 +105,25 @@ describe('communication integration selectors', () => {
         locale: 'en-GB',
       },
     });
+    expect(communicationIntegration.release.readiness.train).toEqual({
+      'he-IL': {
+        status: 'ready',
+        contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+        locale: 'he-IL',
+      },
+      'en-US': {
+        status: 'ready',
+        contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+        locale: 'en-US',
+      },
+      'en-GB': {
+        status: 'ready',
+        contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+        locale: 'en-GB',
+      },
+    });
     expect(result.available).toBe(true);
-    expect(result.publicActivityIds).toEqual(['peek']);
+    expect(result.publicActivityIds).toEqual(['peek', 'train']);
     expect(result.activities).toEqual([
       {
         activityId: 'peek',
@@ -109,10 +134,10 @@ describe('communication integration selectors', () => {
       },
       {
         activityId: 'train',
-        publiclyAvailable: false,
-        explicitlyEnabled: false,
-        componentRegistered: false,
-        contentReady: false,
+        publiclyAvailable: true,
+        explicitlyEnabled: true,
+        componentRegistered: true,
+        contentReady: true,
       },
       {
         activityId: 'phone',
@@ -241,7 +266,7 @@ describe('communication integration selectors', () => {
     });
   });
 
-  it('returns only fixed-order caregiver-safe readiness and permitted metrics', () => {
+  it('returns only public fixed-order caregiver-safe readiness and permitted metrics', () => {
     const contract = integration(['phone'], ['phone']);
     contract.games.phone!.selectCaregiverMetrics = () => ({
       lastPlayedAt: 123,
@@ -254,19 +279,260 @@ describe('communication integration selectors', () => {
       evaluateCommunicationRelease(contract.release),
     );
 
-    expect(items.map((item) => item.activityId)).toEqual(['peek', 'train', 'phone', 'story']);
-    expect(items[2]).toEqual({
+    expect(items.map((item) => item.activityId)).toEqual(['phone']);
+    expect(items[0]).toEqual({
       activityId: 'phone',
       lastPlayedAt: 123,
       sessionsCompleted: 4,
       readiness: 'ready',
     });
-    expect(Object.keys(items[2]!)).toEqual([
+    expect(Object.keys(items[0]!)).toEqual([
       'activityId',
       'lastPlayedAt',
       'sessionsCompleted',
       'readiness',
     ]);
     expect(JSON.stringify(items)).not.toMatch(/url|asset|recording|transcript|accuracy|completion/i);
+  });
+
+  it('does not expose disabled Phone or Story in release caregiver items', () => {
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      createInitialProgress(false, 1),
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.map((item) => item.activityId)).toEqual(['peek', 'train']);
+  });
+
+  it('uses legacy matching communication progress for the released Train item', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communication: {
+        version: 1 as const,
+        contentVersion: 'word-train-v2',
+        sessionsCompleted: 3,
+        roundsSeen: 6,
+        recentContentIds: ['ball', 'apple'],
+        lastPlayedAt: 456,
+      },
+    };
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      progress,
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.find((item) => item.activityId === 'train')).toEqual({
+      activityId: 'train',
+      lastPlayedAt: 456,
+      sessionsCompleted: 3,
+      readiness: 'ready',
+    });
+  });
+
+  it('keeps Peek and Train caregiver metrics scoped to their own progress', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communicationActivities: {
+        peek: {
+          version: 1 as const,
+          contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+          sessionsCompleted: 2,
+          roundsSeen: 4,
+          recentContentIds: ['peek-ball'],
+          lastPlayedAt: 111,
+        },
+        train: {
+          version: 1 as const,
+          contentVersion: WORD_TRAIN_CONTENT_VERSION,
+          sessionsCompleted: 3,
+          roundsSeen: 6,
+          recentContentIds: ['ball', 'apple'],
+          lastPlayedAt: 222,
+        },
+      },
+    };
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      progress,
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.find((item) => item.activityId === 'peek')).toEqual({
+      activityId: 'peek',
+      lastPlayedAt: 111,
+      sessionsCompleted: 2,
+      readiness: 'ready',
+    });
+    expect(items.find((item) => item.activityId === 'train')).toEqual({
+      activityId: 'train',
+      lastPlayedAt: 222,
+      sessionsCompleted: 3,
+      readiness: 'ready',
+    });
+  });
+
+  it('does not fall back to another activity when legacy content versions differ', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communication: {
+        version: 1 as const,
+        contentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
+        sessionsCompleted: 2,
+        roundsSeen: 4,
+        recentContentIds: ['peek-ball'],
+        lastPlayedAt: 111,
+      },
+    };
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      progress,
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.find((item) => item.activityId === 'peek')).toMatchObject({
+      lastPlayedAt: 111,
+      sessionsCompleted: 2,
+    });
+    expect(items.find((item) => item.activityId === 'train')).toMatchObject({
+      lastPlayedAt: 0,
+      sessionsCompleted: 0,
+    });
+  });
+
+  it('seeds matching legacy communication progress before another activity can overwrite it', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communication: {
+        version: 1 as const,
+        contentVersion: WORD_TRAIN_CONTENT_VERSION,
+        sessionsCompleted: 3,
+        roundsSeen: 6,
+        recentContentIds: ['ball', 'apple'],
+        lastPlayedAt: 456,
+      },
+    };
+
+    expect(seedLegacyCommunicationActivities(progress, communicationIntegration)).toEqual({
+      train: progress.communication,
+    });
+  });
+
+  it('recovers Train communication progress when content ids arrive after trainsSeen', () => {
+    let result = applyWordTrainCommunicationMetrics(
+      createInitialCommunicationProgress(null),
+      { sessions: 0, trainsSeen: 0, contentIds: [] },
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: [],
+      },
+      100,
+    );
+
+    expect(result.progress).toMatchObject({
+      contentVersion: null,
+      roundsSeen: 0,
+      recentContentIds: [],
+      lastPlayedAt: 0,
+    });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 0, contentIds: [] });
+
+    result = applyWordTrainCommunicationMetrics(
+      result.progress,
+      result.persisted,
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: ['ball'],
+      },
+      101,
+    );
+
+    expect(result.progress).toMatchObject({
+      contentVersion: WORD_TRAIN_CONTENT_VERSION,
+      roundsSeen: 1,
+      recentContentIds: ['ball'],
+      lastPlayedAt: 101,
+    });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1, contentIds: ['ball'] });
+
+    result = applyWordTrainCommunicationMetrics(
+      result.progress,
+      result.persisted,
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 2,
+        recentContentIds: ['ball'],
+      },
+      102,
+    );
+
+    expect(result.progress).toMatchObject({
+      roundsSeen: 1,
+      recentContentIds: ['ball'],
+      lastPlayedAt: 101,
+    });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1, contentIds: ['ball'] });
+
+    result = applyWordTrainCommunicationMetrics(
+      result.progress,
+      result.persisted,
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 2,
+        recentContentIds: ['ball', 'apple'],
+      },
+      103,
+    );
+
+    expect(result.progress).toMatchObject({
+      roundsSeen: 2,
+      recentContentIds: ['ball', 'apple'],
+      lastPlayedAt: 103,
+    });
+    expect(result.persisted).toEqual({
+      sessions: 0,
+      trainsSeen: 2,
+      contentIds: ['ball', 'apple'],
+    });
+  });
+
+  it('counts a repeated Train concept in a later session as a new communication round', () => {
+    const priorProgress = createInitialCommunicationProgress(WORD_TRAIN_CONTENT_VERSION);
+    const withPriorBall = applyWordTrainCommunicationMetrics(
+      priorProgress,
+      { sessions: 0, trainsSeen: 0, contentIds: [] },
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: ['ball'],
+      },
+      100,
+    ).progress;
+
+    const nextSession = applyWordTrainCommunicationMetrics(
+      withPriorBall,
+      { sessions: 0, trainsSeen: 0, contentIds: [] },
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: ['ball'],
+      },
+      200,
+    );
+
+    expect(nextSession.progress).toMatchObject({
+      contentVersion: WORD_TRAIN_CONTENT_VERSION,
+      roundsSeen: 2,
+      recentContentIds: ['ball'],
+      lastPlayedAt: 200,
+    });
+    expect(nextSession.persisted).toEqual({
+      sessions: 0,
+      trainsSeen: 1,
+      contentIds: ['ball'],
+    });
   });
 });

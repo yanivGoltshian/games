@@ -368,4 +368,67 @@ describe('persistence migration', () => {
     });
     expect(Object.keys(progress.communication)).toHaveLength(6);
   });
+
+  it('sanitizes activity-scoped communication progress without admitting private fields', () => {
+    const progress = migrateStoredProgress({
+      version: 6,
+      communicationActivities: {
+        peek: {
+          contentVersion: ' peek-v1 ',
+          sessionsCompleted: 2,
+          roundsSeen: 3,
+          recentContentIds: ['peek-a', 'peek-a', ''],
+          lastPlayedAt: 100,
+          transcript: 'nope',
+        },
+        train: {
+          contentVersion: ' train-v1 ',
+          sessionsCompleted: 1,
+          roundsSeen: 4,
+          recentContentIds: ['ball'],
+          lastPlayedAt: 200,
+          completionMethod: 'voice',
+        },
+        phone: {
+          contentVersion: ' phone-v1 ',
+          sessionsCompleted: -1,
+          roundsSeen: 1,
+          recentContentIds: ['phone'],
+          lastPlayedAt: 300,
+        },
+        hidden: {
+          contentVersion: 'hidden',
+          sessionsCompleted: 99,
+        },
+      },
+    }, { now: 200 });
+
+    expect(progress.communicationActivities).toEqual({
+      peek: {
+        version: 1,
+        contentVersion: 'peek-v1',
+        sessionsCompleted: 2,
+        roundsSeen: 3,
+        recentContentIds: ['peek-a'],
+        lastPlayedAt: 100,
+      },
+      train: {
+        version: 1,
+        contentVersion: 'train-v1',
+        sessionsCompleted: 1,
+        roundsSeen: 4,
+        recentContentIds: ['ball'],
+        lastPlayedAt: 200,
+      },
+      phone: {
+        version: 1,
+        contentVersion: 'phone-v1',
+        sessionsCompleted: 0,
+        roundsSeen: 1,
+        recentContentIds: ['phone'],
+        lastPlayedAt: 300,
+      },
+    });
+    expect(JSON.stringify(progress.communicationActivities)).not.toMatch(/hidden|transcript|completionMethod/i);
+  });
 });

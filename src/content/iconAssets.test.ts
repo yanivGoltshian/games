@@ -74,7 +74,7 @@ describe('official application icon assets', () => {
     ]));
     expect(html).toContain('href="/favicon-32.png"');
     expect(html).toContain('href="/icons/apple-touch-icon.png"');
-    expect(serviceWorker).toContain("sean-learning-adventure-v21");
+    expect(serviceWorker).toContain("sean-learning-adventure-v22");
     expect(existsSync(resolve('public/favicon.svg'))).toBe(false);
     expect(existsSync(resolve('public/icons/icon.svg'))).toBe(false);
     expect(html).not.toContain('/favicon.svg');

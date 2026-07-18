@@ -1,4 +1,5 @@
 import type { CommunicationProgress } from './communicationProgress';
+import type { CommunicationActivityId } from './communicationGame';
 
 export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'syllableTrain'] as const;
 
@@ -65,6 +66,7 @@ export interface DomainProgress {
 }
 
 export type DomainProgressMap = Record<DomainKey, DomainProgress>;
+export type CommunicationActivityProgressMap = Partial<Record<CommunicationActivityId, CommunicationProgress>>;
 
 export interface AppProgress {
   version: number;
@@ -73,6 +75,7 @@ export interface AppProgress {
   settings: ToddlerSettings;
   domains: DomainProgressMap;
   communication: CommunicationProgress;
+  communicationActivities?: CommunicationActivityProgressMap;
 }
 
 export interface RecordedRound {
@@ -238,34 +241,10 @@ export interface SillyAlienRound {
   signature: string;
 }
 
-/**
- * A "Syllable Train" round. Sean couples two cars to physically assemble a
- * word from its syllables.
- *
- * Speech contract (offline / recorded only): the ONLY string ever narrated is
- * the whole word `plainHe` / `fullEn`, both of which come straight from the
- * learning concept and therefore always exist in the recorded manifest. The
- * pointed syllable splits (`firstHe` / `restHe`) and the English splits
- * (`firstEn` / `restEn`) are display-only and are never spoken, because
- * isolated syllables are not part of the recorded manifest.
- */
 export interface SyllableTrainRound {
   conceptId: string;
-  /** Unpointed whole word. Narrated and used for concept lookup. In manifest. */
-  plainHe: string;
-  /** Pointed whole word for display only. */
-  fullHe: string;
-  /** English whole word. Narrated. In manifest. */
-  fullEn: string;
-  /** Pointed first syllable (locomotive car). Display only, never spoken. */
-  firstHe: string;
-  /** Pointed remaining syllable(s) (loose car). Display only, never spoken. */
-  restHe: string;
-  /** English first chunk (display only). */
-  firstEn: string;
-  /** English remaining chunk (display only). */
-  restEn: string;
-  promptHe: string;
-  promptEn: string;
+  contentVersion: string;
+  image: string;
+  recordings: Readonly<Record<SpeechLocale, string>>;
   signature: string;
 }

@@ -8,6 +8,7 @@ import {
   buildCommunicationCaregiverItems,
   communicationIntegration as defaultCommunicationIntegration,
   evaluateCommunicationPublicAvailability,
+  seedLegacyCommunicationActivities,
   type CommunicationIntegrationContract,
 } from './communication/integration';
 import {
@@ -16,6 +17,7 @@ import {
 } from './communication/registry';
 import { applyRoundResult, createInitialProgress } from './domain/progression';
 import { childGreeting, normalizeChildName } from './domain/childName';
+import type { CommunicationActivityId } from './domain/communicationGame';
 import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
@@ -142,13 +144,17 @@ export default function App({
     return result.summary;
   };
 
-  const updateCommunicationProgress = (
+  const updateCommunicationProgress = (activityId: CommunicationActivityId) => (
     communicationProgress: typeof progress.communication,
   ) => {
     setProgress((current) => ({
       ...current,
       updatedAt: Date.now(),
       communication: communicationProgress,
+      communicationActivities: {
+        ...seedLegacyCommunicationActivities(current, communication),
+        [activityId]: communicationProgress,
+      },
     }));
   };
 
@@ -222,14 +228,20 @@ export default function App({
       throw new Error(`Missing communication integration for ${route.activityId}.`);
     }
     const CommunicationGame = registration.component;
+    const communicationProgress = registration.selectProgress?.(progress) ?? progress.communication;
     content = (
       <CommunicationGame
         activityId={route.activityId}
+        mediaReady={mediaReady}
         onBackToShelf={() => navigate(COMMUNICATION_SHELF_PATH)}
+        onCompleteSyllableTrainRound={completeRound('syllableTrain')}
         onHome={() => navigate('/')}
-        onProgressChange={updateCommunicationProgress}
-        progress={progress.communication}
+        onProgressChange={updateCommunicationProgress(route.activityId)}
+        overallStars={progress.totalStars}
+        progress={communicationProgress}
         settings={progress.settings}
+        speechStatus={speechStatus}
+        syllableTrainDomainProgress={progress.domains.syllableTrain}
       />
     );
   } else {

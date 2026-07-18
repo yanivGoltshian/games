@@ -69,6 +69,7 @@ export function createInitialProgress(prefersReducedMotion = false, now = Date.n
     settings: createInitialSettings(prefersReducedMotion),
     domains: Object.fromEntries(DOMAIN_KEYS.map((domain) => [domain, createInitialDomainProgress()])) as AppProgress['domains'],
     communication: createInitialCommunicationProgress(),
+    communicationActivities: {},
   };
 }
 

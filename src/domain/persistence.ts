@@ -7,12 +7,15 @@ import {
 import { normalizeChildName } from './childName';
 import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
 import {
+  createInitialCommunicationProgress,
   COMMUNICATION_PROGRESS_VERSION,
   RECENT_COMMUNICATION_CONTENT_LIMIT,
   type CommunicationProgress,
 } from './communicationProgress';
+import { COMMUNICATION_ACTIVITY_IDS } from './communicationGame';
 import type {
   AppProgress,
+  CommunicationActivityProgressMap,
   ConceptStat,
   DomainProgress,
   RecentRoundResult,
@@ -200,6 +203,27 @@ function sanitizeCommunicationProgress(
   };
 }
 
+function sanitizeCommunicationActivityProgress(
+  value: unknown,
+  fallback: CommunicationActivityProgressMap = {},
+): CommunicationActivityProgressMap {
+  if (!isRecord(value)) {
+    return fallback;
+  }
+
+  return Object.fromEntries(
+    COMMUNICATION_ACTIVITY_IDS
+      .filter((activityId) => value[activityId] !== undefined)
+      .map((activityId) => [
+        activityId,
+        sanitizeCommunicationProgress(
+          value[activityId],
+          fallback[activityId] ?? createInitialCommunicationProgress(),
+        ),
+      ]),
+  ) as CommunicationActivityProgressMap;
+}
+
 export function migrateStoredProgress(
   raw: unknown,
   options: { prefersReducedMotion?: boolean; now?: number } = {},
@@ -230,6 +254,10 @@ export function migrateStoredProgress(
       settings,
       domains,
       communication: sanitizeCommunicationProgress(raw.communication, base.communication),
+      communicationActivities: sanitizeCommunicationActivityProgress(
+        raw.communicationActivities,
+        base.communicationActivities ?? {},
+      ),
     };
   }
 
@@ -245,6 +273,7 @@ export function migrateStoredProgress(
     settings,
     domains,
     communication: base.communication,
+    communicationActivities: base.communicationActivities ?? {},
   };
 }
 

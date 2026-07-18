@@ -47,6 +47,11 @@ export function resolveRouteForCommunicationAvailability(
       ? route
       : { kind: 'home' };
   }
+  if (route.kind === 'game' && route.domain === 'syllableTrain') {
+    return publicActivityIds.includes('train')
+      ? { kind: 'communication-game', activityId: 'train' }
+      : route;
+  }
 
   return route;
 }

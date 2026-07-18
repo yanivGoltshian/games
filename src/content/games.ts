@@ -52,8 +52,8 @@ export const gameMeta: Record<DomainKey, GameMeta> = {
     colorToken: 'alien',
   },
   syllableTrain: {
-    title: 'רכבת ההברות',
-    subtitle: 'מחברים את קרונות ההברות ושומעים את המילה השלמה נוסעת',
+    title: 'רכבת המילים',
+    subtitle: 'מחברים קרונות ושומעים מילה שלמה',
     accentClass: 'accent-syllable-train',
     colorToken: 'rail',
   },

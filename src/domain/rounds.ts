@@ -12,7 +12,6 @@ import {
   requireSillyAlienWord,
 } from '../content/sillyAlien';
 import {
-  SYLLABLE_TRAIN_PROMPT,
   SYLLABLE_TRAIN_WORDS,
   requireSyllableTrainWord,
 } from '../content/syllableTrain';
@@ -470,15 +469,9 @@ function createSyllableTrainCandidate(
 
   return {
     conceptId,
-    plainHe: word.he,
-    fullHe: word.pointedHe,
-    fullEn: word.en,
-    firstHe: word.firstHe,
-    restHe: word.restHe,
-    firstEn: word.firstEn,
-    restEn: word.restEn,
-    promptHe: SYLLABLE_TRAIN_PROMPT.he,
-    promptEn: SYLLABLE_TRAIN_PROMPT.en,
+    contentVersion: word.contentVersion,
+    image: word.image,
+    recordings: word.recordings,
     signature: conceptId,
   };
 }

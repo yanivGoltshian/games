@@ -26,6 +26,26 @@ describe('HomeScreen', () => {
     }
   });
 
+  it('renders exact whole-word Train metadata without segmentation wording', () => {
+    const html = renderToStaticMarkup(
+      <HomeScreen
+        onOpenCommunication={() => undefined}
+        onOpenGame={() => undefined}
+        settings={settings}
+      />,
+    );
+    const childVisibleText = html.replace(/<[^>]+>/g, ' ');
+
+    expect(gameMeta.syllableTrain).toMatchObject({
+      title: 'רכבת המילים',
+      subtitle: 'מחברים קרונות ושומעים מילה שלמה',
+    });
+    expect(html).toContain('רכבת המילים');
+    expect(`${childVisibleText} ${gameMeta.syllableTrain.subtitle}`).not.toMatch(
+      /הברה|הברות|syllable|fragment|chunk/i,
+    );
+  });
+
   it('staggers portal entrance via a per-card --enter-index custom property', () => {
     const html = renderHome();
     expect(html).toContain('--enter-index:0');

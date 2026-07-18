@@ -1,175 +1,377 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_COMMUNICATION_OPPORTUNITIES } from '../domain/communicationGame';
 import {
-  INITIAL_SYLLABLE_TRAIN_STATE,
+  createInitialSyllableTrainState,
+  hasWordTrainSessionEnded,
+  isPointNearCoupler,
   reduceSyllableTrain,
-  selectCoupleProgress,
-  SYLLABLE_TRAIN_COUPLE_THRESHOLD,
+  SYLLABLE_TRAIN_PHASES,
+  WORD_TRAIN_MAX_TRAINS,
+  WORD_TRAIN_SESSION_LIMIT_MS,
+  type SyllableTrainAction,
+  type SyllableTrainPhase,
   type SyllableTrainState,
 } from './syllableTrainState';
 
-function connecting(overrides: Partial<SyllableTrainState> = {}): SyllableTrainState {
+function inPhase(
+  phase: SyllableTrainPhase,
+  overrides: Partial<SyllableTrainState> = {},
+): SyllableTrainState {
   return {
-    phase: 'connecting',
-    progress: 0,
-    attempts: 1,
+    ...createInitialSyllableTrainState({ tutorialRequired: false, now: 1_000 }),
+    phase,
     ...overrides,
   };
 }
 
-describe('syllable train transitions', () => {
-  it('starts in the intro phase with no progress', () => {
-    expect(INITIAL_SYLLABLE_TRAIN_STATE).toEqual({
-      phase: 'intro',
-      progress: 0,
-      attempts: 0,
+function modelToAvailable(): SyllableTrainState {
+  return reduceSyllableTrain(inPhase('mandatory-model'), {
+    type: 'model-complete',
+    now: 2_000,
+  });
+}
+
+describe('whole-word Train state machine', () => {
+  it('declares every required phase and starts in tutorial or stable preparation', () => {
+    expect(SYLLABLE_TRAIN_PHASES).toEqual([
+      'tutorial',
+      'preparation',
+      'mandatory-model',
+      'available',
+      'first-opportunity',
+      'second-opportunity',
+      'auto-connect',
+      'reward',
+      'rest',
+      'paused',
+      'asset-error',
+      'session-stop',
+    ]);
+    expect(createInitialSyllableTrainState({ now: 10 }).phase).toBe('tutorial');
+    expect(createInitialSyllableTrainState({
+      tutorialRequired: false,
+      now: 10,
+    })).toMatchObject({
+      phase: 'preparation',
+      trainsSeen: 1,
+      trainsConnected: 0,
+      sessionStartedAt: 10,
     });
   });
 
-  it('grabs into connecting, clearing progress and counting the attempt', () => {
-    const next = reduceSyllableTrain(INITIAL_SYLLABLE_TRAIN_STATE, { type: 'grab' });
+  it('runs the no-text tutorial sequence and enters the first preparation', () => {
+    let state = createInitialSyllableTrainState({ now: 100 });
+    state = reduceSyllableTrain(state, { type: 'tutorial-assets-ready' });
+    expect(state.tutorialStep).toBe('ready');
 
-    expect(next).toEqual({
-      phase: 'connecting',
-      progress: 0,
-      attempts: 1,
+    for (const step of ['tap-left', 'tap-right', 'connected', 'lit', 'modeling'] as const) {
+      state = reduceSyllableTrain(state, { type: 'tutorial-step', step });
+    }
+    expect(state).toMatchObject({
+      phase: 'tutorial',
+      tutorialStep: 'modeling',
+      connected: true,
+      conceptLit: true,
+    });
+
+    state = reduceSyllableTrain(state, { type: 'tutorial-complete', now: 700 });
+    expect(state).toMatchObject({
+      phase: 'preparation',
+      trainsSeen: 1,
+      connected: false,
+      conceptLit: false,
+      roundStartedAt: 700,
     });
   });
 
-  it('counts each fresh grab and clears prior progress', () => {
-    const partial = connecting({ progress: 0.4, attempts: 1 });
-    const regrabbed = reduceSyllableTrain(partial, { type: 'grab' });
-
-    expect(regrabbed).toEqual({
-      phase: 'connecting',
-      progress: 0,
-      attempts: 2,
-    });
-  });
-
-  it('ignores a grab once coupled and keeps the same reference', () => {
-    const success = reduceSyllableTrain(connecting(), { type: 'couple' });
-
-    expect(reduceSyllableTrain(success, { type: 'grab' })).toBe(success);
-  });
-
-  it('ignores drag while not connecting and keeps the same reference', () => {
-    const next = reduceSyllableTrain(INITIAL_SYLLABLE_TRAIN_STATE, {
-      type: 'drag',
-      progress: 0.5,
-    });
-
-    expect(next).toBe(INITIAL_SYLLABLE_TRAIN_STATE);
-  });
-
-  it('accumulates below-threshold drag without coupling', () => {
-    const start = connecting();
-    const dragged = reduceSyllableTrain(start, {
-      type: 'drag',
-      progress: SYLLABLE_TRAIN_COUPLE_THRESHOLD - 0.1,
-    });
-
-    expect(dragged.phase).toBe('connecting');
-    expect(dragged.progress).toBeCloseTo(SYLLABLE_TRAIN_COUPLE_THRESHOLD - 0.1);
-    expect(dragged.attempts).toBe(start.attempts);
-  });
-
-  it('returns the same reference when a repeated drag sample changes nothing', () => {
-    const start = connecting({ progress: 0.3 });
-    const repeated = reduceSyllableTrain(start, { type: 'drag', progress: 0.3 });
-
-    expect(repeated).toBe(start);
-  });
-
-  it('couples once the drag crosses the threshold and pins progress to one', () => {
-    const start = connecting({ attempts: 2 });
-    const coupled = reduceSyllableTrain(start, {
-      type: 'drag',
-      progress: SYLLABLE_TRAIN_COUPLE_THRESHOLD,
-    });
-
-    expect(coupled.phase).toBe('success');
-    expect(coupled.progress).toBe(1);
-    expect(coupled.attempts).toBe(2);
-  });
-
-  it('clamps out-of-range and non-finite drag samples', () => {
-    const start = connecting();
-
-    const over = reduceSyllableTrain(start, { type: 'drag', progress: 5 });
-    expect(over.phase).toBe('success');
-    expect(over.progress).toBe(1);
-
-    const under = reduceSyllableTrain(start, { type: 'drag', progress: -3 });
-    expect(under.progress).toBe(0);
-    expect(under).toBe(start);
-
-    const nan = reduceSyllableTrain(connecting({ progress: 0.2 }), {
-      type: 'drag',
-      progress: Number.NaN,
-    });
-    expect(nan.progress).toBe(0);
-  });
-
-  it('releases a partial drag back to zero but no-ops when nothing was dragged', () => {
-    const dragged = connecting({ progress: 0.5 });
-    const released = reduceSyllableTrain(dragged, { type: 'release' });
-    expect(released.progress).toBe(0);
-    expect(released.phase).toBe('connecting');
-
-    const untouched = connecting({ progress: 0 });
-    expect(reduceSyllableTrain(untouched, { type: 'release' })).toBe(untouched);
-    expect(reduceSyllableTrain(INITIAL_SYLLABLE_TRAIN_STATE, { type: 'release' })).toBe(
-      INITIAL_SYLLABLE_TRAIN_STATE,
+  it('lets any tutorial touch interrupt immediately without counting a connection', () => {
+    const interrupted = reduceSyllableTrain(
+      inPhase('tutorial', {
+        tutorialStep: 'tap-right',
+        connected: false,
+        trainsSeen: 0,
+      }),
+      { type: 'tutorial-interrupt', now: 1_500 },
     );
-  });
-
-  it('couples immediately from intro via the explicit tap and counts the attempt', () => {
-    const coupled = reduceSyllableTrain(INITIAL_SYLLABLE_TRAIN_STATE, { type: 'couple' });
-
-    expect(coupled).toEqual({
-      phase: 'success',
-      progress: 1,
-      attempts: 1,
+    expect(interrupted).toMatchObject({
+      phase: 'preparation',
+      trainsSeen: 1,
+      trainsConnected: 0,
+      connected: false,
     });
   });
 
-  it('couples from connecting without double-counting the in-flight attempt', () => {
-    const coupled = reduceSyllableTrain(connecting({ attempts: 1 }), { type: 'couple' });
+  it('validates assets before entering the mandatory whole-word model', () => {
+    const preparation = inPhase('preparation');
+    expect(reduceSyllableTrain(preparation, { type: 'assets-ready' }).phase)
+      .toBe('mandatory-model');
 
-    expect(coupled.phase).toBe('success');
-    expect(coupled.attempts).toBe(1);
+    const failed = reduceSyllableTrain(preparation, { type: 'asset-error' });
+    expect(failed.phase).toBe('asset-error');
+    expect(reduceSyllableTrain(failed, { type: 'retry-assets' }).phase)
+      .toBe('preparation');
   });
 
-  it('keeps the same reference when coupling actions repeat', () => {
-    const success = reduceSyllableTrain(connecting(), { type: 'couple' });
+  it('queues exactly one connection during the mandatory model and connects only after completion', () => {
+    const mandatory = inPhase('mandatory-model');
+    const pending = reduceSyllableTrain(mandatory, { type: 'request-connect' });
+    expect(pending).toMatchObject({
+      phase: 'mandatory-model',
+      pendingConnect: true,
+      connected: false,
+      trainsConnected: 0,
+    });
+    expect(reduceSyllableTrain(pending, { type: 'request-connect' })).toBe(pending);
 
-    expect(reduceSyllableTrain(success, { type: 'couple' })).toBe(success);
-    expect(reduceSyllableTrain(success, { type: 'drag', progress: 0.9 })).toBe(success);
-    expect(reduceSyllableTrain(success, { type: 'release' })).toBe(success);
+    const completed = reduceSyllableTrain(pending, {
+      type: 'model-complete',
+      now: 2_000,
+    });
+    expect(completed).toMatchObject({
+      phase: 'reward',
+      pendingConnect: false,
+      connected: true,
+      conceptLit: true,
+      trainsConnected: 1,
+    });
   });
 
-  it('resets back to intro from success but no-ops when pristine', () => {
-    const success = reduceSyllableTrain(connecting(), { type: 'couple' });
+  it('opens action only after the mandatory model completes', () => {
+    const available = modelToAvailable();
+    expect(available).toMatchObject({
+      phase: 'available',
+      modelCompletedAt: 2_000,
+      connected: false,
+    });
+    const preparation = inPhase('preparation');
+    expect(reduceSyllableTrain(preparation, {
+      type: 'request-connect',
+    })).toBe(preparation);
+  });
 
-    expect(reduceSyllableTrain(success, { type: 'reset' })).toEqual(INITIAL_SYLLABLE_TRAIN_STATE);
-    expect(reduceSyllableTrain(INITIAL_SYLLABLE_TRAIN_STATE, { type: 'reset' })).toBe(
-      INITIAL_SYLLABLE_TRAIN_STATE,
+  it('uses the identical connection transition for tap, drag, voice, and timeout', () => {
+    const first = reduceSyllableTrain(modelToAvailable(), {
+      type: 'begin-first-opportunity',
+    });
+    const touch = reduceSyllableTrain(first, { type: 'request-connect' });
+    const drag = reduceSyllableTrain(first, { type: 'request-connect' });
+    const voice = reduceSyllableTrain(first, { type: 'request-connect' });
+
+    let automatic = reduceSyllableTrain(first, { type: 'opportunity-expired' });
+    automatic = reduceSyllableTrain(automatic, { type: 'opportunity-expired' });
+    expect(automatic.phase).toBe('auto-connect');
+    automatic = reduceSyllableTrain(automatic, { type: 'request-connect' });
+
+    for (const result of [touch, drag, voice, automatic]) {
+      expect(result).toMatchObject({
+        phase: 'reward',
+        connected: true,
+        conceptLit: true,
+        trainsConnected: 1,
+      });
+    }
+  });
+
+  it('enforces the two-window ceiling with a visual-only second opportunity', () => {
+    expect(MAX_COMMUNICATION_OPPORTUNITIES).toBe(2);
+    let state = reduceSyllableTrain(modelToAvailable(), {
+      type: 'begin-first-opportunity',
+    });
+    expect(state).toMatchObject({ phase: 'first-opportunity', opportunity: 1 });
+
+    state = reduceSyllableTrain(state, { type: 'opportunity-expired' });
+    expect(state).toMatchObject({
+      phase: 'second-opportunity',
+      opportunity: MAX_COMMUNICATION_OPPORTUNITIES,
+    });
+
+    state = reduceSyllableTrain(state, { type: 'opportunity-expired' });
+    expect(state.phase).toBe('auto-connect');
+    expect(reduceSyllableTrain(state, { type: 'opportunity-expired' })).toBe(state);
+  });
+
+  it('gives the first pointer ownership and merges rapid or extra input', () => {
+    const available = modelToAvailable();
+    const first = reduceSyllableTrain(available, {
+      type: 'pointer-begin',
+      pointerId: 4,
+    });
+    expect(first.pointerOwner).toBe(4);
+    expect(reduceSyllableTrain(first, {
+      type: 'pointer-begin',
+      pointerId: 9,
+    })).toBe(first);
+    expect(reduceSyllableTrain(first, {
+      type: 'pointer-move',
+      pointerId: 9,
+      x: 40,
+      y: 20,
+    })).toBe(first);
+
+    const moved = reduceSyllableTrain(first, {
+      type: 'pointer-move',
+      pointerId: 4,
+      x: 40,
+      y: 20,
+    });
+    expect(moved.pointerOffset).toEqual({ x: 40, y: 20 });
+    const connected = reduceSyllableTrain(moved, { type: 'request-connect' });
+    expect(reduceSyllableTrain(connected, { type: 'request-connect' })).toBe(connected);
+    expect(connected.trainsConnected).toBe(1);
+  });
+
+  it('softly returns a far drag and cancels pointer ownership on orientation', () => {
+    let state = reduceSyllableTrain(modelToAvailable(), {
+      type: 'pointer-begin',
+      pointerId: 1,
+    });
+    state = reduceSyllableTrain(state, {
+      type: 'pointer-end',
+      pointerId: 1,
+      cancelled: true,
+    });
+    expect(state).toMatchObject({
+      pointerOwner: null,
+      pointerOffset: { x: 0, y: 0 },
+      dragCancellations: 1,
+      connected: false,
+    });
+
+    state = reduceSyllableTrain(state, { type: 'pointer-begin', pointerId: 2 });
+    state = reduceSyllableTrain(state, { type: 'orientation-change' });
+    expect(state).toMatchObject({
+      pointerOwner: null,
+      dragCancellations: 2,
+    });
+  });
+
+  it('pauses from every active phase and resumes only at stable preparation', () => {
+    for (const phase of SYLLABLE_TRAIN_PHASES.filter(
+      (candidate) => candidate !== 'paused' && candidate !== 'session-stop',
+    )) {
+      const backgrounded = reduceSyllableTrain(
+        inPhase(phase, { pointerOwner: 3, pendingConnect: true }),
+        { type: 'background' },
+      );
+      expect(backgrounded).toMatchObject({
+        phase: 'paused',
+        pointerOwner: null,
+        pendingConnect: false,
+        advanceRoundOnForeground: phase === 'reward' || phase === 'rest',
+      });
+      expect(reduceSyllableTrain(backgrounded, {
+        type: 'foreground',
+        now: 5_000,
+      })).toMatchObject({
+        phase: 'preparation',
+        connected: false,
+        roundStartedAt: 5_000,
+        trainsSeen: phase === 'reward' || phase === 'rest' ? 2 : 1,
+        roundNumber: phase === 'reward' || phase === 'rest' ? 2 : 1,
+        advanceRoundOnForeground: false,
+      });
+    }
+  });
+
+  it('stops on foreground after the four-minute limit instead of replaying a paused train', () => {
+    const paused = reduceSyllableTrain(
+      inPhase('first-opportunity', { sessionStartedAt: 1_000 }),
+      { type: 'background' },
     );
+    const stopped = reduceSyllableTrain(paused, {
+      type: 'foreground',
+      now: 1_000 + WORD_TRAIN_SESSION_LIMIT_MS,
+    });
+    expect(stopped.phase).toBe('session-stop');
+  });
+
+  it('ends calmly after five trains or four minutes and never auto-restarts', () => {
+    const fifthRest = inPhase('rest', {
+      trainsSeen: WORD_TRAIN_MAX_TRAINS,
+      sessionStartedAt: 1_000,
+    });
+    expect(reduceSyllableTrain(fifthRest, {
+      type: 'rest-finished',
+      now: 2_000,
+    }).phase).toBe('session-stop');
+
+    const timedRest = inPhase('rest', {
+      trainsSeen: 2,
+      sessionStartedAt: 1_000,
+    });
+    expect(hasWordTrainSessionEnded(
+      timedRest,
+      1_000 + WORD_TRAIN_SESSION_LIMIT_MS - 1,
+    )).toBe(false);
+    expect(reduceSyllableTrain(timedRest, {
+      type: 'rest-finished',
+      now: 1_000 + WORD_TRAIN_SESSION_LIMIT_MS,
+    }).phase).toBe('session-stop');
+
+    const stopped = reduceSyllableTrain(timedRest, { type: 'session-timeout' });
+    expect(reduceSyllableTrain(stopped, {
+      type: 'rest-finished',
+      now: 999_999,
+    })).toBe(stopped);
+  });
+
+  it('advances to rest and the next preparation without clinical counters', () => {
+    let state = reduceSyllableTrain(modelToAvailable(), { type: 'request-connect' });
+    state = reduceSyllableTrain(state, { type: 'reward-finished' });
+    expect(state.phase).toBe('rest');
+    state = reduceSyllableTrain(state, { type: 'rest-finished', now: 3_000 });
+    expect(state).toMatchObject({
+      phase: 'preparation',
+      trainsSeen: 2,
+      trainsConnected: 1,
+      roundNumber: 2,
+    });
+    expect(state).not.toHaveProperty('attempts');
+    expect(state).not.toHaveProperty('correctness');
+    expect(state).not.toHaveProperty('mastery');
+  });
+
+  it('ignores stale phase callbacks and exhaustively accepts every action shape', () => {
+    const stable = inPhase('session-stop');
+    const actions: SyllableTrainAction[] = [
+      { type: 'tutorial-assets-ready' },
+      { type: 'tutorial-step', step: 'tap-left' },
+      { type: 'tutorial-complete', now: 1 },
+      { type: 'tutorial-interrupt', now: 1 },
+      { type: 'assets-ready' },
+      { type: 'asset-error' },
+      { type: 'retry-assets' },
+      { type: 'model-complete', now: 1 },
+      { type: 'request-connect' },
+      { type: 'begin-first-opportunity' },
+      { type: 'opportunity-expired' },
+      { type: 'pointer-begin', pointerId: 1 },
+      { type: 'pointer-move', pointerId: 1, x: 1, y: 1 },
+      { type: 'pointer-end', pointerId: 1, cancelled: true },
+      { type: 'orientation-change' },
+      { type: 'reward-finished' },
+      { type: 'rest-finished', now: 1 },
+      { type: 'background' },
+      { type: 'foreground', now: 1 },
+      { type: 'session-timeout' },
+    ];
+    for (const action of actions) {
+      expect(reduceSyllableTrain(stable, action)).toBe(stable);
+    }
+    const available = modelToAvailable();
+    expect(reduceSyllableTrain(available, {
+      type: 'model-complete',
+      now: 99_999,
+    })).toBe(available);
   });
 });
 
-describe('selectCoupleProgress', () => {
-  it('is zero before any drag', () => {
-    expect(selectCoupleProgress(INITIAL_SYLLABLE_TRAIN_STATE)).toBe(0);
-  });
+describe('whole-word Train coupling geometry', () => {
+  const target = { left: 100, right: 220, top: 100, bottom: 220 };
 
-  it('reports the clamped drag progress while connecting', () => {
-    expect(selectCoupleProgress(connecting({ progress: 0.5 }))).toBeCloseTo(0.5);
-    expect(selectCoupleProgress(connecting({ progress: 4 }))).toBe(1);
-  });
-
-  it('is one once coupled', () => {
-    const success = reduceSyllableTrain(connecting(), { type: 'couple' });
-    expect(selectCoupleProgress(success)).toBe(1);
+  it('accepts points in the large target or generous snap radius', () => {
+    expect(isPointNearCoupler({ x: 160, y: 160 }, target)).toBe(true);
+    expect(isPointNearCoupler({ x: 40, y: 160 }, target, 60)).toBe(true);
+    expect(isPointNearCoupler({ x: 39, y: 160 }, target, 60)).toBe(false);
   });
 });
