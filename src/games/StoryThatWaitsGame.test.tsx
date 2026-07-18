@@ -16,6 +16,7 @@ import {
   type StoryThatWaitsGameProps,
   type StoryThatWaitsMediaCoordinator,
   type StoryThatWaitsMetric,
+  type StoryThatWaitsMicrophonePermission,
 } from './StoryThatWaitsGame';
 import {
   STORY_THAT_WAITS_GUARD_MS,
@@ -64,6 +65,22 @@ interface CoordinatorDouble extends StoryThatWaitsMediaCoordinator {
   notifyInteraction: ReturnType<typeof vi.fn>;
   cancelAll: ReturnType<typeof vi.fn>;
   pending: PendingPlayback[];
+}
+
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason: unknown) => void;
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
 }
 
 const READY: CommunicationAssetReadiness = {
@@ -205,6 +222,20 @@ describe('StoryThatWaitsGame', () => {
     });
     await advanceInSteps(520);
     await advanceInSteps(360);
+  }
+
+  async function reachTurnOne(
+    queryMicrophonePermission: () => Promise<StoryThatWaitsMicrophonePermission>,
+    onMetric?: (metric: StoryThatWaitsMetric) => void,
+  ): Promise<void> {
+    await renderGame({
+      queryMicrophonePermission,
+      ...(onMetric ? { onMetric } : {}),
+    });
+    await startStory();
+    await resolveCurrentPlayback();
+    await advance(STORY_THAT_WAITS_GUARD_MS);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('turn1');
   }
 
   it('fails closed and identifies one missing exact-locale sentence', async () => {
@@ -423,6 +454,144 @@ describe('StoryThatWaitsGame', () => {
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('page-action');
   });
 
+  it('reports one live microphone permission rejection and keeps the turn fail-safe', async () => {
+    const permission = createDeferred<StoryThatWaitsMicrophonePermission>();
+    const metrics: StoryThatWaitsMetric[] = [];
+    await reachTurnOne(() => permission.promise, (metric) => metrics.push(metric));
+
+    await act(async () => {
+      permission.reject(new Error('Permissions API unavailable'));
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.story-diagnostic')?.textContent).toContain(
+      'Permissions API unavailable',
+    );
+    expect(metrics.filter(
+      (metric) => metric.name === 'media-error'
+        && metric.code === 'microphone-permission-query-failed',
+    )).toHaveLength(1);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('turn1');
+  });
+
+  it('ignores a microphone permission rejection after the opportunity phase changes', async () => {
+    const permission = createDeferred<StoryThatWaitsMicrophonePermission>();
+    const metrics: StoryThatWaitsMetric[] = [];
+    await reachTurnOne(() => permission.promise, (metric) => metrics.push(metric));
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.story-book')!.click();
+      permission.reject(new Error('stale phase rejection'));
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.story-diagnostic')).toBeNull();
+    expect(metrics.some(
+      (metric) => metric.name === 'media-error'
+        && metric.code === 'microphone-permission-query-failed',
+    )).toBe(false);
+  });
+
+  it('ignores a microphone permission rejection after page generation changes', async () => {
+    const permission = createDeferred<StoryThatWaitsMicrophonePermission>();
+    const metrics: StoryThatWaitsMetric[] = [];
+    await reachTurnOne(() => permission.promise, (metric) => metrics.push(metric));
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.story-book')!.click();
+    });
+    await advance(520);
+    await advance(360);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-page')).toBe('2');
+    await act(async () => {
+      permission.reject(new Error('stale generation rejection'));
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.story-diagnostic')).toBeNull();
+    expect(metrics.some(
+      (metric) => metric.name === 'media-error'
+        && metric.code === 'microphone-permission-query-failed',
+    )).toBe(false);
+  });
+
+  it('ignores a microphone permission rejection after lifecycle cancellation', async () => {
+    const permission = createDeferred<StoryThatWaitsMicrophonePermission>();
+    const metrics: StoryThatWaitsMetric[] = [];
+    await reachTurnOne(() => permission.promise, (metric) => metrics.push(metric));
+
+    await act(async () => {
+      lifecycleListeners.forEach((listener) => listener('background'));
+      permission.reject(new Error('stale lifecycle rejection'));
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.story-diagnostic')).toBeNull();
+    expect(metrics.some(
+      (metric) => metric.name === 'media-error'
+        && metric.code === 'microphone-permission-query-failed',
+    )).toBe(false);
+  });
+
+  it('ignores a replaced microphone permission query rejection', async () => {
+    const firstPermission = createDeferred<StoryThatWaitsMicrophonePermission>();
+    const secondPermission = createDeferred<StoryThatWaitsMicrophonePermission>();
+    const metrics: StoryThatWaitsMetric[] = [];
+    const initialProps = props({
+      queryMicrophonePermission: () => firstPermission.promise,
+      onMetric: (metric) => metrics.push(metric),
+    });
+    await act(async () => {
+      root.render(<StoryThatWaitsGame {...initialProps} />);
+      await Promise.resolve();
+    });
+    await startStory();
+    await resolveCurrentPlayback();
+    await advance(STORY_THAT_WAITS_GUARD_MS);
+
+    await act(async () => {
+      root.render(
+        <StoryThatWaitsGame
+          {...initialProps}
+          queryMicrophonePermission={() => secondPermission.promise}
+        />,
+      );
+      await Promise.resolve();
+    });
+    await act(async () => {
+      firstPermission.reject(new Error('stale retry rejection'));
+      secondPermission.resolve('not-granted');
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.story-diagnostic')).toBeNull();
+    expect(metrics.some(
+      (metric) => metric.name === 'media-error'
+        && metric.code === 'microphone-permission-query-failed',
+    )).toBe(false);
+  });
+
+  it('ignores a microphone permission rejection after unmount', async () => {
+    const permission = createDeferred<StoryThatWaitsMicrophonePermission>();
+    const metrics: StoryThatWaitsMetric[] = [];
+    await reachTurnOne(() => permission.promise, (metric) => metrics.push(metric));
+
+    await act(async () => root.unmount());
+    await act(async () => {
+      permission.reject(new Error('stale unmount rejection'));
+      await Promise.resolve();
+    });
+
+    expect(metrics.some(
+      (metric) => metric.name === 'media-error'
+        && metric.code === 'microphone-permission-query-failed',
+    )).toBe(false);
+    container.remove();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+  });
+
   it('keeps the automatic tutorial under three seconds and lets one touch take control', async () => {
     await renderGame();
     expect(container.querySelector('.story-book.is-tutorial')).not.toBeNull();
@@ -461,6 +630,134 @@ describe('StoryThatWaitsGame', () => {
 
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('narrating-page');
     expect(coordinator.play).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    {
+      name: 'mounts and resolves while backgrounded',
+      initialLifecycle: 'background' as const,
+      lifecycleBeforeReadiness: [] as Array<'foreground' | 'background'>,
+    },
+    {
+      name: 'mounts backgrounded and foregrounds before readiness',
+      initialLifecycle: 'background' as const,
+      lifecycleBeforeReadiness: ['foreground'] as Array<'foreground' | 'background'>,
+    },
+    {
+      name: 'backgrounds and foregrounds before delayed readiness',
+      initialLifecycle: 'foreground' as const,
+      lifecycleBeforeReadiness: ['background', 'foreground'] as Array<
+        'foreground' | 'background'
+      >,
+    },
+  ])(
+    'requires one fresh start gesture when it $name',
+    async ({ initialLifecycle, lifecycleBeforeReadiness }) => {
+      const readiness = createDeferred<CommunicationAssetReadiness>();
+      let lifecycle: 'foreground' | 'background' = initialLifecycle;
+      await renderGame({
+        readinessCheck: () => readiness.promise,
+        readLifecycle: () => lifecycle,
+      });
+
+      for (const nextLifecycle of lifecycleBeforeReadiness) {
+        lifecycle = nextLifecycle;
+        await act(async () => {
+          lifecycleListeners.forEach((listener) => listener(nextLifecycle));
+        });
+      }
+      await act(async () => {
+        readiness.resolve(READY);
+        await Promise.resolve();
+      });
+      expect(coordinator.play).not.toHaveBeenCalled();
+
+      if (lifecycle === 'background') {
+        lifecycle = 'foreground';
+        await act(async () => {
+          lifecycleListeners.forEach((listener) => listener('foreground'));
+        });
+      }
+      expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('paused');
+
+      await act(async () => {
+        const book = container.querySelector<HTMLButtonElement>('.story-book')!;
+        book.click();
+        book.click();
+        book.click();
+        await Promise.resolve();
+      });
+
+      expect(coordinator.unlock).toHaveBeenCalledTimes(1);
+      expect(coordinator.play).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe(
+        'narrating-page',
+      );
+    },
+  );
+
+  it('keeps normal foreground delayed readiness automatic', async () => {
+    const readiness = createDeferred<CommunicationAssetReadiness>();
+    await renderGame({ readinessCheck: () => readiness.promise });
+    expect(coordinator.play).not.toHaveBeenCalled();
+
+    await act(async () => {
+      readiness.resolve(READY);
+      await Promise.resolve();
+    });
+
+    expect(coordinator.play).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe(
+      'narrating-page',
+    );
+  });
+
+  it('ignores stale readiness after a newer readiness generation starts', async () => {
+    const firstReadiness = createDeferred<CommunicationAssetReadiness>();
+    const secondReadiness = createDeferred<CommunicationAssetReadiness>();
+    const initialProps = props({ readinessCheck: () => firstReadiness.promise });
+    await act(async () => {
+      root.render(<StoryThatWaitsGame {...initialProps} />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      root.render(
+        <StoryThatWaitsGame
+          {...initialProps}
+          readinessCheck={() => secondReadiness.promise}
+        />,
+      );
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      firstReadiness.resolve(READY);
+      await Promise.resolve();
+    });
+    expect(coordinator.play).not.toHaveBeenCalled();
+
+    await act(async () => {
+      secondReadiness.resolve(READY);
+      await Promise.resolve();
+    });
+    expect(coordinator.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores stale delayed readiness after unmount', async () => {
+    const readiness = createDeferred<CommunicationAssetReadiness>();
+    await renderGame({ readinessCheck: () => readiness.promise });
+
+    await act(async () => root.unmount());
+    await act(async () => {
+      readiness.resolve(READY);
+      await Promise.resolve();
+    });
+
+    expect(coordinator.play).not.toHaveBeenCalled();
+    container.remove();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
   });
 
   it('replays interrupted narration from the beginning before consuming a fresh queued touch', async () => {

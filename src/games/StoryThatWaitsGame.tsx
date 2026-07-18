@@ -261,6 +261,14 @@ export function StoryThatWaitsGame({
   const lockedStoryIdRef = useRef(storyId);
   const lockedLocaleRef = useRef(locale);
   const sessionIdRef = useRef(suppliedSessionId ?? createSessionId());
+  const initialLifecycleRef = useRef<AppLifecycleState | null>(null);
+  if (initialLifecycleRef.current === null) {
+    initialLifecycleRef.current = readLifecycle();
+  }
+  const lifecycleRef = useRef<AppLifecycleState>(initialLifecycleRef.current);
+  const automaticStartBlockedRef = useRef(initialLifecycleRef.current === 'background');
+  const startGestureClaimedRef = useRef(false);
+  const readinessGenerationRef = useRef(0);
   const [state, dispatch] = useReducer(reduceStoryThatWaits, INITIAL_STORY_THAT_WAITS_STATE);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -385,25 +393,38 @@ export function StoryThatWaitsGame({
 
   useEffect(() => {
     aliveRef.current = true;
+    const readinessGeneration = readinessGenerationRef.current + 1;
+    readinessGenerationRef.current = readinessGeneration;
     const requirements = createStoryThatWaitsContentRequirements(
       lockedStoryIdRef.current,
       sessionIdRef.current,
       lockedLocaleRef.current,
     );
     let active = true;
+    const isCurrentReadiness = (): boolean => (
+      active
+      && aliveRef.current
+      && readinessGenerationRef.current === readinessGeneration
+    );
     void readinessCheck(requirements).then(
       (result) => {
-        if (!active) {
+        if (!isCurrentReadiness()) {
           return;
         }
         if (result.status === 'ready') {
           setReadiness({ status: 'ready', diagnostic: null });
           dispatch({ type: 'set-readiness', ready: true });
-          if (readLifecycle() === 'background') {
+          const lifecycle = readLifecycle();
+          lifecycleRef.current = lifecycle;
+          if (lifecycle === 'background') {
+            automaticStartBlockedRef.current = true;
+          }
+          if (automaticStartBlockedRef.current) {
             dispatch({ type: 'pause' });
             return;
           }
           if (stateRef.current.phase === 'tutorial') {
+            automaticStartBlockedRef.current = false;
             const lockedStoryId = lockedStoryIdRef.current;
             const lockedLocale = lockedLocaleRef.current;
             dispatch({ type: 'request-story', storyId: lockedStoryId, locale: lockedLocale });
@@ -428,7 +449,7 @@ export function StoryThatWaitsGame({
         });
       },
       (error: unknown) => {
-        if (!active) {
+        if (!isCurrentReadiness()) {
           return;
         }
         const diagnostic = error instanceof Error
@@ -470,18 +491,28 @@ export function StoryThatWaitsGame({
     return () => window.clearTimeout(timer);
   }, [state.pageIndex, state.sessionStartedAtMs, tutorialActive]);
 
-  useEffect(() => subscribeToLifecycle((lifecycle: AppLifecycleState) => {
-    if (lifecycle === 'background') {
-      microphoneRef.current.stop();
-      mediaCancellationEpochRef.current += 1;
-      mediaCoordinator.cancelAll('background');
-      replayActiveRef.current = false;
-      setResumeReplayActive(false);
+  useEffect(() => {
+    if (lifecycleRef.current === 'background') {
+      automaticStartBlockedRef.current = true;
       dispatch({ type: 'pause' });
-      return;
     }
-    dispatch({ type: 'foregrounded' });
-  }), [mediaCoordinator, subscribeToLifecycle]);
+    return subscribeToLifecycle((lifecycle: AppLifecycleState) => {
+      lifecycleRef.current = lifecycle;
+      if (lifecycle === 'background') {
+        if (stateRef.current.sessionStartedAtMs === null) {
+          automaticStartBlockedRef.current = true;
+        }
+        microphoneRef.current.stop();
+        mediaCancellationEpochRef.current += 1;
+        mediaCoordinator.cancelAll('background');
+        replayActiveRef.current = false;
+        setResumeReplayActive(false);
+        dispatch({ type: 'pause' });
+        return;
+      }
+      dispatch({ type: 'foregrounded' });
+    });
+  }, [mediaCoordinator, subscribeToLifecycle]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -603,23 +634,26 @@ export function StoryThatWaitsGame({
       pageGeneration: state.pageGeneration,
       stepGeneration: state.stepGeneration,
     };
+    const cancellationEpoch = mediaCancellationEpochRef.current;
+    let active = true;
+    const isCurrentPermissionQuery = (): boolean => (
+      active
+      && aliveRef.current
+      && cancellationEpoch === mediaCancellationEpochRef.current
+      && isCurrentToken(stateRef.current, token)
+      && stateRef.current.phase === 'turn1'
+    );
     void queryMicrophonePermission().then(
       (permission) => {
         if (
           permission !== 'granted'
-          || !aliveRef.current
-          || !isCurrentToken(stateRef.current, token)
-          || stateRef.current.phase !== 'turn1'
+          || !isCurrentPermissionQuery()
         ) {
           return;
         }
         micTokenRef.current = token;
         void microphoneRef.current.start().then((outcome) => {
-          if (
-            !aliveRef.current
-            || !isCurrentToken(stateRef.current, token)
-            || stateRef.current.phase !== 'turn1'
-          ) {
+          if (!isCurrentPermissionQuery()) {
             if (micTokenRef.current === token) {
               micTokenRef.current = null;
             }
@@ -632,12 +666,18 @@ export function StoryThatWaitsGame({
         });
       },
       (error: unknown) => {
+        if (!isCurrentPermissionQuery()) {
+          return;
+        }
         const diagnostic = error instanceof Error
           ? error.message
           : 'Microphone permission status could not be read.';
         reportNonblockingError('microphone-permission-query-failed', diagnostic);
       },
     );
+    return () => {
+      active = false;
+    };
   }, [
     queryMicrophonePermission,
     reportNonblockingError,
@@ -802,10 +842,21 @@ export function StoryThatWaitsGame({
   }, []);
 
   const handleBookInteraction = useCallback((): void => {
+    const snapshot = stateRef.current;
+    const claimsBlockedStart = (
+      snapshot.phase === 'paused'
+      && (snapshot.pausedResumeTarget === 'tutorial' || snapshot.pausedResumeTarget === 'loading-story')
+      && readiness.status === 'ready'
+    );
+    if (claimsBlockedStart && startGestureClaimedRef.current) {
+      return;
+    }
+    if (claimsBlockedStart) {
+      startGestureClaimedRef.current = true;
+    }
     setTutorialActive(false);
     pulseTouch();
     mediaCoordinator.unlock();
-    const snapshot = stateRef.current;
     if (snapshot.phase === 'tutorial') {
       return;
     }
@@ -815,6 +866,7 @@ export function StoryThatWaitsGame({
         (snapshot.pausedResumeTarget === 'tutorial' || snapshot.pausedResumeTarget === 'loading-story')
         && readiness.status === 'ready'
       ) {
+        automaticStartBlockedRef.current = false;
         const lockedStoryId = lockedStoryIdRef.current;
         const lockedLocale = lockedLocaleRef.current;
         dispatch({ type: 'request-story', storyId: lockedStoryId, locale: lockedLocale });
