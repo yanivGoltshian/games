@@ -80,6 +80,7 @@ export default function App({
     ),
     [communication, communicationAvailability.release, progress],
   );
+  const recordedOnlyToyPhoneRoute = route.kind === 'communication-game' && route.activityId === 'phone';
 
   useEffect(() => {
     if (!window.location.hash) {
@@ -119,10 +120,12 @@ export default function App({
   }, [progress.settings.childName, progress.settings.languageMode]);
 
   const unlockMedia = useCallback(() => {
-    speechService.unlock(progress.settings);
+    if (!recordedOnlyToyPhoneRoute) {
+      speechService.unlock(progress.settings);
+    }
     soundService.unlock();
     setMediaReady(true);
-  }, [progress.settings]);
+  }, [progress.settings, recordedOnlyToyPhoneRoute]);
 
   const updateSettings = (patch: Partial<ToddlerSettings>) => {
     const normalizedPatch = patch.childName === undefined
