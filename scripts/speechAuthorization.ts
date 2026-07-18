@@ -3,6 +3,19 @@ import { AzureCliCredential, type AccessToken } from '@azure/identity';
 const TOKEN_SCOPE = 'https://cognitiveservices.azure.com/.default';
 const REFRESH_WINDOW_MS = 5 * 60_000;
 
+export function createSpeechAuthorizationHeader(
+  resourceId: string,
+  accessToken: string,
+): string {
+  if (!resourceId.startsWith('/subscriptions/')) {
+    throw new Error('Azure Speech resource ID must be a full Azure resource ID.');
+  }
+  if (accessToken.length === 0) {
+    throw new Error('Azure Speech access token cannot be empty.');
+  }
+  return `Bearer aad#${resourceId}#${accessToken}`;
+}
+
 export interface SpeechTokenCredential {
   getToken(scope: string): Promise<AccessToken | null>;
 }

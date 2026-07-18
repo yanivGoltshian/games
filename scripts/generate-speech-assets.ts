@@ -18,7 +18,10 @@ import {
   NEURAL_VOICES,
   readSpeechEnvironment,
 } from './speechSsml.js';
-import { SpeechTokenProvider } from './speechAuthorization.js';
+import {
+  createSpeechAuthorizationHeader,
+  SpeechTokenProvider,
+} from './speechAuthorization.js';
 
 const SAMPLE_RATE = 24_000;
 const BIT_RATE = '64k';
@@ -147,7 +150,7 @@ class SpeechAuthorizer {
   async getAuthorizationHeader(): Promise<string> {
     this.token = await this.tokenProvider.getAccessToken();
 
-    return `Bearer aad#${this.resourceId}#${this.token.token}`;
+    return createSpeechAuthorizationHeader(this.resourceId, this.token.token);
   }
 }
 
