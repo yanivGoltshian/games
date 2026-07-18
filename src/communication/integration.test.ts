@@ -323,7 +323,7 @@ describe('communication integration selectors', () => {
   it('recovers Train communication progress when content ids arrive after trainsSeen', () => {
     let result = applyWordTrainCommunicationMetrics(
       createInitialCommunicationProgress(null),
-      { sessions: 0, trainsSeen: 0 },
+      { sessions: 0, trainsSeen: 0, contentIds: [] },
       {
         ...INITIAL_WORD_TRAIN_METRICS,
         trainsSeen: 1,
@@ -338,7 +338,7 @@ describe('communication integration selectors', () => {
       recentContentIds: [],
       lastPlayedAt: 0,
     });
-    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 0 });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 0, contentIds: [] });
 
     result = applyWordTrainCommunicationMetrics(
       result.progress,
@@ -357,7 +357,7 @@ describe('communication integration selectors', () => {
       recentContentIds: ['ball'],
       lastPlayedAt: 101,
     });
-    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1 });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1, contentIds: ['ball'] });
 
     result = applyWordTrainCommunicationMetrics(
       result.progress,
@@ -375,7 +375,7 @@ describe('communication integration selectors', () => {
       recentContentIds: ['ball'],
       lastPlayedAt: 101,
     });
-    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1 });
+    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 1, contentIds: ['ball'] });
 
     result = applyWordTrainCommunicationMetrics(
       result.progress,
@@ -393,6 +393,47 @@ describe('communication integration selectors', () => {
       recentContentIds: ['ball', 'apple'],
       lastPlayedAt: 103,
     });
-    expect(result.persisted).toEqual({ sessions: 0, trainsSeen: 2 });
+    expect(result.persisted).toEqual({
+      sessions: 0,
+      trainsSeen: 2,
+      contentIds: ['ball', 'apple'],
+    });
+  });
+
+  it('counts a repeated Train concept in a later session as a new communication round', () => {
+    const priorProgress = createInitialCommunicationProgress(WORD_TRAIN_CONTENT_VERSION);
+    const withPriorBall = applyWordTrainCommunicationMetrics(
+      priorProgress,
+      { sessions: 0, trainsSeen: 0, contentIds: [] },
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: ['ball'],
+      },
+      100,
+    ).progress;
+
+    const nextSession = applyWordTrainCommunicationMetrics(
+      withPriorBall,
+      { sessions: 0, trainsSeen: 0, contentIds: [] },
+      {
+        ...INITIAL_WORD_TRAIN_METRICS,
+        trainsSeen: 1,
+        recentContentIds: ['ball'],
+      },
+      200,
+    );
+
+    expect(nextSession.progress).toMatchObject({
+      contentVersion: WORD_TRAIN_CONTENT_VERSION,
+      roundsSeen: 2,
+      recentContentIds: ['ball'],
+      lastPlayedAt: 200,
+    });
+    expect(nextSession.persisted).toEqual({
+      sessions: 0,
+      trainsSeen: 1,
+      contentIds: ['ball'],
+    });
   });
 });

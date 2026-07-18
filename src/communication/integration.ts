@@ -34,6 +34,7 @@ import {
 interface PersistedWordTrainMetricCounts {
   sessions: number;
   trainsSeen: number;
+  contentIds: string[];
 }
 
 export function applyWordTrainCommunicationMetrics(
@@ -48,14 +49,10 @@ export function applyWordTrainCommunicationMetrics(
   let nextProgress = progress;
   let persistedTrainsSeen = persisted.trainsSeen;
   const newTrainCount = Math.max(0, metrics.trainsSeen - persisted.trainsSeen);
-  const newContentIds = metrics.recentContentIds.slice(-newTrainCount);
+  const newContentIds = metrics.recentContentIds
+    .filter((contentId) => !persisted.contentIds.includes(contentId))
+    .slice(-newTrainCount);
   for (const contentId of newContentIds) {
-    if (
-      nextProgress.contentVersion === WORD_TRAIN_CONTENT_VERSION
-      && nextProgress.recentContentIds.includes(contentId)
-    ) {
-      continue;
-    }
     nextProgress = recordCommunicationRound(
       nextProgress,
       WORD_TRAIN_CONTENT_VERSION,
@@ -79,6 +76,7 @@ export function applyWordTrainCommunicationMetrics(
     persisted: {
       sessions: Math.max(persisted.sessions, metrics.sessions),
       trainsSeen: persistedTrainsSeen,
+      contentIds: [...persisted.contentIds, ...newContentIds],
     },
   };
 }
@@ -212,9 +210,10 @@ function TrainCommunicationGame({
 }: CommunicationGameHostProps) {
   const latestProgressRef = useRef(progress);
   latestProgressRef.current = progress;
-  const persistedMetricsRef = useRef({
+  const persistedMetricsRef = useRef<PersistedWordTrainMetricCounts>({
     sessions: 0,
     trainsSeen: 0,
+    contentIds: [],
   });
   const handleCommunicationMetrics = useCallback((metrics: Readonly<WordTrainMetrics>): void => {
     const result = applyWordTrainCommunicationMetrics(
