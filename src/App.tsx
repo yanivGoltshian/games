@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type SyntheticEvent,
+} from 'react';
 import { CaregiverGate } from './components/CaregiverGate';
 import { CaregiverPanel } from './components/CaregiverPanel';
 import { CommunicationShelf } from './components/CommunicationShelf';
@@ -43,6 +49,11 @@ function navigate(path: string) {
 
 function replaceHashWithoutMedia(path: string) {
   window.history.replaceState(window.history.state, '', `#${path}`);
+}
+
+function isToyPhoneDoorEvent(event: SyntheticEvent): boolean {
+  return event.target instanceof Element
+    && event.target.closest('.communication-door[data-activity-id="phone"]') !== null;
 }
 
 export interface AppProps {
@@ -119,8 +130,8 @@ export default function App({
     document.title = title;
   }, [progress.settings.childName, progress.settings.languageMode]);
 
-  const unlockMedia = useCallback(() => {
-    if (!recordedOnlyToyPhoneRoute) {
+  const unlockMedia = useCallback((event: SyntheticEvent) => {
+    if (!recordedOnlyToyPhoneRoute && !isToyPhoneDoorEvent(event)) {
       speechService.unlock(progress.settings);
     }
     soundService.unlock();
