@@ -3,9 +3,20 @@ import {
   PeekAndDiscoverGame,
   PEEK_AND_DISCOVER_INSTALLED_CONTENT,
 } from '../games/peekAndDiscover';
+import {
+  WORD_TRAIN_INSTALLED_CONTENT,
+} from '../content/syllableTrain';
 import type { CommunicationActivityId } from '../domain/communicationGame';
 import type { CommunicationProgress } from '../domain/communicationProgress';
-import type { AppProgress, ToddlerSettings } from '../domain/types';
+import type {
+  AppProgress,
+  DomainProgress,
+  ProgressUpdateSummary,
+  RecordedRound,
+  ToddlerSettings,
+} from '../domain/types';
+import type { SpeechStatus } from '../services/speech';
+import { SyllableTrainGame } from '../games/SyllableTrainGame';
 import { COMMUNICATION_SHELF_REGISTRY } from './registry';
 import {
   evaluateCommunicationRelease,
@@ -17,8 +28,13 @@ import {
 export interface CommunicationGameHostProps {
   activityId: CommunicationActivityId;
   settings: ToddlerSettings;
+  overallStars: number;
+  mediaReady: boolean;
+  speechStatus: SpeechStatus;
   progress: CommunicationProgress;
+  syllableTrainDomainProgress: DomainProgress;
   onProgressChange: (progress: CommunicationProgress) => void;
+  onCompleteSyllableTrainRound: (round: RecordedRound) => ProgressUpdateSummary;
   onBackToShelf: () => void;
   onHome: () => void;
 }
@@ -76,16 +92,34 @@ const PEEK_RELEASE_READINESS = Object.freeze({
   }),
 } satisfies CommunicationLocaleReadiness);
 
+const TRAIN_RELEASE_READINESS = Object.freeze({
+  'he-IL': Object.freeze({
+    status: 'ready',
+    contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+    locale: 'he-IL',
+  }),
+  'en-US': Object.freeze({
+    status: 'ready',
+    contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+    locale: 'en-US',
+  }),
+  'en-GB': Object.freeze({
+    status: 'ready',
+    contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+    locale: 'en-GB',
+  }),
+} satisfies CommunicationLocaleReadiness);
+
 const PROGRESSIVE_COMMUNICATION_RELEASE: CommunicationReleaseConfiguration = Object.freeze({
   explicitlyEnabled: Object.freeze({
     peek: true,
-    train: false,
+    train: true,
     phone: false,
     story: false,
   }),
   readiness: Object.freeze({
     peek: PEEK_RELEASE_READINESS,
-    train: Object.freeze({}),
+    train: TRAIN_RELEASE_READINESS,
     phone: Object.freeze({}),
     story: Object.freeze({}),
   }),
@@ -107,6 +141,26 @@ function PeekCommunicationGame({
   });
 }
 
+function TrainCommunicationGame({
+  settings,
+  overallStars,
+  mediaReady,
+  speechStatus,
+  syllableTrainDomainProgress,
+  onCompleteSyllableTrainRound,
+  onBackToShelf,
+}: CommunicationGameHostProps) {
+  return createElement(SyllableTrainGame, {
+    domainProgress: syllableTrainDomainProgress,
+    settings,
+    overallStars,
+    mediaReady,
+    speechStatus,
+    onBack: onBackToShelf,
+    onCompleteRound: onCompleteSyllableTrainRound,
+  });
+}
+
 export const communicationIntegration: CommunicationIntegrationContract = Object.freeze({
   release: PROGRESSIVE_COMMUNICATION_RELEASE,
   games: Object.freeze({
@@ -115,6 +169,13 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
       selectCaregiverMetrics: (progress: AppProgress) => ({
         lastPlayedAt: progress.communication.lastPlayedAt,
         sessionsCompleted: progress.communication.sessionsCompleted,
+      }),
+    }),
+    train: Object.freeze({
+      component: TrainCommunicationGame,
+      selectCaregiverMetrics: (progress: AppProgress) => ({
+        lastPlayedAt: progress.domains.syllableTrain.lastPracticedAt,
+        sessionsCompleted: progress.domains.syllableTrain.completedRounds,
       }),
     }),
   }),

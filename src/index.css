@@ -2728,6 +2728,33 @@ body[data-reduced-motion='true'] .syllable-train-surface * {
   transform: rotate(115deg);
 }
 
+.syllable-train-metadata {
+  grid-row: 1;
+  display: grid;
+  gap: clamp(2px, 0.5dvh, 6px);
+  place-items: center;
+  max-width: min(74%, 520px);
+  text-align: center;
+  z-index: 5;
+}
+
+.syllable-train-metadata h1,
+.syllable-train-metadata p {
+  margin: 0;
+}
+
+.syllable-train-metadata h1 {
+  font-size: clamp(1.3rem, 4.2dvh, 2.4rem);
+  line-height: 1;
+}
+
+.syllable-train-metadata p {
+  color: var(--color-ink-muted);
+  font-size: clamp(0.86rem, 2.1dvh, 1.1rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
 .syllable-train-concept {
   grid-row: 2;
   position: relative;

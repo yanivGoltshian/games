@@ -13,8 +13,8 @@ import {
 import { PuppyMascotArt } from '../art/mascot';
 import { GameShell } from '../components/GameShell';
 import {
-  SYLLABLE_TRAIN_WORDS,
   WORD_TRAIN_CONTENT_VERSION,
+  WORD_TRAIN_INSTALLED_CONTENT,
   WordTrainRoundLocaleLock,
 } from '../content/syllableTrain';
 import { gameMeta } from '../content/games';
@@ -28,7 +28,6 @@ import { useAppLifecycle } from '../platform/useAppLifecycle';
 import {
   communicationAssetReadiness,
   type CommunicationContentRequirements,
-  type InstalledCommunicationContent,
 } from '../services/communicationAssetReadiness';
 import { DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS } from '../services/microphonePlaybackGuard';
 import { soundService } from '../services/sound';
@@ -64,11 +63,6 @@ const TUTORIAL_STORAGE_KEY = `${WORD_TRAIN_CONTENT_VERSION}:tutorial-seen`;
 const RECENT_CONTENT_LIMIT = 12;
 const POINTER_MOVE_THRESHOLD_PX = 8;
 const AUTO_CONNECT_SETTLE_MS = 180;
-
-const WORD_TRAIN_INSTALLED_CONTENT: InstalledCommunicationContent = {
-  contentVersion: WORD_TRAIN_CONTENT_VERSION,
-  images: SYLLABLE_TRAIN_WORDS.map((word) => ({ kind: 'url', value: word.image })),
-};
 
 interface ActivePointer {
   pointerId: number;
@@ -799,6 +793,11 @@ export function SyllableTrainGame({
         <div className="syllable-train-station" aria-hidden="true">
           <span className="syllable-train-station__roof" />
           <span className="syllable-train-station__clock" />
+        </div>
+
+        <div className="syllable-train-metadata">
+          <h1>{gameMeta.syllableTrain.title}</h1>
+          <p>{gameMeta.syllableTrain.subtitle}</p>
         </div>
 
         <div className="syllable-train-concept" aria-hidden="true">

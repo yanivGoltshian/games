@@ -1,4 +1,5 @@
 import type { SpeechLocale, ToddlerSettings } from '../domain/types';
+import type { InstalledCommunicationContent } from '../services/communicationAssetReadiness';
 import { requireLearningConcept } from './concepts';
 
 export const WORD_TRAIN_CONTENT_VERSION = 'word-train-v2' as const;
@@ -41,6 +42,11 @@ export const SYLLABLE_TRAIN_WORDS: readonly SyllableTrainWord[] =
       },
     };
   });
+
+export const WORD_TRAIN_INSTALLED_CONTENT: InstalledCommunicationContent = {
+  contentVersion: WORD_TRAIN_CONTENT_VERSION,
+  images: SYLLABLE_TRAIN_WORDS.map((word) => ({ kind: 'url', value: word.image })),
+};
 
 export function requireSyllableTrainWord(conceptId: string): SyllableTrainWord {
   const word = SYLLABLE_TRAIN_WORDS.find((entry) => entry.conceptId === conceptId);

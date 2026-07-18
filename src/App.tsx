@@ -225,11 +225,16 @@ export default function App({
     content = (
       <CommunicationGame
         activityId={route.activityId}
+        mediaReady={mediaReady}
         onBackToShelf={() => navigate(COMMUNICATION_SHELF_PATH)}
+        onCompleteSyllableTrainRound={completeRound('syllableTrain')}
         onHome={() => navigate('/')}
         onProgressChange={updateCommunicationProgress}
+        overallStars={progress.totalStars}
         progress={progress.communication}
         settings={progress.settings}
+        speechStatus={speechStatus}
+        syllableTrainDomainProgress={progress.domains.syllableTrain}
       />
     );
   } else {

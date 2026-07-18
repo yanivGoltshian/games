@@ -7,6 +7,7 @@ import { createInitialProgress } from '../domain/progression';
 import type { SpeechLocale } from '../domain/types';
 import type { CommunicationAssetReadiness } from '../services/communicationAssetReadiness';
 import { PEEK_AND_DISCOVER_INSTALLED_CONTENT } from '../games/peekAndDiscover';
+import { WORD_TRAIN_INSTALLED_CONTENT } from '../content/syllableTrain';
 import {
   buildCommunicationCaregiverItems,
   communicationIntegration,
@@ -70,16 +71,16 @@ function integration(
 }
 
 describe('communication integration selectors', () => {
-  it('publishes only the production Peek door with exact installed locale readiness', () => {
+  it('publishes only the production Peek and Train doors with exact installed locale readiness', () => {
     const result = evaluateCommunicationPublicAvailability(communicationIntegration);
 
     expect(communicationIntegration.release.explicitlyEnabled).toEqual({
       peek: true,
-      train: false,
+      train: true,
       phone: false,
       story: false,
     });
-    expect(Object.keys(communicationIntegration.games)).toEqual(['peek']);
+    expect(Object.keys(communicationIntegration.games)).toEqual(['peek', 'train']);
     expect(communicationIntegration.release.readiness.peek).toEqual({
       'he-IL': {
         status: 'ready',
@@ -97,8 +98,25 @@ describe('communication integration selectors', () => {
         locale: 'en-GB',
       },
     });
+    expect(communicationIntegration.release.readiness.train).toEqual({
+      'he-IL': {
+        status: 'ready',
+        contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+        locale: 'he-IL',
+      },
+      'en-US': {
+        status: 'ready',
+        contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+        locale: 'en-US',
+      },
+      'en-GB': {
+        status: 'ready',
+        contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
+        locale: 'en-GB',
+      },
+    });
     expect(result.available).toBe(true);
-    expect(result.publicActivityIds).toEqual(['peek']);
+    expect(result.publicActivityIds).toEqual(['peek', 'train']);
     expect(result.activities).toEqual([
       {
         activityId: 'peek',
@@ -109,10 +127,10 @@ describe('communication integration selectors', () => {
       },
       {
         activityId: 'train',
-        publiclyAvailable: false,
-        explicitlyEnabled: false,
-        componentRegistered: false,
-        contentReady: false,
+        publiclyAvailable: true,
+        explicitlyEnabled: true,
+        componentRegistered: true,
+        contentReady: true,
       },
       {
         activityId: 'phone',

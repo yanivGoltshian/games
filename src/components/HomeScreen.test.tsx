@@ -27,7 +27,13 @@ describe('HomeScreen', () => {
   });
 
   it('renders exact whole-word Train metadata without segmentation wording', () => {
-    const html = renderToStaticMarkup(<HomeScreen onOpenGame={() => {}} settings={settings} />);
+    const html = renderToStaticMarkup(
+      <HomeScreen
+        onOpenCommunication={() => undefined}
+        onOpenGame={() => undefined}
+        settings={settings}
+      />,
+    );
     const childVisibleText = html.replace(/<[^>]+>/g, ' ');
 
     expect(gameMeta.syllableTrain).toMatchObject({

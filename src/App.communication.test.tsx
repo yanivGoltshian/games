@@ -150,7 +150,7 @@ describe('App progressive communication release routing', () => {
     vi.restoreAllMocks();
   });
 
-  it('exposes the production Peek shelf while preserving exactly eight home tiles by default', async () => {
+  it('exposes the production communication shelf while preserving exactly eight home tiles by default', async () => {
     await act(async () => root?.render(<App />));
 
     expect(homeDomains(container)).toEqual([
@@ -198,13 +198,13 @@ describe('App progressive communication release routing', () => {
       .toBe('1');
   });
 
-  it('renders exactly one production Peek door on the default shelf', async () => {
+  it('renders exactly the production Peek and Train doors on the default shelf', async () => {
     window.history.replaceState(null, '', '#/communication');
     await act(async () => root?.render(<App />));
 
-    expect(shelfDoorIds(container)).toEqual(['peek']);
+    expect(shelfDoorIds(container)).toEqual(['peek', 'train']);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
-      .toBe('1');
+      .toBe('2');
   });
 
   it('adds later public activities without changing App or route wiring', async () => {
@@ -339,6 +339,16 @@ describe('App progressive communication release routing', () => {
     expect(container.querySelector('[data-mounted-communication-game="phone"]')).not.toBeNull();
   });
 
+  it('opens the production Train route through the communication host', async () => {
+    window.history.replaceState(null, '', '#/communication/word-train');
+    await act(async () => root?.render(<App />));
+
+    expect(window.location.hash).toBe('#/communication/word-train');
+    expect(container.textContent).toContain('רכבת המילים');
+    expect(container.textContent).toContain('מחברים קרונות ושומעים מילה שלמה');
+    expect(container.textContent).not.toMatch(/הברה|הברות|syllable|fragment|chunk/i);
+  });
+
   it('does not resurrect a normalized activity deep link after that activity becomes public', async () => {
     window.history.replaceState(null, '', '#/communication/story-that-waits');
     await act(async () => root?.render(
@@ -381,7 +391,6 @@ describe('App progressive communication release routing', () => {
     await act(async () => root?.render(<App />));
 
     for (const hash of [
-      '#/communication/word-train',
       '#/communication/toy-phone',
       '#/communication/story-that-waits',
       '#/communication/unknown-one',

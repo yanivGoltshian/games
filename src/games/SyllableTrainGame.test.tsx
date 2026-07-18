@@ -496,10 +496,12 @@ describe('SyllableTrainGame whole-word rebuild', () => {
     },
   );
 
-  it('renders no syllables, parts, prompts, dashes, letters, or whole-word text', async () => {
+  it('renders only approved metadata with no syllables, parts, prompts, dashes, letters, or target word text', async () => {
     await renderGame();
 
-    expect(container.querySelector('.syllable-train-surface')!.textContent).toBe('');
+    expect(container.querySelector('.syllable-train-surface')!.textContent).toBe(
+      'רכבת המיליםמחברים קרונות ושומעים מילה שלמה',
+    );
     expect(container.innerHTML).not.toContain('כַּ');
     expect(container.innerHTML).not.toContain('דּוּר');
     expect(container.innerHTML).not.toContain('Couple the train');
