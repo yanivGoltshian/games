@@ -4,6 +4,10 @@ import {
   type CommunicationLocaleLock,
 } from '../domain/communicationGame';
 import type { CommunicationContentRequirements } from '../services/communicationAssetReadiness';
+import {
+  STORY_THAT_WAITS_HEBREW_DISPLAY_TEXTS,
+  type StoryThatWaitsHebrewLookupText,
+} from './storyThatWaitsHebrew';
 
 export const STORY_THAT_WAITS_VERSION = 'story-that-waits-v1';
 export const STORY_THAT_WAITS_LOCALES = ['he-IL', 'en-US', 'en-GB'] as const;
@@ -65,6 +69,24 @@ export interface StoryThatWaitsLocaleLockTemplate {
   boundary: 'session';
 }
 
+export const STORY_THAT_WAITS_SHELF_METADATA = {
+  'he-IL': {
+    title: 'סִפּוּר שֶׁמְּחַכֶּה',
+    description: 'גְּעוּ בַּסֵּפֶר',
+  },
+  'en-US': {
+    title: 'Story That Waits',
+    description: 'Touch the book',
+  },
+  'en-GB': {
+    title: 'Story That Waits',
+    description: 'Touch the book',
+  },
+} as const satisfies Readonly<Record<
+  StoryThatWaitsLocale,
+  Readonly<{ title: string; description: string }>
+>>;
+
 export interface StoryThatWaitsRecordingRequirement {
   locale: StoryThatWaitsLocale;
   storyId: StoryThatWaitsStoryId;
@@ -87,7 +109,7 @@ export const STORY_THAT_WAITS_STORIES = [
     localeLockBoundary: 'session',
     activityId: 'story-that-waits:duck-and-ball',
     titles: {
-      'he-IL': 'ברווז וכדור',
+      'he-IL': 'בַּרְוָז וְכַדּוּר',
       'en-US': 'Duck and Ball',
       'en-GB': 'Duck and Ball',
     },
@@ -236,7 +258,7 @@ export const STORY_THAT_WAITS_STORIES = [
     localeLockBoundary: 'session',
     activityId: 'story-that-waits:rabbit-and-carrot',
     titles: {
-      'he-IL': 'ארנב וגזר',
+      'he-IL': 'אַרְנָב וְגֶזֶר',
       'en-US': 'Rabbit and Carrot',
       'en-GB': 'Rabbit and Carrot',
     },
@@ -385,7 +407,7 @@ export const STORY_THAT_WAITS_STORIES = [
     localeLockBoundary: 'session',
     activityId: 'story-that-waits:bus-to-tree-and-flower',
     titles: {
-      'he-IL': 'אוטובוס לעץ ולפרח',
+      'he-IL': 'אוֹטוֹבּוּס לָעֵץ וְלַפֶּרַח',
       'en-US': 'Bus, Tree, and Flower',
       'en-GB': 'Bus, Tree, and Flower',
     },
@@ -534,7 +556,7 @@ export const STORY_THAT_WAITS_STORIES = [
     localeLockBoundary: 'session',
     activityId: 'story-that-waits:cat-finds-shoe-and-cup',
     titles: {
-      'he-IL': 'חתול, נעל וכוס',
+      'he-IL': 'חָתוּל, נַעַל וְכוֹס',
       'en-US': 'Cat, Shoe, and Cup',
       'en-GB': 'Cat, Shoe, and Cup',
     },
@@ -725,12 +747,35 @@ export function getStoryThatWaitsUtterance(
   return getStoryThatWaitsPage(storyId, pageId).utterances[locale];
 }
 
+export function getStoryThatWaitsDisplaySentence(
+  storyId: StoryThatWaitsStoryId,
+  pageId: StoryThatWaitsPageId,
+  locale: StoryThatWaitsLocale,
+): string {
+  const utterance = getStoryThatWaitsUtterance(storyId, pageId, locale);
+  if (locale !== 'he-IL') {
+    return utterance.sentence;
+  }
+  const displaySentence = STORY_THAT_WAITS_HEBREW_DISPLAY_TEXTS[
+    utterance.recordedLookupText as StoryThatWaitsHebrewLookupText
+  ];
+  if (!displaySentence) {
+    throw new Error(`Missing pointed Story display sentence for ${storyId}/${pageId}`);
+  }
+  return displaySentence;
+}
+
 export function getStoryThatWaitsAccessibilityLabel(
   storyId: StoryThatWaitsStoryId,
   pageId: StoryThatWaitsPageId,
   locale: StoryThatWaitsLocale,
 ): string {
-  return getStoryThatWaitsUtterance(storyId, pageId, locale).accessibilityLabel;
+  if (locale !== 'he-IL') {
+    return getStoryThatWaitsUtterance(storyId, pageId, locale).accessibilityLabel;
+  }
+  const story = getStoryThatWaitsStory(storyId);
+  const page = getStoryThatWaitsPage(storyId, pageId);
+  return `${story.titles[locale]}, עַמּוּד ${page.order} מִתּוֹךְ 4. ${getStoryThatWaitsDisplaySentence(storyId, pageId, locale)}`;
 }
 
 export function getStoryThatWaitsRecordingKeys(

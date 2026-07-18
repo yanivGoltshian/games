@@ -1,7 +1,7 @@
 /**
  * Human-review gate for Story That Waits Hebrew recording production.
  *
- * Keys are immutable, unpointed runtime/display lookup text. Values are the
+ * Keys are immutable, unpointed runtime/recorded lookup text. Values are the
  * fully pointed synthesis source staged for review. These sentences remain
  * outside the recorded catalog until language review approves the full set.
  * Review must cover pronunciation, standard Israeli stress, masculine
@@ -25,6 +25,9 @@ export const STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS = {
   'חתול מוצא כוס.': 'חָתוּל מוֹצֵא כּוֹס.',
   'חתול יושב ליד הכוס.': 'חָתוּל יוֹשֵׁב לְיַד הַכּוֹס.',
 } as const satisfies Readonly<Record<string, string>>;
+
+export const STORY_THAT_WAITS_HEBREW_DISPLAY_TEXTS =
+  STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS;
 
 export type StoryThatWaitsHebrewLookupText =
   keyof typeof STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS;

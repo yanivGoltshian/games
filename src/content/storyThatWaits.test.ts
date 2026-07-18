@@ -10,6 +10,7 @@ import {
   stripNiqqud,
 } from './hebrewPronunciation';
 import {
+  STORY_THAT_WAITS_HEBREW_DISPLAY_TEXTS,
   STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
   STORY_THAT_WAITS_HEBREW_REVIEW_GATE,
 } from './storyThatWaitsHebrew';
@@ -21,6 +22,7 @@ import {
   STORY_THAT_WAITS_MAX_CHARACTERS,
   STORY_THAT_WAITS_MAX_WORDS,
   STORY_THAT_WAITS_PAGE_IDS,
+  STORY_THAT_WAITS_SHELF_METADATA,
   STORY_THAT_WAITS_STORIES,
   STORY_THAT_WAITS_STORY_IDS,
   STORY_THAT_WAITS_VERSION,
@@ -28,6 +30,8 @@ import {
   createStoryThatWaitsContentRequirements,
   createStoryThatWaitsLocaleLock,
   createStoryThatWaitsScope,
+  getStoryThatWaitsAccessibilityLabel,
+  getStoryThatWaitsDisplaySentence,
   getStoryThatWaitsRecordedLookupTexts,
   getStoryThatWaitsRecordingKeys,
   getStoryThatWaitsStory,
@@ -246,6 +250,49 @@ describe('Story That Waits content pack', () => {
       expect(
         productionWords.every((word) => hasNiqqud(word)),
         `every word must be pointed in ${productionText}`,
+      ).toBe(true);
+    }
+  });
+
+  it('renders every approved pointed Hebrew sentence and keeps private shelf copy fully pointed', () => {
+    expect(STORY_THAT_WAITS_HEBREW_DISPLAY_TEXTS)
+      .toBe(STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS);
+
+    for (const story of STORY_THAT_WAITS_STORIES) {
+      const titleWords = story.titles['he-IL'].match(HEBREW_WORD_PATTERN) ?? [];
+      expect(titleWords.every((word) => hasNiqqud(word))).toBe(true);
+
+      for (const page of story.pages) {
+        const utterance = page.utterances['he-IL'];
+        const displaySentence = getStoryThatWaitsDisplaySentence(
+          story.id,
+          page.id,
+          'he-IL',
+        );
+        const accessibilityLabel = getStoryThatWaitsAccessibilityLabel(
+          story.id,
+          page.id,
+          'he-IL',
+        );
+
+        expect(displaySentence).toBe(
+          STORY_THAT_WAITS_HEBREW_DISPLAY_TEXTS[
+            utterance.recordedLookupText as keyof typeof STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS
+          ],
+        );
+        expect(hasNiqqud(utterance.recordedLookupText)).toBe(false);
+        expect(accessibilityLabel).toContain(displaySentence);
+        expect(accessibilityLabel).toContain(story.titles['he-IL']);
+        expect(
+          (accessibilityLabel.match(HEBREW_WORD_PATTERN) ?? [])
+            .every((word) => hasNiqqud(word)),
+        ).toBe(true);
+      }
+    }
+
+    for (const copy of Object.values(STORY_THAT_WAITS_SHELF_METADATA['he-IL'])) {
+      expect(
+        (copy.match(HEBREW_WORD_PATTERN) ?? []).every((word) => hasNiqqud(word)),
       ).toBe(true);
     }
   });

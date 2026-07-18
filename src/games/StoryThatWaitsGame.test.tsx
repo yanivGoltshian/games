@@ -270,7 +270,8 @@ describe('StoryThatWaitsGame', () => {
     await renderGame();
 
     expect(container.querySelector('.story-book.is-tutorial')).not.toBeNull();
-    expect(container.querySelector('.story-book')?.textContent).not.toContain('The duck sees a ball.');
+    expect(container.querySelector('.story-book__sentence')?.textContent)
+      .toBe('The duck sees a ball.');
     await startStory();
 
     expect(coordinator.play).toHaveBeenCalledTimes(1);
@@ -293,6 +294,25 @@ describe('StoryThatWaitsGame', () => {
     await resolveCurrentPlayback();
     expect(container.querySelector('.story-unavailable')).toBeNull();
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-phase')).toBe('guard');
+  });
+
+  it('visibly renders the approved pointed Hebrew sentence while lookup text stays unpointed', async () => {
+    settings.languageMode = 'he';
+    await renderGame({
+      locale: 'he-IL',
+      readinessCheck: vi.fn().mockResolvedValue({
+        status: 'ready',
+        contentVersion: 'story-that-waits-v1',
+        locale: 'he-IL',
+      } satisfies CommunicationAssetReadiness),
+    });
+
+    expect(container.querySelector('.story-book__sentence')?.textContent)
+      .toBe('בַּרְוָז רוֹאֶה כַּדּוּר.');
+    expect(container.querySelector('.story-book')?.getAttribute('aria-label'))
+      .toBe('בַּרְוָז וְכַדּוּר, עַמּוּד 1 מִתּוֹךְ 4. בַּרְוָז רוֹאֶה כַּדּוּר.');
+    expect(coordinator.pending[0]?.request.segments?.[0]?.recordedText)
+      .toBe('ברווז רואה כדור.');
   });
 
   it.each(['cancelled', 'errored', 'unavailable'] as const)(
@@ -994,7 +1014,7 @@ describe('StoryThatWaitsGame', () => {
     expect(progressUpdates.mock.calls.at(-1)?.[0].sessionsCompleted).toBe(0);
   });
 
-  it('provides reduced-motion state, large semantic controls, and no visible sentence text', async () => {
+  it('provides reduced-motion state, large semantic controls, and visible sentence text', async () => {
     settings.reducedMotion = true;
     await renderGame();
     await startStory();
@@ -1005,7 +1025,7 @@ describe('StoryThatWaitsGame', () => {
     expect(book?.tagName).toBe('BUTTON');
     expect(book?.getAttribute('aria-label')).toContain('page 1 of 4');
     expect(container.querySelector('.story-that-waits')?.getAttribute('data-reduced-motion')).toBe('true');
-    expect(book?.textContent).not.toContain('The duck sees a ball.');
+    expect(book?.textContent).toContain('The duck sees a ball.');
   });
 
   it('ignores stale narration completion after pause and waits for the fresh replay', async () => {

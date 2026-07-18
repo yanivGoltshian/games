@@ -117,12 +117,26 @@
 
 .story-scene {
   position: absolute;
-  inset: 5%;
+  inset: 5% 5% 17%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   justify-items: center;
   gap: 2%;
+}
+
+.story-book__sentence {
+  position: absolute;
+  z-index: 2;
+  inset-inline: 6%;
+  bottom: 4%;
+  margin: 0;
+  color: var(--story-ink);
+  font-size: clamp(1rem, 2.6vmin, 1.9rem);
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
 }
 
 .story-scene__art {

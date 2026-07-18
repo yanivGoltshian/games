@@ -14,6 +14,8 @@ import {
   createStoryThatWaitsContentRequirements,
   createStoryThatWaitsLocaleLock,
   createStoryThatWaitsScope,
+  getStoryThatWaitsAccessibilityLabel,
+  getStoryThatWaitsDisplaySentence,
   getStoryThatWaitsStory,
   type StoryThatWaitsLocale,
   type StoryThatWaitsPage,
@@ -209,21 +211,19 @@ async function queryPreauthorizedMicrophonePermission(): Promise<StoryThatWaitsM
 function labels(locale: StoryThatWaitsLocale) {
   if (locale === 'he-IL') {
     return {
-      game: 'סיפור שמחכה',
-      back: 'חזרה לבית',
-      replay: 'לשמוע שוב',
-      page: 'געו בספר',
-      waiting: 'הסיפור מחכה',
-      blocked: 'הסיפור ינוח עכשיו',
-      diagnostic: 'מידע למטפל',
-      rest: 'הסיפור הסתיים',
+      game: 'סִפּוּר שֶׁמְּחַכֶּה',
+      back: 'חֲזָרָה לַבַּיִת',
+      replay: 'לִשְׁמֹעַ שׁוּב',
+      waiting: 'הַסִּפּוּר מְחַכֶּה',
+      blocked: 'הַסִּפּוּר יָנוּחַ עַכְשָׁו',
+      diagnostic: 'מֵידָע לַמְטַפֵּל',
+      rest: 'הַסִּפּוּר הִסְתַּיֵּם',
     };
   }
   return {
     game: 'Story That Waits',
     back: 'Back home',
     replay: 'Hear it again',
-    page: 'Touch the book',
     waiting: 'The story is waiting',
     blocked: 'The story is resting now',
     diagnostic: 'Caregiver information',
@@ -994,7 +994,16 @@ export function StoryThatWaitsGame({
   const blockedDiagnostic = runtimeError ?? (readiness.status === 'blocked' ? readiness.diagnostic : null);
   const accessibilityLabel = state.pageIndex === null
     ? copy.waiting
-    : selectedPage.utterances[lockedLocale].accessibilityLabel;
+    : getStoryThatWaitsAccessibilityLabel(
+      lockedStoryIdRef.current,
+      selectedPage.id,
+      lockedLocale,
+    );
+  const displaySentence = getStoryThatWaitsDisplaySentence(
+    lockedStoryIdRef.current,
+    selectedPage.id,
+    lockedLocale,
+  );
   const liveStatus = blockedDiagnostic
     ? copy.blocked
     : state.phase === 'rest'
@@ -1072,6 +1081,9 @@ export function StoryThatWaitsGame({
                         className={`story-scene__art story-scene__art--${artId} ${artId === selectedPage.action.subjectArtId ? 'is-action-subject' : ''}`}
                       />
                     ))}
+                  </span>
+                  <span className="story-book__sentence" aria-hidden="true">
+                    {displaySentence}
                   </span>
                   <span className="story-action-hotspot" aria-hidden="true" />
                 </span>

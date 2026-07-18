@@ -9,13 +9,17 @@ export {
 export {
   STORY_THAT_WAITS_STORIES,
   STORY_THAT_WAITS_STORY_IDS,
+  STORY_THAT_WAITS_SHELF_METADATA,
   STORY_THAT_WAITS_VERSION,
   createStoryThatWaitsContentRequirements,
+  getStoryThatWaitsAccessibilityLabel,
+  getStoryThatWaitsDisplaySentence,
   getStoryThatWaitsStory,
   type StoryThatWaitsLocale,
   type StoryThatWaitsStoryId,
 } from '../content/storyThatWaits';
 export {
+  STORY_THAT_WAITS_HEBREW_DISPLAY_TEXTS,
   STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
   STORY_THAT_WAITS_HEBREW_REVIEW_GATE,
   type StoryThatWaitsHebrewLookupText,
