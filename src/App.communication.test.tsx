@@ -198,13 +198,13 @@ describe('App progressive communication release routing', () => {
       .toBe('1');
   });
 
-  it('renders exactly the production Peek, Train, and Story doors on the default shelf', async () => {
+  it('renders exactly the production Peek, Train, Toy Phone, and Story doors on the default shelf', async () => {
     window.history.replaceState(null, '', '#/communication');
     await act(async () => root?.render(<App />));
 
-    expect(shelfDoorIds(container)).toEqual(['peek', 'train', 'story']);
+    expect(shelfDoorIds(container)).toEqual(['peek', 'train', 'phone', 'story']);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
-      .toBe('3');
+      .toBe('4');
   });
 
   it('adds later public activities without changing App or route wiring', async () => {
@@ -394,14 +394,57 @@ describe('App progressive communication release routing', () => {
     }
   });
 
+  it('keeps Toy Phone interactions out of the global speech unlock path', async () => {
+    const unlock = vi.spyOn(speechService, 'unlock');
+    window.history.replaceState(null, '', '#/communication/toy-phone');
+    await act(async () => root?.render(
+      <App communication={readyIntegration({ enabledActivityIds: ['phone'] })} />,
+    ));
+
+    expect(window.location.hash).toBe('#/communication/toy-phone');
+    expect(container.querySelector('[data-mounted-communication-game="phone"]')).not.toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLElement>('[data-mounted-communication-game="phone"]')?.click();
+    });
+
+    expect(unlock).not.toHaveBeenCalled();
+  });
+
+  it('keeps Toy Phone shelf entry out of the global speech unlock path', async () => {
+    const unlock = vi.spyOn(speechService, 'unlock');
+    window.history.replaceState(null, '', '#/communication');
+    await act(async () => root?.render(<App />));
+
+    const phoneDoor = container.querySelector<HTMLButtonElement>(
+      '.communication-door[data-activity-id="phone"]',
+    );
+    expect(phoneDoor).not.toBeNull();
+
+    await act(async () => {
+      phoneDoor?.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 1,
+      }));
+      phoneDoor?.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+      }));
+      window.dispatchEvent(new Event('hashchange'));
+    });
+
+    expect(window.location.hash).toBe('#/communication/toy-phone');
+    expect(unlock).not.toHaveBeenCalled();
+  });
+
   it('fails production disabled and malformed communication routes closed without media side effects', async () => {
     const cancelAll = vi.spyOn(speechService, 'cancelAll');
     const unlock = vi.spyOn(speechService, 'unlock');
     await act(async () => root?.render(<App />));
 
     for (const hash of [
-      '#/communication/toy-phone',
       '#/communication/unknown-one',
+      '#/communication/toy-phone?mode=child',
       '#/communication/peek-and-discover?mode=child',
     ]) {
       await act(async () => {

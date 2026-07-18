@@ -1,0 +1,336 @@
+.accent-toy-phone {
+  --accent: #3aa9b8;
+  --accent-dark: #217f8c;
+  --accent-soft: #d9f4f5;
+  background:
+    radial-gradient(circle at 15% 10%, rgb(255 235 156 / 48%), transparent 30%),
+    radial-gradient(circle at 85% 16%, rgb(129 218 224 / 46%), transparent 34%),
+    linear-gradient(180deg, #fff9df 0%, #eaf9f8 100%);
+}
+
+.accent-toy-phone .rail-button {
+  min-width: 88px;
+  min-height: 64px;
+}
+
+.toy-phone-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+.toy-phone-stage {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(148px, 38vh) 1fr;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: clamp(12px, 3vw, 34px);
+}
+
+.toy-phone-handset-target {
+  position: relative;
+  z-index: 3;
+  width: min(76vw, 440px);
+  min-width: 240px;
+  min-height: 120px;
+  padding: 0;
+  border: 0;
+  border-radius: 44px;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toy-phone-device {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: saturate(0.98);
+}
+
+.toy-phone-device__glow {
+  opacity: 0.2;
+  transform-origin: center;
+}
+
+.toy-phone-device__ring-waves {
+  opacity: 0;
+}
+
+.toy-phone-device.is-ringing .toy-phone-device__glow {
+  animation: toy-phone-glow 1.25s ease-in-out infinite;
+}
+
+.toy-phone-device.is-ringing .toy-phone-device__ring-waves {
+  opacity: 0.9;
+  animation: toy-phone-ring-waves 1.25s ease-in-out infinite;
+}
+
+.toy-phone-device.is-ringing .toy-phone-device__handset {
+  transform-origin: center 84px;
+  animation: toy-phone-handset-ring 1.25s ease-in-out infinite;
+}
+
+.toy-phone-device.is-answered .toy-phone-device__handset {
+  transform: translateY(-14px) rotate(-3deg);
+}
+
+.toy-phone-call-content {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 6vw, 64px);
+  width: min(94vw, 760px);
+  min-height: 210px;
+}
+
+.toy-phone-caller-target,
+.toy-phone-object-target {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(160px, 29vw, 230px);
+  min-width: 160px;
+  min-height: 160px;
+  aspect-ratio: 1;
+  padding: 12px;
+  border: 5px solid rgb(255 255 255 / 88%);
+  border-radius: 46%;
+  background: rgb(255 255 255 / 76%);
+  box-shadow: 0 13px 30px rgb(49 91 94 / 18%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toy-phone-object-target {
+  border-radius: 34%;
+  background: rgb(255 244 191 / 82%);
+}
+
+.toy-phone-caller-art,
+.toy-phone-object-art {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+
+.toy-phone-caller-target.is-waving {
+  transform-origin: 50% 100%;
+  animation: toy-phone-wave 0.72s ease-in-out infinite alternate;
+}
+
+.toy-phone-speech-dot {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 2px;
+  width: 36px;
+  height: 36px;
+  border: 7px solid #fff;
+  border-radius: 999px;
+  background: #52c1cf;
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.toy-phone-surface--greeting .toy-phone-speech-dot,
+.toy-phone-surface--request .toy-phone-speech-dot,
+.toy-phone-surface--goodbye .toy-phone-speech-dot,
+.toy-phone-surface--tutorial[data-tutorial-step="greeting"] .toy-phone-speech-dot,
+.toy-phone-surface--tutorial[data-tutorial-step="request"] .toy-phone-speech-dot,
+.toy-phone-surface--tutorial[data-tutorial-step="goodbye"] .toy-phone-speech-dot {
+  opacity: 1;
+  animation: toy-phone-speech-pulse 0.85s ease-in-out infinite;
+}
+
+.toy-phone-surface.reaction-odd .toy-phone-caller-target,
+.toy-phone-surface.reaction-odd .toy-phone-object-target {
+  filter: brightness(1.05);
+  box-shadow: 0 0 0 10px rgb(82 193 207 / 18%), 0 13px 30px rgb(49 91 94 / 18%);
+}
+
+.toy-phone-tutorial-mascot {
+  position: absolute;
+  z-index: 5;
+  top: clamp(118px, 23vh, 190px);
+  inset-inline-start: calc(50% + min(22vw, 140px));
+  width: 128px;
+  height: 128px;
+  pointer-events: none;
+}
+
+.toy-phone-tutorial-mascot__art {
+  width: 118px;
+  height: 118px;
+}
+
+.toy-phone-tutorial-mascot__paw {
+  position: absolute;
+  inset-inline-start: 8px;
+  top: 16px;
+  width: 34px;
+  height: 62px;
+  border-radius: 50% 50% 46% 46%;
+  background: #e0a15f;
+  transform: rotate(38deg);
+  animation: toy-phone-paw-tap 0.58s ease-in-out infinite alternate;
+}
+
+.toy-phone-sleep-cue {
+  position: absolute;
+  z-index: 5;
+  inset-inline-start: 50%;
+  top: 56%;
+  display: flex;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+
+.toy-phone-sleep-cue span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #72b9c1;
+  opacity: 0.3;
+}
+
+.toy-phone-asset-error {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border: 7px solid #fff;
+  border-radius: 50%;
+  background: #f4be62;
+  color: #704820;
+  box-shadow: 0 10px 24px rgb(73 53 26 / 18%);
+  font-size: 54px;
+  font-weight: 900;
+}
+
+.toy-phone-readiness--checking .toy-phone-stage {
+  opacity: 0.72;
+}
+
+@keyframes toy-phone-glow {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes toy-phone-ring-waves {
+  0%,
+  100% {
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes toy-phone-handset-ring {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes toy-phone-wave {
+  from {
+    transform: rotate(-3deg);
+  }
+  to {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes toy-phone-speech-pulse {
+  0%,
+  100% {
+    transform: scale(0.76);
+  }
+  50% {
+    transform: scale(1);
+  }
+}
+
+@keyframes toy-phone-paw-tap {
+  from {
+    transform: translateY(-8px) rotate(32deg);
+  }
+  to {
+    transform: translateY(10px) rotate(42deg);
+  }
+}
+
+.reduced-motion .toy-phone-device.is-ringing .toy-phone-device__handset,
+.reduced-motion .toy-phone-device.is-ringing .toy-phone-device__ring-waves,
+.reduced-motion .toy-phone-caller-target.is-waving,
+.reduced-motion .toy-phone-speech-dot,
+.reduced-motion .toy-phone-tutorial-mascot__paw {
+  animation: none;
+  transform: none;
+}
+
+.reduced-motion .toy-phone-device.is-ringing .toy-phone-device__ring-waves {
+  opacity: 0;
+}
+
+.reduced-motion .toy-phone-device.is-ringing .toy-phone-device__glow {
+  animation: toy-phone-reduced-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes toy-phone-reduced-glow {
+  0%,
+  100% {
+    opacity: 0.34;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@media (max-width: 560px), (max-height: 620px) {
+  .toy-phone-stage {
+    grid-template-rows: minmax(120px, 34vh) 1fr;
+    padding: 8px;
+  }
+
+  .toy-phone-handset-target {
+    width: min(86vw, 390px);
+  }
+
+  .toy-phone-call-content {
+    gap: 0;
+    min-height: 170px;
+  }
+
+  .toy-phone-caller-target,
+  .toy-phone-object-target {
+    width: 160px;
+    min-width: 160px;
+    min-height: 160px;
+    padding: 8px;
+  }
+
+  .toy-phone-tutorial-mascot {
+    top: 100px;
+    width: 100px;
+    height: 100px;
+  }
+}

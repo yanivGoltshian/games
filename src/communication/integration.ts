@@ -13,6 +13,7 @@ import {
   type StoryThatWaitsLocale,
   type StoryThatWaitsStoryId,
 } from '../content/storyThatWaits';
+import { TOY_PHONE_CONTENT_VERSION } from '../content/toyPhone';
 import type { CommunicationActivityId } from '../domain/communicationGame';
 import {
   createInitialCommunicationProgress,
@@ -30,6 +31,7 @@ import type {
 } from '../domain/types';
 import type { SpeechStatus } from '../services/speech';
 import { SyllableTrainGame } from '../games/SyllableTrainGame';
+import { ToyPhoneGame } from '../games/ToyPhoneGame';
 import type { WordTrainMetrics } from '../games/wordTrainMetrics';
 import { StoryThatWaitsGame } from '../games/StoryThatWaitsGame';
 import { COMMUNICATION_SHELF_REGISTRY } from './registry';
@@ -195,17 +197,35 @@ const STORY_RELEASE_READINESS = Object.freeze({
   }),
 } satisfies CommunicationLocaleReadiness);
 
+const PHONE_RELEASE_READINESS = Object.freeze({
+  'he-IL': Object.freeze({
+    status: 'ready',
+    contentVersion: TOY_PHONE_CONTENT_VERSION,
+    locale: 'he-IL',
+  }),
+  'en-US': Object.freeze({
+    status: 'ready',
+    contentVersion: TOY_PHONE_CONTENT_VERSION,
+    locale: 'en-US',
+  }),
+  'en-GB': Object.freeze({
+    status: 'ready',
+    contentVersion: TOY_PHONE_CONTENT_VERSION,
+    locale: 'en-GB',
+  }),
+} satisfies CommunicationLocaleReadiness);
+
 const PROGRESSIVE_COMMUNICATION_RELEASE: CommunicationReleaseConfiguration = Object.freeze({
   explicitlyEnabled: Object.freeze({
     peek: true,
     train: true,
-    phone: false,
+    phone: true,
     story: true,
   }),
   readiness: Object.freeze({
     peek: PEEK_RELEASE_READINESS,
     train: TRAIN_RELEASE_READINESS,
-    phone: Object.freeze({}),
+    phone: PHONE_RELEASE_READINESS,
     story: STORY_RELEASE_READINESS,
   }),
 });
@@ -296,6 +316,33 @@ function StoryCommunicationGame({
   });
 }
 
+function ToyPhoneCommunicationGame({
+  settings,
+  overallStars,
+  mediaReady,
+  speechStatus,
+  syllableTrainDomainProgress,
+  onBackToShelf,
+}: CommunicationGameHostProps) {
+  return createElement(ToyPhoneGame, {
+    domainProgress: syllableTrainDomainProgress,
+    settings,
+    overallStars,
+    mediaReady,
+    speechStatus,
+    onBack: onBackToShelf,
+    onCompleteRound: () => ({
+      starsEarned: 0,
+      leveledUp: false,
+      milestone: false,
+      level: syllableTrainDomainProgress.level,
+      mastery: syllableTrainDomainProgress.mastery,
+      firstAttempt: true,
+      recommendation: null,
+    }),
+  });
+}
+
 function selectCommunicationActivityProgress(
   progress: AppProgress,
   activityId: CommunicationActivityId,
@@ -378,6 +425,18 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
           'train',
           WORD_TRAIN_CONTENT_VERSION,
         ).sessionsCompleted,
+      }),
+    }),
+    phone: Object.freeze({
+      component: ToyPhoneCommunicationGame,
+      selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
+        progress,
+        'phone',
+        TOY_PHONE_CONTENT_VERSION,
+      ),
+      selectCaregiverMetrics: () => ({
+        lastPlayedAt: 0,
+        sessionsCompleted: 0,
       }),
     }),
     story: Object.freeze({

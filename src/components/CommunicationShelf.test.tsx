@@ -108,6 +108,31 @@ describe('CommunicationShelf', () => {
       .map((door) => door.dataset.activityId)).toEqual(['peek', 'phone']);
   });
 
+  it('renders the production communication shelf as exactly three ready doors in fixed order', async () => {
+    await act(async () => {
+      root.render(
+        <CommunicationShelf
+          activityIds={['peek', 'train', 'phone']}
+          languageMode="he"
+          onHome={() => undefined}
+          onSelect={() => undefined}
+          reducedMotion={false}
+        />,
+      );
+    });
+
+    const doors = [...container.querySelectorAll<HTMLButtonElement>('.communication-door')];
+    expect(doors.map((door) => door.dataset.activityId)).toEqual(['peek', 'train', 'phone']);
+    expect(doors.map((door) => door.getAttribute('aria-label'))).toEqual([
+      'מציצים ומגלים',
+      'רכבת המילים',
+      'טֵלֵפוֹן צַעֲצוּעַ',
+    ]);
+    expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
+      .toBe('3');
+    expect(container.textContent).not.toContain('סיפור');
+  });
+
   it('emits one semantic selection under ten rapid activations', async () => {
     const onSelect = vi.fn();
     await act(async () => {
