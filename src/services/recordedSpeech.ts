@@ -31,6 +31,8 @@ export interface RecordedSpeechBackend {
   cancel: () => void;
 }
 
+export type RecordedSpeechManifestValidator = (manifest: RecordedSpeechManifest) => RecordedSpeechManifest;
+
 export interface RecordedSpeechEnvironment {
   userAgent: string;
   platform: string;
@@ -92,6 +94,8 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     private readonly unlockContext: () => Promise<void> = unlockAudioContext,
     private readonly fetcher: typeof fetch = (...args) => fetch(...args),
     private readonly enabled: () => boolean = shouldUseRecordedSpeech,
+    private readonly manifestPath = '/speech/manifest.json',
+    private readonly validateManifest: RecordedSpeechManifestValidator = (manifest) => manifest,
   ) {}
 
   isEnabled(): boolean {
@@ -170,13 +174,14 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
   }
 
   private loadManifest(): Promise<RecordedSpeechManifest> {
-    this.manifestPromise ??= this.fetcher('/speech/manifest.json', { cache: 'force-cache' })
+    this.manifestPromise ??= this.fetcher(this.manifestPath, { cache: 'force-cache' })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Recorded speech manifest failed with HTTP ${response.status}.`);
         }
         return response.json() as Promise<RecordedSpeechManifest>;
       })
+      .then((manifest) => this.validateManifest(manifest))
       .catch((error: unknown) => {
         this.manifestPromise = null;
         throw error;

@@ -127,9 +127,10 @@ export class CommunicationAssetReadinessService {
   async validate(
     requirements: CommunicationContentRequirements,
     installed: InstalledCommunicationContent,
+    loadManifest: () => Promise<RecordedSpeechManifest> = this.loadManifest,
   ): Promise<CommunicationAssetReadiness> {
     try {
-      const manifest = await this.loadManifest();
+      const manifest = await loadManifest();
       return validateCommunicationAssetReadiness(requirements, installed, manifest);
     } catch (error: unknown) {
       const diagnostic = error instanceof Error ? error.message : 'Unknown installed catalog error.';

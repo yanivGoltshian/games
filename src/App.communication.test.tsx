@@ -198,13 +198,13 @@ describe('App progressive communication release routing', () => {
       .toBe('1');
   });
 
-  it('renders exactly the production Peek and Train doors on the default shelf', async () => {
+  it('renders exactly the production Peek, Train, and Story doors on the default shelf', async () => {
     window.history.replaceState(null, '', '#/communication');
     await act(async () => root?.render(<App />));
 
-    expect(shelfDoorIds(container)).toEqual(['peek', 'train']);
+    expect(shelfDoorIds(container)).toEqual(['peek', 'train', 'story']);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
-      .toBe('2');
+      .toBe('3');
   });
 
   it('adds later public activities without changing App or route wiring', async () => {
@@ -401,7 +401,6 @@ describe('App progressive communication release routing', () => {
 
     for (const hash of [
       '#/communication/toy-phone',
-      '#/communication/story-that-waits',
       '#/communication/unknown-one',
       '#/communication/peek-and-discover?mode=child',
     ]) {

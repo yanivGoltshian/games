@@ -64,7 +64,7 @@ describe('CommunicationShelf', () => {
       'Peek and Discover',
       'Word Train',
       'Toy Phone',
-      'Story That Waits',
+      'Story That Waits. Touch the book',
     ]);
     expect(doors.every((door) => door.type === 'button')).toBe(true);
     expect(doors.every((door) => door.querySelector('svg')?.getAttribute('aria-hidden') === 'true')).toBe(true);
