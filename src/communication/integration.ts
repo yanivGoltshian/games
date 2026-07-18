@@ -16,6 +16,7 @@ import {
 } from '../domain/communicationProgress';
 import type {
   AppProgress,
+  CommunicationActivityProgressMap,
   DomainProgress,
   ProgressUpdateSummary,
   RecordedRound,
@@ -103,6 +104,7 @@ export type CommunicationCaregiverMetrics = Pick<
 
 export interface CommunicationGameRegistration {
   component: ComponentType<CommunicationGameHostProps>;
+  legacyContentVersion?: string;
   selectProgress?: (progress: AppProgress) => CommunicationProgress;
   selectCaregiverMetrics?: (progress: AppProgress) => CommunicationCaregiverMetrics;
 }
@@ -257,11 +259,36 @@ function selectCommunicationActivityProgress(
   return createInitialCommunicationProgress(contentVersion);
 }
 
+export function seedLegacyCommunicationActivities(
+  progress: AppProgress,
+  integration: CommunicationIntegrationContract,
+): CommunicationActivityProgressMap {
+  const activities: CommunicationActivityProgressMap = {
+    ...progress.communicationActivities,
+  };
+  const contentVersion = progress.communication.contentVersion;
+  if (!contentVersion) {
+    return activities;
+  }
+
+  for (const activityId of Object.keys(integration.games) as CommunicationActivityId[]) {
+    const registration = integration.games[activityId];
+    if (
+      registration?.legacyContentVersion === contentVersion
+      && activities[activityId] === undefined
+    ) {
+      activities[activityId] = progress.communication;
+    }
+  }
+  return activities;
+}
+
 export const communicationIntegration: CommunicationIntegrationContract = Object.freeze({
   release: PROGRESSIVE_COMMUNICATION_RELEASE,
   games: Object.freeze({
     peek: Object.freeze({
       component: PeekCommunicationGame,
+      legacyContentVersion: PEEK_AND_DISCOVER_INSTALLED_CONTENT.contentVersion,
       selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
         progress,
         'peek',
@@ -282,6 +309,7 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
     }),
     train: Object.freeze({
       component: TrainCommunicationGame,
+      legacyContentVersion: WORD_TRAIN_CONTENT_VERSION,
       selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
         progress,
         'train',
@@ -339,7 +367,14 @@ export function buildCommunicationCaregiverItems(
   progress: AppProgress,
   evaluation: CommunicationReleaseEvaluation,
 ): readonly CommunicationCaregiverItem[] {
-  return COMMUNICATION_SHELF_REGISTRY.map((entry) => {
+  return COMMUNICATION_SHELF_REGISTRY.filter((entry) => (
+    integration.games[entry.activityId]?.component !== undefined
+    && evaluation.activities.some((activity) => (
+      activity.activityId === entry.activityId
+      && activity.explicitlyEnabled
+      && activity.status === 'ready'
+    ))
+  )).map((entry) => {
     const metrics = integration.games[entry.activityId]?.selectCaregiverMetrics?.(progress) ?? {
       lastPlayedAt: 0,
       sessionsCompleted: 0,

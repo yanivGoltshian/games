@@ -18,6 +18,7 @@ import {
   buildCommunicationCaregiverItems,
   communicationIntegration,
   evaluateCommunicationPublicAvailability,
+  seedLegacyCommunicationActivities,
   type CommunicationIntegrationContract,
 } from './integration';
 import {
@@ -265,7 +266,7 @@ describe('communication integration selectors', () => {
     });
   });
 
-  it('returns only fixed-order caregiver-safe readiness and permitted metrics', () => {
+  it('returns only public fixed-order caregiver-safe readiness and permitted metrics', () => {
     const contract = integration(['phone'], ['phone']);
     contract.games.phone!.selectCaregiverMetrics = () => ({
       lastPlayedAt: 123,
@@ -278,20 +279,30 @@ describe('communication integration selectors', () => {
       evaluateCommunicationRelease(contract.release),
     );
 
-    expect(items.map((item) => item.activityId)).toEqual(['peek', 'train', 'phone', 'story']);
-    expect(items[2]).toEqual({
+    expect(items.map((item) => item.activityId)).toEqual(['phone']);
+    expect(items[0]).toEqual({
       activityId: 'phone',
       lastPlayedAt: 123,
       sessionsCompleted: 4,
       readiness: 'ready',
     });
-    expect(Object.keys(items[2]!)).toEqual([
+    expect(Object.keys(items[0]!)).toEqual([
       'activityId',
       'lastPlayedAt',
       'sessionsCompleted',
       'readiness',
     ]);
     expect(JSON.stringify(items)).not.toMatch(/url|asset|recording|transcript|accuracy|completion/i);
+  });
+
+  it('does not expose disabled Phone or Story in release caregiver items', () => {
+    const items = buildCommunicationCaregiverItems(
+      communicationIntegration,
+      createInitialProgress(false, 1),
+      evaluateCommunicationRelease(communicationIntegration.release),
+    );
+
+    expect(items.map((item) => item.activityId)).toEqual(['peek', 'train']);
   });
 
   it('uses legacy matching communication progress for the released Train item', () => {
@@ -387,6 +398,24 @@ describe('communication integration selectors', () => {
     expect(items.find((item) => item.activityId === 'train')).toMatchObject({
       lastPlayedAt: 0,
       sessionsCompleted: 0,
+    });
+  });
+
+  it('seeds matching legacy communication progress before another activity can overwrite it', () => {
+    const progress = {
+      ...createInitialProgress(false, 1),
+      communication: {
+        version: 1 as const,
+        contentVersion: WORD_TRAIN_CONTENT_VERSION,
+        sessionsCompleted: 3,
+        roundsSeen: 6,
+        recentContentIds: ['ball', 'apple'],
+        lastPlayedAt: 456,
+      },
+    };
+
+    expect(seedLegacyCommunicationActivities(progress, communicationIntegration)).toEqual({
+      train: progress.communication,
     });
   });
 

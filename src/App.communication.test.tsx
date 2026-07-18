@@ -349,6 +349,15 @@ describe('App progressive communication release routing', () => {
     expect(container.textContent).not.toMatch(/הברה|הברות|syllable|fragment|chunk/i);
   });
 
+  it('opens the legacy Train route through the communication host when Train is public', async () => {
+    window.history.replaceState(null, '', '#/games/syllableTrain');
+    await act(async () => root?.render(<App />));
+
+    expect(container.textContent).toContain('רכבת המילים');
+    expect(container.textContent).toContain('מחברים קרונות ושומעים מילה שלמה');
+    expect(container.textContent).not.toMatch(/הברה|הברות|syllable|fragment|chunk/i);
+  });
+
   it('does not resurrect a normalized activity deep link after that activity becomes public', async () => {
     window.history.replaceState(null, '', '#/communication/story-that-waits');
     await act(async () => root?.render(

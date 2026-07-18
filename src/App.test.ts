@@ -63,6 +63,16 @@ describe('child navigation', () => {
     expect(resolveRouteForCommunicationAvailability(game, ['train'])).toEqual(game);
   });
 
+  it('routes the legacy Train URL through the communication release surface when public', () => {
+    const legacyTrain = parseHash('#/games/syllableTrain');
+
+    expect(resolveRouteForCommunicationAvailability(legacyTrain, [])).toEqual(legacyTrain);
+    expect(resolveRouteForCommunicationAvailability(legacyTrain, ['train'])).toEqual({
+      kind: 'communication-game',
+      activityId: 'train',
+    });
+  });
+
   it('recognizes complete communication hash identities for fail-closed normalization', () => {
     expect(isCommunicationHash('#/communication')).toBe(true);
     expect(isCommunicationHash('#/communication/toy-phone')).toBe(true);

@@ -8,6 +8,7 @@ import {
   buildCommunicationCaregiverItems,
   communicationIntegration as defaultCommunicationIntegration,
   evaluateCommunicationPublicAvailability,
+  seedLegacyCommunicationActivities,
   type CommunicationIntegrationContract,
 } from './communication/integration';
 import {
@@ -151,7 +152,7 @@ export default function App({
       updatedAt: Date.now(),
       communication: communicationProgress,
       communicationActivities: {
-        ...current.communicationActivities,
+        ...seedLegacyCommunicationActivities(current, communication),
         [activityId]: communicationProgress,
       },
     }));
