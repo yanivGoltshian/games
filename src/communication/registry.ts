@@ -47,7 +47,7 @@ export const COMMUNICATION_SHELF_REGISTRY = [
     path: '/communication/toy-phone',
     palette: 'leaf',
     title: {
-      he: 'טלפון צעצוע',
+      he: 'טֵלֵפוֹן צַעֲצוּעַ',
       en: 'Toy Phone',
     },
   },

@@ -13,6 +13,7 @@ import {
   WORD_TRAIN_INSTALLED_CONTENT,
 } from '../content/syllableTrain';
 import { STORY_THAT_WAITS_VERSION } from '../content/storyThatWaits';
+import { TOY_PHONE_CONTENT_VERSION } from '../content/toyPhone';
 import { INITIAL_WORD_TRAIN_METRICS } from '../games/wordTrainMetrics';
 import {
   applyWordTrainCommunicationMetrics,
@@ -79,16 +80,16 @@ function integration(
 }
 
 describe('communication integration selectors', () => {
-  it('publishes only the production Peek, Train, and Story doors with exact installed locale readiness', () => {
+  it('publishes production Peek, Train, Toy Phone, and Story doors with exact installed locale readiness', () => {
     const result = evaluateCommunicationPublicAvailability(communicationIntegration);
 
     expect(communicationIntegration.release.explicitlyEnabled).toEqual({
       peek: true,
       train: true,
-      phone: false,
+      phone: true,
       story: true,
     });
-    expect(Object.keys(communicationIntegration.games)).toEqual(['peek', 'train', 'story']);
+    expect(Object.keys(communicationIntegration.games)).toEqual(['peek', 'train', 'phone', 'story']);
     expect(communicationIntegration.release.readiness.peek).toEqual({
       'he-IL': {
         status: 'ready',
@@ -140,8 +141,25 @@ describe('communication integration selectors', () => {
         locale: 'en-GB',
       },
     });
+    expect(communicationIntegration.release.readiness.phone).toEqual({
+      'he-IL': {
+        status: 'ready',
+        contentVersion: TOY_PHONE_CONTENT_VERSION,
+        locale: 'he-IL',
+      },
+      'en-US': {
+        status: 'ready',
+        contentVersion: TOY_PHONE_CONTENT_VERSION,
+        locale: 'en-US',
+      },
+      'en-GB': {
+        status: 'ready',
+        contentVersion: TOY_PHONE_CONTENT_VERSION,
+        locale: 'en-GB',
+      },
+    });
     expect(result.available).toBe(true);
-    expect(result.publicActivityIds).toEqual(['peek', 'train', 'story']);
+    expect(result.publicActivityIds).toEqual(['peek', 'train', 'phone', 'story']);
     expect(result.activities).toEqual([
       {
         activityId: 'peek',
@@ -159,10 +177,10 @@ describe('communication integration selectors', () => {
       },
       {
         activityId: 'phone',
-        publiclyAvailable: false,
-        explicitlyEnabled: false,
-        componentRegistered: false,
-        contentReady: false,
+        publiclyAvailable: true,
+        explicitlyEnabled: true,
+        componentRegistered: true,
+        contentReady: true,
       },
       {
         activityId: 'story',
@@ -313,14 +331,14 @@ describe('communication integration selectors', () => {
     expect(JSON.stringify(items)).not.toMatch(/url|asset|recording|transcript|accuracy|completion/i);
   });
 
-  it('does not expose disabled Phone in release caregiver items', () => {
+  it('exposes production communication items in fixed registry order', () => {
     const items = buildCommunicationCaregiverItems(
       communicationIntegration,
       createInitialProgress(false, 1),
       evaluateCommunicationRelease(communicationIntegration.release),
     );
 
-    expect(items.map((item) => item.activityId)).toEqual(['peek', 'train', 'story']);
+    expect(items.map((item) => item.activityId)).toEqual(['peek', 'train', 'phone', 'story']);
   });
 
   it('uses legacy matching communication progress for the released Train item', () => {

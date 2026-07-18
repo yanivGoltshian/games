@@ -41,6 +41,10 @@ describe('child navigation', () => {
       kind: 'communication-game',
       activityId: 'peek',
     });
+    expect(parseHash('#/communication/toy-phone')).toEqual({
+      kind: 'communication-game',
+      activityId: 'phone',
+    });
     expect(parseHash('#/communication/story-that-waits')).toEqual({
       kind: 'communication-game',
       activityId: 'story',
@@ -61,6 +65,17 @@ describe('child navigation', () => {
       kind: 'home',
     });
     expect(resolveRouteForCommunicationAvailability(game, ['train'])).toEqual(game);
+    expect(resolveRouteForCommunicationAvailability(
+      parseHash('#/communication/toy-phone'),
+      ['peek', 'train', 'phone'],
+    )).toEqual({
+      kind: 'communication-game',
+      activityId: 'phone',
+    });
+    expect(resolveRouteForCommunicationAvailability(
+      parseHash('#/communication/story-that-waits'),
+      ['peek', 'train', 'phone'],
+    )).toEqual({ kind: 'home' });
   });
 
   it('keeps Phone routes closed while Story is released through availability', () => {

@@ -39,16 +39,20 @@ export function hasNiqqud(value: string): boolean {
 }
 
 export function getHebrewPronunciationSkeleton(source: string): string {
-  const replacements = learningConcepts.flatMap((concept) => {
-    const pairs = [[concept.he, stripNiqqud(concept.spokenHe)]] as Array<[string, string]>;
-    if (concept.quantity) {
-      pairs.push(
-        [concept.quantity.he.plural, stripNiqqud(concept.quantity.he.pluralSpoken)],
-        [concept.quantity.he.countedPlural, stripNiqqud(concept.quantity.he.countedPluralSpoken)],
-      );
-    }
-    return pairs;
-  }).filter(([visual, spoken]) => visual !== spoken)
+  const replacements: Array<[string, string]> = [
+    ['היי', 'הי'] as [string, string],
+    ['ביי', 'בי'] as [string, string],
+    ...learningConcepts.flatMap((concept) => {
+      const pairs = [[concept.he, stripNiqqud(concept.spokenHe)]] as Array<[string, string]>;
+      if (concept.quantity) {
+        pairs.push(
+          [concept.quantity.he.plural, stripNiqqud(concept.quantity.he.pluralSpoken)],
+          [concept.quantity.he.countedPlural, stripNiqqud(concept.quantity.he.countedPluralSpoken)],
+        );
+      }
+      return pairs;
+    }),
+  ].filter(([visual, spoken]) => visual !== spoken)
     .sort(([left], [right]) => right.length - left.length);
 
   return replacements.reduce(
@@ -300,6 +304,26 @@ export const HEBREW_PRONUNCIATIONS: Readonly<Record<string, string>> = {
     'שׁוֹן, יוֹפִי שֶׁנִּיסִיתָ, חֲמוּדִי. עוֹד נִיסָּיוֹן קָטָן.',
   'שון, כל ניסיון עוזר לנו ללמוד. בוא נמשיך.':
     'שׁוֹן, כָּל נִיסָּיוֹן עוֹזֵר לָנוּ לִלְמוֹד. בּוֹא נַמְשִׁיךְ.',
+
+  // Toy Phone complete utterances.
+  'שלום! אני הברווז.': 'שָׁלוֹם! אֲנִי הַבַּרְוָז.',
+  'אפשר להראות לי את הכדור?': 'אֶפְשָׁר לְהַרְאוֹת לִי אֶת הַכַּדּוּר?',
+  'תודה! להתראות!': 'תּוֹדָה! לְהִתְרָאוֹת!',
+  'היי! אני הארנב.': 'הַי! אֲנִי הָאַרְנָב.',
+  'אפשר להראות לי את התפוח?': 'אֶפְשָׁר לְהַרְאוֹת לִי אֶת הַתַּפּוּחַ?',
+  'תודה רבה! ביי ביי!': 'תּוֹדָה רַבָּה! בַּי בַּי!',
+  'שלום לך! אני החתול.': 'שָׁלוֹם לְךָ! אֲנִי הַחָתוּל.',
+  'אפשר להראות לי את הבננה?': 'אֶפְשָׁר לְהַרְאוֹת לִי אֶת הַבָּנָנָה?',
+  'איזה יופי! להתראות!': 'אֵיזֶה יוֹפִי! לְהִתְרָאוֹת!',
+  'היי לך! אני הכלב.': 'הַי לְךָ! אֲנִי הַכֶּלֶב.',
+  'אפשר להראות לי את האוטו?': 'אֶפְשָׁר לְהַרְאוֹת לִי אֶת הָאוֹטוֹ?',
+  'תודה שעזרת לי! ביי ביי!': 'תּוֹדָה שֶׁעָזַרְתָּ לִי! בַּי בַּי!',
+  'שלום שלום! אני הפיל.': 'שָׁלוֹם שָׁלוֹם! אֲנִי הַפִּיל.',
+  'אפשר להראות לי את הנעל?': 'אֶפְשָׁר לְהַרְאוֹת לִי אֶת הַנַּעַל?',
+  'נהדר! נתראה בפעם הבאה!': 'נֶהְדָּר! נִתְרָאֶה בַּפַּעַם הַבָּאָה!',
+  'היי! אני הכלבלב, החבר שלך.': 'הַי! אֲנִי הַכְּלַבְלַב, הַחָבֵר שֶׁלְּךָ.',
+  'אפשר להראות לי את התפוז?': 'אֶפְשָׁר לְהַרְאוֹת לִי אֶת הַתַּפּוּז?',
+  'היה לי כיף! להתראות!': 'הָיָה לִי כֵּיף! לְהִתְרָאוֹת!',
 
   // Silly Alien (החייזר המבולבל) — broken words + narration.
   // Staged for the offline speech pass; not yet in the recorded catalog.
