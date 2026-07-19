@@ -9,7 +9,7 @@ import {
 import { CelebrationArt } from '../art/celebrations';
 import { LEVEL_UP_SPEECH } from '../content/levelUpSpeech';
 import { REAL_WORLD_PAUSE_EN, REAL_WORLD_PAUSE_HE, type PraiseTier } from '../content/praise';
-import type { InteractionScope } from '../domain/interactionScope';
+import type { InteractionMediaScope } from '../domain/interactionMedia';
 import type { LevelRecommendation, ToddlerSettings } from '../domain/types';
 import { selectCelebrationVariant, type CelebrationVariant } from '../games/celebrationVariants';
 import { selectPraiseSegments } from '../games/praiseSpeech';
@@ -37,7 +37,7 @@ export interface SuccessOverlayProps {
   beforeSpeech?: Promise<SpeechResult>;
   coordinatedSpeech?: {
     intentId: string;
-    scope: InteractionScope;
+    scope: InteractionMediaScope;
   };
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;

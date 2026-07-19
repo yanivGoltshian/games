@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CaregiverGate } from './components/CaregiverGate';
 import { CaregiverPanel } from './components/CaregiverPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -14,7 +9,7 @@ import type { DomainKey, RecordedRound, ToddlerSettings } from './domain/types';
 import { clearProgress, loadProgress, saveProgress } from './services/storage';
 import { soundService } from './services/sound';
 import { speechService } from './services/speech';
-import { parseHash } from './routes';
+import { isRetiredActivityHash, parseHash } from './routes';
 import { CountingGame } from './games/CountingGame';
 import { ListeningGame } from './games/ListeningGame';
 import { MemoryGame } from './games/MemoryGame';
@@ -28,6 +23,10 @@ function navigate(path: string) {
   window.location.hash = path;
 }
 
+function replaceHashWithoutMedia(path: string) {
+  window.history.replaceState(window.history.state, '', `#${path}`);
+}
+
 export default function App() {
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [progress, setProgress] = useState(() => loadProgress(prefersReducedMotion));
@@ -37,8 +36,7 @@ export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
   const [caregiverUnlocked, setCaregiverUnlocked] = useState(false);
   const [speechStatus, setSpeechStatus] = useState(() => speechService.getStatus());
-  const requestedRoute = useMemo(() => parseHash(requestedHash), [requestedHash]);
-  const route = requestedRoute;
+  const route = useMemo(() => parseHash(requestedHash), [requestedHash]);
 
   useEffect(() => {
     if (!window.location.hash) {
@@ -50,15 +48,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (route.kind !== 'home' || !isRetiredActivityHash(requestedHash)) return;
+    replaceHashWithoutMedia('/');
+    setRequestedHash('#/');
+  }, [requestedHash, route.kind]);
+
+  useEffect(() => {
     saveProgress(progress);
   }, [progress]);
 
   useEffect(() => speechService.subscribe(setSpeechStatus), []);
 
   useEffect(() => {
-    const englishChildRoute = (
-      route.kind === 'game'
-    ) && progress.settings.languageMode === 'en';
+    const englishChildRoute = route.kind === 'game' && progress.settings.languageMode === 'en';
     document.documentElement.lang = englishChildRoute ? 'en' : 'he';
     document.documentElement.dir = englishChildRoute ? 'ltr' : 'rtl';
     document.body.dataset.reducedMotion = progress.settings.reducedMotion ? 'true' : 'false';
@@ -155,9 +157,7 @@ export default function App() {
     );
   }
 
-  const routeKey = route.kind === 'game'
-    ? `game:${route.domain}`
-    : route.kind;
+  const routeKey = route.kind === 'game' ? `game:${route.domain}` : route.kind;
 
   return (
     <div

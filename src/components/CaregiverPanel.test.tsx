@@ -128,7 +128,7 @@ describe('CaregiverPanel child name', () => {
     expect(container.textContent).toContain('Azure אינו מסווג קול ילד עברי');
   });
 
-  it('shows only the seven retained game metrics after removing the communication shelf', async () => {
+  it('shows exactly seven game progress cards without retired activity metrics', async () => {
     await act(async () => {
       root.render(
         <CaregiverPanel
@@ -141,7 +141,7 @@ describe('CaregiverPanel child name', () => {
     });
 
     expect(container.querySelectorAll('.domain-progress-item')).toHaveLength(7);
-    expect(container.querySelector('.communication-caregiver-group')).toBeNull();
     expect(container.textContent).not.toContain('משחקי תקשורת');
+    expect(container.textContent).not.toContain('מוכנות תוכן');
   });
 });

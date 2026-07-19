@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialSettings } from '../domain/progression';
-import { createInteractionLocaleLock, type InteractionScope } from '../domain/interactionScope';
+import { createInteractionLocaleLock, type InteractionMediaScope } from '../domain/interactionMedia';
 import type { SpeechRequestOptions, SpeechResult, SpeechSegment } from './speech';
 import {
   createInteractionMediaUnits,
@@ -52,7 +52,7 @@ class FakeSpeechBackend implements InteractionSpeechBackend {
   }
 }
 
-const scope: InteractionScope = {
+const scope: InteractionMediaScope = {
   activityId: 'counting',
   sessionId: 'session-1',
   roundId: 'round-1',

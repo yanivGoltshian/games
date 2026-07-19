@@ -8,7 +8,7 @@ import type {
 import type { CelebrationVariant } from './celebrationVariants';
 import type { SpeechResult, SpeechSegment, SpeechStatus } from '../services/speech';
 import type { PraiseTier } from '../content/praise';
-import type { InteractionScope } from '../domain/interactionScope';
+import type { InteractionMediaScope } from '../domain/interactionMedia';
 
 export interface ToddlerGameProps {
   domainProgress: DomainProgress;
@@ -27,7 +27,7 @@ export interface CelebrationInfo {
   beforeSpeech?: Promise<SpeechResult>;
   coordinatedSpeech?: {
     intentId: string;
-    scope: InteractionScope;
+    scope: InteractionMediaScope;
   };
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;

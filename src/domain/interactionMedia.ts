@@ -1,6 +1,6 @@
 import type { SpeechLocale } from './types';
 
-export interface InteractionScope {
+export interface InteractionMediaScope {
   activityId: string;
   sessionId: string;
   roundId: string;
@@ -10,14 +10,14 @@ export interface InteractionScope {
 export type InteractionLocaleLockBoundary = 'session' | 'round' | 'step';
 
 export interface InteractionLocaleLock {
-  scope: InteractionScope;
+  scope: InteractionMediaScope;
   boundary: InteractionLocaleLockBoundary;
   locale: SpeechLocale;
 }
 
 export type InteractionInputSource = 'touch' | 'voice' | 'automatic';
 
-export function interactionScopeKey(scope: InteractionScope): string {
+export function interactionScopeKey(scope: InteractionMediaScope): string {
   return [
     scope.activityId,
     scope.sessionId,
@@ -27,14 +27,14 @@ export function interactionScopeKey(scope: InteractionScope): string {
 }
 
 export function sameInteractionScope(
-  left: InteractionScope,
-  right: InteractionScope,
+  left: InteractionMediaScope,
+  right: InteractionMediaScope,
 ): boolean {
   return interactionScopeKey(left) === interactionScopeKey(right);
 }
 
 export function createInteractionLocaleLock(
-  scope: InteractionScope,
+  scope: InteractionMediaScope,
   locale: SpeechLocale,
   boundary: InteractionLocaleLockBoundary = 'round',
 ): InteractionLocaleLock {
@@ -42,7 +42,7 @@ export function createInteractionLocaleLock(
 }
 
 export function interactionLocaleUnitKey(
-  scope: InteractionScope,
+  scope: InteractionMediaScope,
   boundary: InteractionLocaleLockBoundary,
 ): string {
   const parts = [scope.activityId, scope.sessionId];
@@ -55,9 +55,9 @@ export function interactionLocaleUnitKey(
   return parts.join('\u0000');
 }
 
-export function localeLockMatches(
+export function interactionLocaleLockMatches(
   lock: InteractionLocaleLock,
-  scope: InteractionScope,
+  scope: InteractionMediaScope,
   locale: SpeechLocale,
 ): boolean {
   return (

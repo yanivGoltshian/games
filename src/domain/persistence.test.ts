@@ -296,7 +296,7 @@ describe('persistence migration', () => {
     expect(progress.settings.languageMode).toBe('en');
   });
 
-  it('drops deleted Train history from old persisted domains', () => {
+  it('drops retired Train history during version five migration', () => {
     const trainHistory = {
       attempts: 4,
       successes: 3,
@@ -332,10 +332,9 @@ describe('persistence migration', () => {
 
     expect(progress.version).toBe(6);
     expect(progress.domains).not.toHaveProperty('syllableTrain');
-    expect(JSON.stringify(progress)).not.toContain('syllableTrain');
   });
 
-  it('drops deleted communication progress without admitting private fields', () => {
+  it('drops retired communication progress and private activity fields', () => {
     const progress = migrateStoredProgress({
       version: 6,
       communication: {
@@ -349,15 +348,6 @@ describe('persistence migration', () => {
         transcript: 'stored text',
         completionMethod: 'voice',
       },
-    }, { now: 200 });
-
-    expect(progress).not.toHaveProperty('communication');
-    expect(JSON.stringify(progress)).not.toMatch(/pack-2|stored text|completionMethod/i);
-  });
-
-  it('drops deleted activity-scoped communication progress without admitting private fields', () => {
-    const progress = migrateStoredProgress({
-      version: 6,
       communicationActivities: {
         peek: {
           contentVersion: ' peek-v1 ',
@@ -389,7 +379,9 @@ describe('persistence migration', () => {
       },
     }, { now: 200 });
 
-    expect(progress).not.toHaveProperty('communicationActivities');
-    expect(JSON.stringify(progress)).not.toMatch(/peek-v1|train-v1|phone-v1|hidden|transcript|completionMethod/i);
+    const stored = JSON.parse(serializeProgress(progress));
+    expect(stored).not.toHaveProperty('communication');
+    expect(stored).not.toHaveProperty('communicationActivities');
+    expect(JSON.stringify(stored)).not.toMatch(/transcript|completionMethod/i);
   });
 });

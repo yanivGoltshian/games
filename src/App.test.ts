@@ -2,10 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { PORTAL_ART } from './art/portalRegistry';
 import { gameMeta } from './content/games';
 import { DOMAIN_KEYS } from './domain/types';
-import { parseHash } from './routes';
+import { isRetiredActivityHash, parseHash } from './routes';
+
+const RETIRED_ROUTES = [
+  '#/communication',
+  '#/communication/peek-and-discover',
+  '#/communication/word-train',
+  '#/communication/toy-phone',
+  '#/communication/story-that-waits',
+  '#/games/syllableTrain',
+  '#/games/word-stretch',
+] as const;
 
 describe('child navigation', () => {
-  it('exposes seven direct game destinations with art and metadata', () => {
+  it('exposes exactly seven direct game destinations with art and metadata', () => {
     expect(DOMAIN_KEYS).toEqual([
       'listening',
       'counting',
@@ -23,25 +33,22 @@ describe('child navigation', () => {
     }
   });
 
-  it('falls back safely for unknown or malformed routes', () => {
+  it('fails every retired activity route closed to home', () => {
+    for (const route of RETIRED_ROUTES) {
+      expect(parseHash(route), route).toEqual({ kind: 'home' });
+      expect(isRetiredActivityHash(route), route).toBe(true);
+    }
+  });
+
+  it('recognizes retired communication subpaths and query strings for normalization', () => {
+    expect(isRetiredActivityHash('#/communication/unknown?mode=child')).toBe(true);
+    expect(isRetiredActivityHash('#/communication/toy-phone/')).toBe(true);
+    expect(isRetiredActivityHash('#/communications')).toBe(false);
+  });
+
+  it('falls back safely for other unknown or malformed routes', () => {
     expect(parseHash('#/games/unknown')).toEqual({ kind: 'home' });
-    expect(parseHash('#/games/word-stretch')).toEqual({ kind: 'home' });
     expect(parseHash('#/games/first-sound-factory')).toEqual({ kind: 'home' });
     expect(parseHash('')).toEqual({ kind: 'home' });
-  });
-
-  it('fails every old communication route closed to Home', () => {
-    expect(parseHash('#/communication')).toEqual({ kind: 'home' });
-    expect(parseHash('#/communication/peek-and-discover')).toEqual({ kind: 'home' });
-    expect(parseHash('#/communication/toy-phone')).toEqual({ kind: 'home' });
-    expect(parseHash('#/communication/story-that-waits')).toEqual({ kind: 'home' });
-    expect(parseHash('#/communication/word-train')).toEqual({ kind: 'home' });
-    expect(parseHash('#/communication/unknown')).toEqual({ kind: 'home' });
-    expect(parseHash('#/communication/toy-phone/')).toEqual({ kind: 'home' });
-    expect(parseHash('#/communication/toy-phone?mode=child')).toEqual({ kind: 'home' });
-  });
-
-  it('fails the legacy Train URL closed instead of restoring Train', () => {
-    expect(parseHash('#/games/syllableTrain')).toEqual({ kind: 'home' });
   });
 });

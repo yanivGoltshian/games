@@ -6,8 +6,16 @@ export type Route =
   | { kind: 'caregiver' }
   | { kind: 'game'; domain: DomainKey };
 
-export function parseHash(hash: string): Route {
+const RETIRED_GAME_PATH_PATTERN =
+  /^\/games\/(?:syllableTrain|word-stretch)(?:$|[/?])/;
+
+function hashPath(hash: string): string {
   const cleaned = (hash.startsWith('#') ? hash.slice(1) : hash) || '/';
+  return cleaned.split('?', 1)[0] ?? '/';
+}
+
+export function parseHash(hash: string): Route {
+  const cleaned = hashPath(hash);
   if (cleaned === '/caregiver') {
     return { kind: 'caregiver' };
   }
@@ -19,4 +27,12 @@ export function parseHash(hash: string): Route {
     }
   }
   return { kind: 'home' };
+}
+
+export function isRetiredActivityHash(hash: string): boolean {
+  const path = hashPath(hash);
+  return (
+    /^\/communication(?:$|[/?])/.test(path)
+    || RETIRED_GAME_PATH_PATTERN.test(path)
+  );
 }

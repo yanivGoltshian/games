@@ -36,7 +36,7 @@ describe('HomeScreen', () => {
     expect(html).toMatch(/portal-card__sparkles[^>]*aria-hidden="true"/);
   });
 
-  it('keeps the exact current seven tiles while language-game replacement is undecided', () => {
+  it('renders exactly the seven current game tiles without a shelf', () => {
     const document = new DOMParser().parseFromString(renderHome(), 'text/html');
     const domains = [...document.querySelectorAll<HTMLElement>('.portal-grid__item')]
       .map((item) => item.dataset.domain);
@@ -50,17 +50,10 @@ describe('HomeScreen', () => {
       'numberPairs',
       'sillyAlien',
     ]);
-  });
-
-  it('does not restore Train, Word Stretch, or the Communication Shelf', () => {
-    const document = new DOMParser().parseFromString(renderHome(), 'text/html');
-    const domains = [...document.querySelectorAll<HTMLElement>('.portal-grid__item')]
-      .map((item) => item.dataset.domain);
-
-    expect(domains).toHaveLength(7);
-    expect(document.body.textContent).not.toContain('רכבת המילים');
     expect(document.body.textContent).not.toContain('מדף התקשורת');
-    expect(document.body.textContent).not.toMatch(/Word Stretch|מתיחת מילים/i);
+    expect(document.body.textContent).not.toContain('רכבת המילים');
+    expect(document.body.textContent).not.toContain('מציצים ומגלים');
+    expect(document.body.textContent).not.toContain('טלפון צעצוע');
   });
 });
 

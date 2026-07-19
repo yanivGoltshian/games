@@ -46,7 +46,7 @@ describe('recorded speech asset coverage', () => {
     }
   });
 
-  it('pre-caches the manifest and the three retained legacy sprites for installed offline use', () => {
+  it('pre-caches the manifest and three immutable legacy sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
     expect(serviceWorker).toContain("sean-learning-adventure-v25");
@@ -54,7 +54,12 @@ describe('recorded speech asset coverage', () => {
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");
     expect(serviceWorker).toContain("'/speech/en-GB.mp3'");
-    expect(serviceWorker).not.toContain('toy-phone');
+    const appShell = serviceWorker.match(/const APP_SHELL = \[(.*?)\];/s)?.[1] ?? '';
+    expect(appShell).not.toContain('toy-phone');
+    expect(appShell).not.toContain('story-that-waits');
+    expect(serviceWorker).toContain('RETIRED_ASSET_PATHS');
+    expect(serviceWorker).toContain('cache.delete(path)');
+    expect(serviceWorker).toContain("status: 404");
     for (const concept of learningConcepts) {
       expect(serviceWorker).toContain(`'${concept.image}'`);
     }
@@ -65,7 +70,7 @@ describe('recorded speech pronunciation layer', () => {
   const catalog = collectRecordedSpeechCatalog();
   const byLocale = (locale: string) => catalog.filter((entry) => entry.locale === locale);
 
-  it('keeps a stable count of 490 unique phrases per locale after removing communication activities', () => {
+  it('keeps exactly 490 unique phrases per locale', () => {
     for (const locale of ['he-IL', 'en-US', 'en-GB']) {
       const entries = byLocale(locale);
       expect(entries).toHaveLength(490);
@@ -106,13 +111,13 @@ describe('recorded speech pronunciation layer', () => {
     }
   });
 
-  it('does not include removed Toy Phone dedicated sprite entries', () => {
+  it('contains exactly 1,470 clips and no retired sprites', () => {
     const manifest = JSON.parse(
       readFileSync(resolve('public/speech/manifest.json'), 'utf8'),
     ) as Manifest;
     expect(Object.keys(manifest.entries)).toHaveLength(1470);
-
     expect(JSON.stringify(manifest.entries)).not.toContain('toy-phone');
+    expect(JSON.stringify(manifest.entries)).not.toContain('story-that-waits');
   });
 
   it('never points the source text, English entries, or manifest lookup keys', () => {

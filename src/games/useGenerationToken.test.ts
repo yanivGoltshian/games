@@ -5,7 +5,7 @@ import {
 } from './useGenerationToken';
 
 const firstScope = {
-  activityId: 'train',
+  activityId: 'counting',
   sessionId: 'session-1',
   roundId: 'round-1',
   stepId: 'step-1',

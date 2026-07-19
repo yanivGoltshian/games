@@ -1,19 +1,19 @@
 import { useEffect, useRef } from 'react';
 import {
   interactionScopeKey,
-  type InteractionScope,
-} from '../domain/interactionScope';
+  type InteractionMediaScope,
+} from '../domain/interactionMedia';
 
 export interface GenerationToken {
   readonly generation: number;
-  readonly scope: InteractionScope;
+  readonly scope: InteractionMediaScope;
 }
 
 export class GenerationTokenController {
   private generation = 0;
   private currentToken: GenerationToken | null = null;
 
-  issue(scope: InteractionScope): GenerationToken {
+  issue(scope: InteractionMediaScope): GenerationToken {
     this.generation += 1;
     this.currentToken = {
       generation: this.generation,
@@ -61,7 +61,7 @@ export interface GenerationTokenHandle {
   invalidate: () => void;
 }
 
-export function useGenerationToken(scope: InteractionScope): GenerationTokenHandle {
+export function useGenerationToken(scope: InteractionMediaScope): GenerationTokenHandle {
   const controllerRef = useRef<GenerationTokenController | null>(null);
   const tokenRef = useRef<{ key: string; token: GenerationToken } | null>(null);
   controllerRef.current ??= new GenerationTokenController();

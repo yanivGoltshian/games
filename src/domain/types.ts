@@ -63,7 +63,6 @@ export interface DomainProgress {
 }
 
 export type DomainProgressMap = Record<DomainKey, DomainProgress>;
-
 export interface AppProgress {
   version: number;
   updatedAt: number;

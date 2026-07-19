@@ -1,11 +1,11 @@
 import {
-  createInteractionLocaleLock,
   interactionScopeKey,
-  localeLockMatches,
+  createInteractionLocaleLock,
+  interactionLocaleLockMatches,
+  type InteractionMediaScope,
   type InteractionInputSource,
   type InteractionLocaleLock,
-  type InteractionScope,
-} from '../domain/interactionScope';
+} from '../domain/interactionMedia';
 import type { ToddlerSettings } from '../domain/types';
 import { subscribeAppLifecycle } from '../platform/useAppLifecycle';
 import {
@@ -15,7 +15,7 @@ import {
   type SpeechSegment,
 } from './speech';
 import {
-  interactionMicrophoneGuard,
+  microphonePlaybackGuard,
   type MicrophonePlaybackGuardContract,
   type PlaybackGuardOutcome,
 } from './microphonePlaybackGuard';
@@ -35,13 +35,13 @@ export type InteractionCancellationReason =
 interface InteractionMediaRequestBase {
   intentId: string;
   source: InteractionInputSource;
-  scope: InteractionScope;
+  scope: InteractionMediaScope;
   audioClass: InteractionAudioClass;
   settings: ToddlerSettings;
 }
 
 export interface InteractionMediaUnit {
-  scope: InteractionScope;
+  scope: InteractionMediaScope;
   localeLock: InteractionLocaleLock;
   segment: SpeechSegment;
 }
@@ -104,11 +104,11 @@ function mapSpeechOutcome(status: SpeechResult['status']): InteractionMediaOutco
   }
 }
 
-function sameActivity(left: InteractionScope, right: InteractionScope): boolean {
+function sameActivity(left: InteractionMediaScope, right: InteractionMediaScope): boolean {
   return left.activityId === right.activityId && left.sessionId === right.sessionId;
 }
 
-function sameRound(left: InteractionScope, right: InteractionScope): boolean {
+function sameRound(left: InteractionMediaScope, right: InteractionMediaScope): boolean {
   return (
     sameActivity(left, right)
     && left.roundId === right.roundId
@@ -120,7 +120,7 @@ function intentWaitsForMandatory(reason: InteractionCancellationReason): boolean
 }
 
 export function createInteractionMediaUnits(
-  scope: InteractionScope,
+  scope: InteractionMediaScope,
   segments: readonly SpeechSegment[],
 ): InteractionMediaUnit[] {
   return segments.map((segment, index) => {
@@ -145,7 +145,7 @@ function readRequestSegments(request: InteractionMediaRequest): {
       segments: request.units.map((unit) => unit.segment),
       valid: request.units.every((unit) => (
         sameRound(request.scope, unit.scope)
-        && localeLockMatches(unit.localeLock, unit.scope, unit.segment.locale)
+        && interactionLocaleLockMatches(unit.localeLock, unit.scope, unit.segment.locale)
       )),
     };
   }
@@ -153,7 +153,7 @@ function readRequestSegments(request: InteractionMediaRequest): {
   return {
     segments: request.segments,
     valid: (
-      localeLockMatches(request.localeLock, request.scope, request.localeLock.locale)
+      interactionLocaleLockMatches(request.localeLock, request.scope, request.localeLock.locale)
       && request.segments.every((segment) => segment.locale === request.localeLock.locale)
     ),
   };
@@ -166,7 +166,7 @@ export class InteractionMediaCoordinator {
 
   constructor(
     private readonly speech: InteractionSpeechBackend = speechService,
-    private readonly microphoneGuard: MicrophonePlaybackGuardContract = interactionMicrophoneGuard,
+    private readonly microphoneGuard: MicrophonePlaybackGuardContract = microphonePlaybackGuard,
     subscribeLifecycle: typeof subscribeAppLifecycle = subscribeAppLifecycle,
   ) {
     this.unsubscribeLifecycle = subscribeLifecycle((state) => {
@@ -208,7 +208,7 @@ export class InteractionMediaCoordinator {
     });
   }
 
-  notifyInteraction(scope: InteractionScope, reason: InteractionCancellationReason): void {
+  notifyInteraction(scope: InteractionMediaScope, reason: InteractionCancellationReason): void {
     const relevant = (entry: MediaEntry): boolean => (
       reason === 'background'
       || reason === 'exit'

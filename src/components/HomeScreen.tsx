@@ -4,7 +4,7 @@ import { PuppyMascotArt } from '../art/mascot';
 import { gameMeta } from '../content/games';
 import { childGreeting } from '../domain/childName';
 import type { DomainKey, ToddlerSettings } from '../domain/types';
-import { homeItems } from './homeItems';
+import { DOMAIN_KEYS } from '../domain/types';
 
 interface HomeScreenProps {
   onOpenGame: (domain: DomainKey) => void;
@@ -12,9 +12,9 @@ interface HomeScreenProps {
 }
 
 /**
- * Child home: the seven retained stable-identity game portals are visible together.
+ * Child home: all seven stable-identity game portals are visible together.
  * No swipe knowledge, reading, progress dashboard, or caregiver copy is
- * required to discover and launch an activity.
+ * required to discover and launch a game.
  */
 export function HomeScreen({
   onOpenGame,
@@ -31,11 +31,9 @@ export function HomeScreen({
         <h1>{greeting}</h1>
       </header>
       <ul className="portal-grid">
-        {homeItems().map((item, index) => {
-          const { domain } = item;
+        {DOMAIN_KEYS.map((domain, index) => {
           const meta = gameMeta[domain];
           const PortalArt = PORTAL_ART[domain];
-          const { title } = meta;
           return (
             <li
               key={domain}
@@ -46,11 +44,11 @@ export function HomeScreen({
                 className={`portal-card ${meta.accentClass}`}
                 style={{ '--enter-index': index } as CSSProperties}
                 onClick={() => onOpenGame(domain)}
-                aria-label={title}
+                aria-label={meta.title}
                 type="button"
               >
                 <PortalArt className="portal-card__art" />
-                <span className="portal-card__label">{title}</span>
+                <span className="portal-card__label">{meta.title}</span>
                 <span className="portal-card__sparkles" aria-hidden="true">
                   <i />
                   <i />
