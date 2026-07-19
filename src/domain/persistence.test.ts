@@ -296,7 +296,7 @@ describe('persistence migration', () => {
     expect(progress.settings.languageMode).toBe('en');
   });
 
-  it('migrates version five without changing current Train history', () => {
+  it('drops deleted Train history from old persisted domains', () => {
     const trainHistory = {
       attempts: 4,
       successes: 3,
@@ -332,17 +332,10 @@ describe('persistence migration', () => {
 
     expect(progress.version).toBe(6);
     expect(progress.domains).not.toHaveProperty('syllableTrain');
-    expect(progress.communication).toEqual({
-      version: 1,
-      contentVersion: null,
-      sessionsCompleted: 0,
-      roundsSeen: 0,
-      recentContentIds: [],
-      lastPlayedAt: 0,
-    });
+    expect(JSON.stringify(progress)).not.toContain('syllableTrain');
   });
 
-  it('sanitizes communication progress without admitting extra fields', () => {
+  it('drops deleted communication progress without admitting private fields', () => {
     const progress = migrateStoredProgress({
       version: 6,
       communication: {
@@ -358,18 +351,11 @@ describe('persistence migration', () => {
       },
     }, { now: 200 });
 
-    expect(progress.communication).toEqual({
-      version: 1,
-      contentVersion: 'pack-2',
-      sessionsCompleted: 2,
-      roundsSeen: 4,
-      recentContentIds: ['a', 'b'],
-      lastPlayedAt: 120,
-    });
-    expect(Object.keys(progress.communication)).toHaveLength(6);
+    expect(progress).not.toHaveProperty('communication');
+    expect(JSON.stringify(progress)).not.toMatch(/pack-2|stored text|completionMethod/i);
   });
 
-  it('sanitizes activity-scoped communication progress without admitting private fields', () => {
+  it('drops deleted activity-scoped communication progress without admitting private fields', () => {
     const progress = migrateStoredProgress({
       version: 6,
       communicationActivities: {
@@ -403,24 +389,7 @@ describe('persistence migration', () => {
       },
     }, { now: 200 });
 
-    expect(progress.communicationActivities).toEqual({
-      peek: {
-        version: 1,
-        contentVersion: 'peek-v1',
-        sessionsCompleted: 2,
-        roundsSeen: 3,
-        recentContentIds: ['peek-a'],
-        lastPlayedAt: 100,
-      },
-      phone: {
-        version: 1,
-        contentVersion: 'phone-v1',
-        sessionsCompleted: 0,
-        roundsSeen: 1,
-        recentContentIds: ['phone'],
-        lastPlayedAt: 300,
-      },
-    });
-    expect(JSON.stringify(progress.communicationActivities)).not.toMatch(/hidden|transcript|completionMethod/i);
+    expect(progress).not.toHaveProperty('communicationActivities');
+    expect(JSON.stringify(progress)).not.toMatch(/peek-v1|train-v1|phone-v1|hidden|transcript|completionMethod/i);
   });
 });

@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react';
-import { CommunicationShelfPortalArt } from '../art/communicationShelf';
 import { PORTAL_ART } from '../art/portalRegistry';
 import { PuppyMascotArt } from '../art/mascot';
 import { gameMeta } from '../content/games';
@@ -9,26 +8,19 @@ import { homeItems } from './homeItems';
 
 interface HomeScreenProps {
   onOpenGame: (domain: DomainKey) => void;
-  onOpenCommunication: () => void;
   settings: Pick<ToddlerSettings, 'childName' | 'languageMode'>;
-  communicationAvailable?: boolean;
 }
 
 /**
- * Child home: all eight stable-identity activity portals are visible together.
+ * Child home: the seven retained stable-identity game portals are visible together.
  * No swipe knowledge, reading, progress dashboard, or caregiver copy is
  * required to discover and launch an activity.
  */
 export function HomeScreen({
   onOpenGame,
-  onOpenCommunication,
   settings,
-  communicationAvailable = false,
 }: HomeScreenProps) {
   const greeting = childGreeting(settings.childName, settings.languageMode);
-  const communicationTitle = settings.languageMode === 'en'
-    ? 'Communication Shelf'
-    : 'מדף התקשורת';
   return (
     <main
       className="page home-page"
@@ -39,22 +31,21 @@ export function HomeScreen({
         <h1>{greeting}</h1>
       </header>
       <ul className="portal-grid">
-        {homeItems(communicationAvailable).map((item, index) => {
-          const communication = item.kind === 'communication';
-          const domain = communication ? null : item.domain;
-          const meta = domain ? gameMeta[domain] : null;
-          const PortalArt = domain ? PORTAL_ART[domain] : CommunicationShelfPortalArt;
-          const title = meta?.title ?? communicationTitle;
+        {homeItems().map((item, index) => {
+          const { domain } = item;
+          const meta = gameMeta[domain];
+          const PortalArt = PORTAL_ART[domain];
+          const { title } = meta;
           return (
             <li
-              key={domain ?? 'communication'}
+              key={domain}
               className="portal-grid__item"
-              data-domain={domain ?? 'communication'}
+              data-domain={domain}
             >
               <button
-                className={`portal-card ${meta?.accentClass ?? 'accent-communication'}`}
+                className={`portal-card ${meta.accentClass}`}
                 style={{ '--enter-index': index } as CSSProperties}
-                onClick={domain ? () => onOpenGame(domain) : onOpenCommunication}
+                onClick={() => onOpenGame(domain)}
                 aria-label={title}
                 type="button"
               >
