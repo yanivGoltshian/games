@@ -296,7 +296,7 @@ describe('persistence migration', () => {
     expect(progress.settings.languageMode).toBe('en');
   });
 
-  it('migrates version five without changing current Train history', () => {
+  it('drops retired Train history during version five migration', () => {
     const trainHistory = {
       attempts: 4,
       successes: 3,
@@ -332,17 +332,9 @@ describe('persistence migration', () => {
 
     expect(progress.version).toBe(6);
     expect(progress.domains).not.toHaveProperty('syllableTrain');
-    expect(progress.communication).toEqual({
-      version: 1,
-      contentVersion: null,
-      sessionsCompleted: 0,
-      roundsSeen: 0,
-      recentContentIds: [],
-      lastPlayedAt: 0,
-    });
   });
 
-  it('sanitizes communication progress without admitting extra fields', () => {
+  it('drops retired communication progress and private activity fields', () => {
     const progress = migrateStoredProgress({
       version: 6,
       communication: {
@@ -356,22 +348,6 @@ describe('persistence migration', () => {
         transcript: 'stored text',
         completionMethod: 'voice',
       },
-    }, { now: 200 });
-
-    expect(progress.communication).toEqual({
-      version: 1,
-      contentVersion: 'pack-2',
-      sessionsCompleted: 2,
-      roundsSeen: 4,
-      recentContentIds: ['a', 'b'],
-      lastPlayedAt: 120,
-    });
-    expect(Object.keys(progress.communication)).toHaveLength(6);
-  });
-
-  it('sanitizes activity-scoped communication progress without admitting private fields', () => {
-    const progress = migrateStoredProgress({
-      version: 6,
       communicationActivities: {
         peek: {
           contentVersion: ' peek-v1 ',
@@ -403,24 +379,9 @@ describe('persistence migration', () => {
       },
     }, { now: 200 });
 
-    expect(progress.communicationActivities).toEqual({
-      peek: {
-        version: 1,
-        contentVersion: 'peek-v1',
-        sessionsCompleted: 2,
-        roundsSeen: 3,
-        recentContentIds: ['peek-a'],
-        lastPlayedAt: 100,
-      },
-      phone: {
-        version: 1,
-        contentVersion: 'phone-v1',
-        sessionsCompleted: 0,
-        roundsSeen: 1,
-        recentContentIds: ['phone'],
-        lastPlayedAt: 300,
-      },
-    });
-    expect(JSON.stringify(progress.communicationActivities)).not.toMatch(/hidden|transcript|completionMethod/i);
+    const stored = JSON.parse(serializeProgress(progress));
+    expect(stored).not.toHaveProperty('communication');
+    expect(stored).not.toHaveProperty('communicationActivities');
+    expect(JSON.stringify(stored)).not.toMatch(/transcript|completionMethod/i);
   });
 });

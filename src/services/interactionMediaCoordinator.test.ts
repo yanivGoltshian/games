@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialSettings } from '../domain/progression';
-import { createCommunicationLocaleLock, type CommunicationGameScope } from '../domain/communicationGame';
+import { createInteractionLocaleLock, type InteractionMediaScope } from '../domain/interactionMedia';
 import type { SpeechRequestOptions, SpeechResult, SpeechSegment } from './speech';
 import {
   createInteractionMediaUnits,
@@ -52,8 +52,8 @@ class FakeSpeechBackend implements InteractionSpeechBackend {
   }
 }
 
-const scope: CommunicationGameScope = {
-  activityId: 'peek',
+const scope: InteractionMediaScope = {
+  activityId: 'counting',
   sessionId: 'session-1',
   roundId: 'round-1',
   stepId: 'step-1',
@@ -71,7 +71,7 @@ function request(
     intentId,
     source,
     scope: requestScope,
-    localeLock: createCommunicationLocaleLock(requestScope, 'he-IL'),
+    localeLock: createInteractionLocaleLock(requestScope, 'he-IL'),
     audioClass,
     segments: [{ text: intentId, locale: 'he-IL' }],
     settings,
@@ -388,7 +388,7 @@ describe('interaction media coordinator', () => {
       scope,
       audioClass: 'mandatory',
       settings,
-      localeLock: createCommunicationLocaleLock(scope, 'he-IL'),
+      localeLock: createInteractionLocaleLock(scope, 'he-IL'),
       segments: [{ text: 'word', locale: 'en-US' as const }],
     };
 

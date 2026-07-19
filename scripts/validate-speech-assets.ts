@@ -30,21 +30,6 @@ const EXPECTED_SPRITES = {
     bytes: 9_036_525,
     sha256: '0cab2bba2b6db842c20c80a749d5ad7de6f7babb6aadadeb65a0536fcff38113',
   },
-  '/speech/toy-phone-he-IL-v1.mp3': {
-    count: 18,
-    bytes: 638_829,
-    sha256: '70ff4785f0e7cbabe454581dae2aac9ce70e006fa0fba971ae02b5b4cfad893d',
-  },
-  '/speech/toy-phone-en-US-v1.mp3': {
-    count: 18,
-    bytes: 594_861,
-    sha256: 'ed7c91f89581225f86206798dfff8d7c43d7b58f6979216162e4c683b5466aec',
-  },
-  '/speech/toy-phone-en-GB-v1.mp3': {
-    count: 18,
-    bytes: 587_757,
-    sha256: '3c39e6c0a49161c67fa6175e9503cac5565570383f584f7192da6a6b7866e27c',
-  },
 } as const;
 
 interface ManifestClip {
@@ -385,4 +370,4 @@ for (const [src, entries] of expectedSpriteEntries.map(([spriteSrc]) => (
   );
 }
 
-console.log(`Validated ${actualKeys.length} manifest clips and six 24 kHz mono sprites.`);
+console.log(`Validated ${actualKeys.length} manifest clips and three 24 kHz mono sprites.`);

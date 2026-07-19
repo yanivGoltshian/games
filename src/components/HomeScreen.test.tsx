@@ -9,10 +9,8 @@ import { HomeScreen } from './HomeScreen';
 
 describe('HomeScreen', () => {
   const settings = { childName: 'שון', languageMode: 'he' as const };
-  const renderHome = (communicationAvailable = false) => renderToStaticMarkup(
+  const renderHome = () => renderToStaticMarkup(
     <HomeScreen
-      communicationAvailable={communicationAvailable}
-      onOpenCommunication={() => undefined}
       onOpenGame={() => undefined}
       settings={settings}
     />,
@@ -38,8 +36,8 @@ describe('HomeScreen', () => {
     expect(html).toMatch(/portal-card__sparkles[^>]*aria-hidden="true"/);
   });
 
-  it('keeps the exact current eight tiles when communication is available', () => {
-    const document = new DOMParser().parseFromString(renderHome(true), 'text/html');
+  it('renders exactly the seven current game tiles without a shelf', () => {
+    const document = new DOMParser().parseFromString(renderHome(), 'text/html');
     const domains = [...document.querySelectorAll<HTMLElement>('.portal-grid__item')]
       .map((item) => item.dataset.domain);
 
@@ -51,27 +49,11 @@ describe('HomeScreen', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
-      'communication',
     ]);
-  });
-
-  it('does not restore Train while preserving exactly eight positions', () => {
-    const document = new DOMParser().parseFromString(renderHome(true), 'text/html');
-    const domains = [...document.querySelectorAll<HTMLElement>('.portal-grid__item')]
-      .map((item) => item.dataset.domain);
-
-    expect(domains).toEqual([
-      'listening',
-      'counting',
-      'sorting',
-      'puzzle',
-      'memory',
-      'numberPairs',
-      'sillyAlien',
-      'communication',
-    ]);
-    expect(document.body.textContent).toContain('מדף התקשורת');
+    expect(document.body.textContent).not.toContain('מדף התקשורת');
     expect(document.body.textContent).not.toContain('רכבת המילים');
+    expect(document.body.textContent).not.toContain('מציצים ומגלים');
+    expect(document.body.textContent).not.toContain('טלפון צעצוע');
   });
 });
 
@@ -80,14 +62,12 @@ describe('HomeScreen greeting', () => {
     const base = createInitialSettings();
     const hebrew = renderToStaticMarkup(
       <HomeScreen
-        onOpenCommunication={() => undefined}
         onOpenGame={() => undefined}
         settings={{ ...base, childName: 'נוֹעָה', languageMode: 'he' }}
       />,
     );
     const english = renderToStaticMarkup(
       <HomeScreen
-        onOpenCommunication={() => undefined}
         onOpenGame={() => undefined}
         settings={{ ...base, childName: 'נוֹעָה', languageMode: 'en' }}
       />,

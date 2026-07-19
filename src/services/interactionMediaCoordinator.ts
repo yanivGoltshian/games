@@ -1,11 +1,11 @@
 import {
-  communicationScopeKey,
-  createCommunicationLocaleLock,
-  localeLockMatches,
-  type CommunicationGameScope,
-  type CommunicationInputSource,
-  type CommunicationLocaleLock,
-} from '../domain/communicationGame';
+  interactionScopeKey,
+  createInteractionLocaleLock,
+  interactionLocaleLockMatches,
+  type InteractionMediaScope,
+  type InteractionInputSource,
+  type InteractionLocaleLock,
+} from '../domain/interactionMedia';
 import type { ToddlerSettings } from '../domain/types';
 import { subscribeAppLifecycle } from '../platform/useAppLifecycle';
 import {
@@ -15,7 +15,7 @@ import {
   type SpeechSegment,
 } from './speech';
 import {
-  communicationMicrophoneGuard,
+  microphonePlaybackGuard,
   type MicrophonePlaybackGuardContract,
   type PlaybackGuardOutcome,
 } from './microphonePlaybackGuard';
@@ -34,21 +34,21 @@ export type InteractionCancellationReason =
 
 interface InteractionMediaRequestBase {
   intentId: string;
-  source: CommunicationInputSource;
-  scope: CommunicationGameScope;
+  source: InteractionInputSource;
+  scope: InteractionMediaScope;
   audioClass: InteractionAudioClass;
   settings: ToddlerSettings;
 }
 
 export interface InteractionMediaUnit {
-  scope: CommunicationGameScope;
-  localeLock: CommunicationLocaleLock;
+  scope: InteractionMediaScope;
+  localeLock: InteractionLocaleLock;
   segment: SpeechSegment;
 }
 
 export type InteractionMediaRequest = InteractionMediaRequestBase & (
   | {
-    localeLock: CommunicationLocaleLock;
+    localeLock: InteractionLocaleLock;
     segments: readonly SpeechSegment[];
     units?: never;
   }
@@ -104,11 +104,11 @@ function mapSpeechOutcome(status: SpeechResult['status']): InteractionMediaOutco
   }
 }
 
-function sameActivity(left: CommunicationGameScope, right: CommunicationGameScope): boolean {
+function sameActivity(left: InteractionMediaScope, right: InteractionMediaScope): boolean {
   return left.activityId === right.activityId && left.sessionId === right.sessionId;
 }
 
-function sameRound(left: CommunicationGameScope, right: CommunicationGameScope): boolean {
+function sameRound(left: InteractionMediaScope, right: InteractionMediaScope): boolean {
   return (
     sameActivity(left, right)
     && left.roundId === right.roundId
@@ -120,7 +120,7 @@ function intentWaitsForMandatory(reason: InteractionCancellationReason): boolean
 }
 
 export function createInteractionMediaUnits(
-  scope: CommunicationGameScope,
+  scope: InteractionMediaScope,
   segments: readonly SpeechSegment[],
 ): InteractionMediaUnit[] {
   return segments.map((segment, index) => {
@@ -130,7 +130,7 @@ export function createInteractionMediaUnits(
     };
     return {
       scope: unitScope,
-      localeLock: createCommunicationLocaleLock(unitScope, segment.locale, 'step'),
+      localeLock: createInteractionLocaleLock(unitScope, segment.locale, 'step'),
       segment,
     };
   });
@@ -145,7 +145,7 @@ function readRequestSegments(request: InteractionMediaRequest): {
       segments: request.units.map((unit) => unit.segment),
       valid: request.units.every((unit) => (
         sameRound(request.scope, unit.scope)
-        && localeLockMatches(unit.localeLock, unit.scope, unit.segment.locale)
+        && interactionLocaleLockMatches(unit.localeLock, unit.scope, unit.segment.locale)
       )),
     };
   }
@@ -153,7 +153,7 @@ function readRequestSegments(request: InteractionMediaRequest): {
   return {
     segments: request.segments,
     valid: (
-      localeLockMatches(request.localeLock, request.scope, request.localeLock.locale)
+      interactionLocaleLockMatches(request.localeLock, request.scope, request.localeLock.locale)
       && request.segments.every((segment) => segment.locale === request.localeLock.locale)
     ),
   };
@@ -166,7 +166,7 @@ export class InteractionMediaCoordinator {
 
   constructor(
     private readonly speech: InteractionSpeechBackend = speechService,
-    private readonly microphoneGuard: MicrophonePlaybackGuardContract = communicationMicrophoneGuard,
+    private readonly microphoneGuard: MicrophonePlaybackGuardContract = microphonePlaybackGuard,
     subscribeLifecycle: typeof subscribeAppLifecycle = subscribeAppLifecycle,
   ) {
     this.unsubscribeLifecycle = subscribeLifecycle((state) => {
@@ -197,7 +197,7 @@ export class InteractionMediaCoordinator {
       const entry: MediaEntry = {
         request,
         segments: content.segments,
-        backendScope: `communication:${communicationScopeKey(request.scope)}`,
+        backendScope: `interaction:${interactionScopeKey(request.scope)}`,
         started: false,
         playbackGuardActive: false,
         forcedStatus: null,
@@ -208,7 +208,7 @@ export class InteractionMediaCoordinator {
     });
   }
 
-  notifyInteraction(scope: CommunicationGameScope, reason: InteractionCancellationReason): void {
+  notifyInteraction(scope: InteractionMediaScope, reason: InteractionCancellationReason): void {
     const relevant = (entry: MediaEntry): boolean => (
       reason === 'background'
       || reason === 'exit'

@@ -128,15 +128,10 @@ describe('CaregiverPanel child name', () => {
     expect(container.textContent).toContain('Azure אינו מסווג קול ילד עברי');
   });
 
-  it('groups seven core games and two communication games with caregiver-safe metrics only', async () => {
+  it('shows exactly seven game progress cards without retired activity metrics', async () => {
     await act(async () => {
       root.render(
         <CaregiverPanel
-          communicationItems={[
-            { activityId: 'peek', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'ready' },
-            { activityId: 'phone', lastPlayedAt: 200, sessionsCompleted: 3, readiness: 'ready' },
-          ]}
-          communicationReleaseAvailable
           progress={createInitialProgress(false, 1)}
           onBack={() => undefined}
           onReset={() => undefined}
@@ -146,40 +141,7 @@ describe('CaregiverPanel child name', () => {
     });
 
     expect(container.querySelectorAll('.domain-progress-item')).toHaveLength(7);
-    const group = container.querySelector<HTMLElement>('.communication-caregiver-group')!;
-    const items = [...group.querySelectorAll<HTMLElement>('.communication-caregiver-item')];
-    expect(items.map((item) => item.dataset.activityId)).toEqual([
-      'peek',
-      'phone',
-    ]);
-    expect(group.textContent).toContain('הפעלה אחרונה');
-    expect(group.textContent).toContain('מספר הפעלות');
-    expect(group.textContent).toContain('מוכנות תוכן');
-    expect(group.textContent).not.toMatch(/score|stars|accuracy|completion|speech|thumbnail|https?:/i);
-    expect(group.querySelector('img')).toBeNull();
-    expect([...group.querySelectorAll('svg')]
-      .every((art) => art.getAttribute('aria-hidden') === 'true')).toBe(true);
-  });
-
-  it('preserves all seven current domain metrics while pre-release diagnostics stay unavailable', async () => {
-    await act(async () => {
-      root.render(
-        <CaregiverPanel
-          communicationItems={[
-            { activityId: 'peek', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'not-ready' },
-            { activityId: 'phone', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'not-ready' },
-          ]}
-          progress={createInitialProgress(false, 1)}
-          onBack={() => undefined}
-          onReset={() => undefined}
-          onUpdateSettings={() => undefined}
-        />,
-      );
-    });
-
-    expect(container.querySelectorAll('.domain-progress-item')).toHaveLength(7);
-    expect(container.querySelectorAll('.communication-caregiver-item')).toHaveLength(2);
-    expect(container.querySelector('.communication-caregiver-group')?.textContent)
-      .toContain('עדיין לא מוכן');
+    expect(container.textContent).not.toContain('משחקי תקשורת');
+    expect(container.textContent).not.toContain('מוכנות תוכן');
   });
 });

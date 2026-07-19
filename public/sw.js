@@ -31,9 +31,15 @@ const APP_SHELL = [
   '/speech/he-IL.mp3',
   '/speech/en-US.mp3',
   '/speech/en-GB.mp3',
+];
+const RETIRED_ASSET_PATHS = [
   '/speech/toy-phone-he-IL-v1.mp3',
   '/speech/toy-phone-en-US-v1.mp3',
   '/speech/toy-phone-en-GB-v1.mp3',
+  '/speech/story-that-waits-v1.manifest.json',
+  '/speech/story-that-waits-he-IL-v1.mp3',
+  '/speech/story-that-waits-en-US-v1.mp3',
+  '/speech/story-that-waits-en-GB-v1.mp3',
 ];
 
 self.addEventListener('install', (event) => {
@@ -58,9 +64,14 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+    Promise.all([
+      caches
+        .keys()
+        .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))),
+      caches
+        .open(CACHE_NAME)
+        .then((cache) => Promise.all(RETIRED_ASSET_PATHS.map((path) => cache.delete(path)))),
+    ])
       .then(() => self.clients.claim()),
   );
 });
@@ -76,6 +87,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin !== self.location.origin) {
+    return;
+  }
+  if (RETIRED_ASSET_PATHS.includes(url.pathname)) {
+    event.respondWith(Promise.resolve(new Response(null, {
+      status: 404,
+      statusText: 'Not Found',
+    })));
     return;
   }
 

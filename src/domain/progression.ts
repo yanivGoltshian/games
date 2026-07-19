@@ -10,7 +10,6 @@ import type {
   ToddlerSettings,
 } from './types';
 import { DEFAULT_CHILD_NAME } from './childName';
-import { createInitialCommunicationProgress } from './communicationProgress';
 import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
 import { DOMAIN_KEYS } from './types';
 
@@ -68,8 +67,6 @@ export function createInitialProgress(prefersReducedMotion = false, now = Date.n
     totalStars: 0,
     settings: createInitialSettings(prefersReducedMotion),
     domains: Object.fromEntries(DOMAIN_KEYS.map((domain) => [domain, createInitialDomainProgress()])) as AppProgress['domains'],
-    communication: createInitialCommunicationProgress(),
-    communicationActivities: {},
   };
 }
 
