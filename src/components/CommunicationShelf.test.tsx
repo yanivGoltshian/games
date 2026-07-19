@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CommunicationShelf } from './CommunicationShelf';
 
-const allActivityIds = ['peek', 'train', 'phone', 'story'] as const;
+const allActivityIds = ['peek', 'phone'] as const;
 
 function pointerEvent(type: string, pointerId: number): Event {
   const event = new Event(type, { bubbles: true, cancelable: true });
@@ -40,7 +40,7 @@ describe('CommunicationShelf', () => {
     container.remove();
   });
 
-  it('renders exactly four fixed doors with accessible names and decorative art hidden', async () => {
+  it('renders exactly two fixed doors with accessible names and decorative art hidden', async () => {
     await act(async () => {
       root.render(
         <CommunicationShelf
@@ -56,15 +56,11 @@ describe('CommunicationShelf', () => {
     const doors = [...container.querySelectorAll<HTMLButtonElement>('.communication-door')];
     expect(doors.map((door) => door.dataset.activityId)).toEqual([
       'peek',
-      'train',
       'phone',
-      'story',
     ]);
     expect(doors.map((door) => door.getAttribute('aria-label'))).toEqual([
       'Peek and Discover',
-      'Word Train',
       'Toy Phone',
-      'Story That Waits. Touch the book',
     ]);
     expect(doors.every((door) => door.type === 'button')).toBe(true);
     expect(doors.every((door) => door.querySelector('svg')?.getAttribute('aria-hidden') === 'true')).toBe(true);
@@ -78,7 +74,7 @@ describe('CommunicationShelf', () => {
     await act(async () => {
       root.render(
         <CommunicationShelf
-          activityIds={['story']}
+          activityIds={['phone']}
           languageMode="en"
           onHome={() => undefined}
           onSelect={() => undefined}
@@ -88,10 +84,9 @@ describe('CommunicationShelf', () => {
     });
 
     const doors = [...container.querySelectorAll<HTMLButtonElement>('.communication-door')];
-    expect(doors.map((door) => door.dataset.activityId)).toEqual(['story']);
+    expect(doors.map((door) => door.dataset.activityId)).toEqual(['phone']);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
       .toBe('1');
-    expect(container.textContent).not.toMatch(/locked|coming soon/i);
 
     await act(async () => {
       root.render(
@@ -108,11 +103,11 @@ describe('CommunicationShelf', () => {
       .map((door) => door.dataset.activityId)).toEqual(['peek', 'phone']);
   });
 
-  it('renders the production communication shelf as exactly three ready doors in fixed order', async () => {
+  it('renders the production communication shelf as exactly two ready doors in fixed order', async () => {
     await act(async () => {
       root.render(
         <CommunicationShelf
-          activityIds={['peek', 'train', 'phone']}
+          activityIds={['peek', 'phone']}
           languageMode="he"
           onHome={() => undefined}
           onSelect={() => undefined}
@@ -122,15 +117,15 @@ describe('CommunicationShelf', () => {
     });
 
     const doors = [...container.querySelectorAll<HTMLButtonElement>('.communication-door')];
-    expect(doors.map((door) => door.dataset.activityId)).toEqual(['peek', 'train', 'phone']);
+    expect(doors.map((door) => door.dataset.activityId)).toEqual(['peek', 'phone']);
     expect(doors.map((door) => door.getAttribute('aria-label'))).toEqual([
       'מציצים ומגלים',
-      'רכבת המילים',
       'טֵלֵפוֹן צַעֲצוּעַ',
     ]);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
-      .toBe('3');
+      .toBe('2');
     expect(container.textContent).not.toContain('סיפור');
+    expect(container.textContent).not.toContain('רכבת');
   });
 
   it('emits one semantic selection under ten rapid activations', async () => {
@@ -253,10 +248,10 @@ describe('CommunicationShelf', () => {
         />,
       );
     });
-    const storyDoor = container.querySelector<HTMLButtonElement>('[data-activity-id="story"]')!;
-    storyDoor.focus();
-    expect(document.activeElement).toBe(storyDoor);
-    await act(async () => storyDoor.click());
-    expect(onSelect).toHaveBeenCalledWith('story');
+    const phoneDoor = container.querySelector<HTMLButtonElement>('[data-activity-id="phone"]')!;
+    phoneDoor.focus();
+    expect(document.activeElement).toBe(phoneDoor);
+    await act(async () => phoneDoor.click());
+    expect(onSelect).toHaveBeenCalledWith('phone');
   });
 });

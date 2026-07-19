@@ -22,7 +22,6 @@ export const DEFAULT_HOME_ITEMS = [
   { kind: 'game', domain: 'memory' },
   { kind: 'game', domain: 'numberPairs' },
   { kind: 'game', domain: 'sillyAlien' },
-  { kind: 'game', domain: 'syllableTrain' },
 ] as const satisfies readonly HomeItem[];
 
 export const COMMUNICATION_HOME_ITEMS = [

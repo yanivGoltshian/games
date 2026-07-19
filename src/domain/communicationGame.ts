@@ -1,7 +1,7 @@
 import type { SpeechLocale } from './types';
 
 export const MAX_COMMUNICATION_OPPORTUNITIES = 2;
-export const COMMUNICATION_ACTIVITY_IDS = ['peek', 'train', 'phone', 'story'] as const;
+export const COMMUNICATION_ACTIVITY_IDS = ['peek', 'phone'] as const;
 
 export type CommunicationActivityId = (typeof COMMUNICATION_ACTIVITY_IDS)[number];
 

@@ -20,8 +20,8 @@ const scope: CommunicationGameScope = {
 };
 
 describe('communication game contracts', () => {
-  it('defines the four shared communication activity scope identities once', () => {
-    expect(COMMUNICATION_ACTIVITY_IDS).toEqual(['peek', 'train', 'phone', 'story']);
+  it('defines the active shared communication activity scope identities once', () => {
+    expect(COMMUNICATION_ACTIVITY_IDS).toEqual(['peek', 'phone']);
     expect(isCommunicationActivityId('phone')).toBe(true);
     expect(isCommunicationActivityId('counting')).toBe(false);
   });

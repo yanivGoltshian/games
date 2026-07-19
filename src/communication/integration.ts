@@ -1,24 +1,12 @@
-import { createElement, useCallback, useRef, type ComponentType } from 'react';
+import { createElement, type ComponentType } from 'react';
 import {
   PeekAndDiscoverGame,
   PEEK_AND_DISCOVER_INSTALLED_CONTENT,
 } from '../games/peekAndDiscover';
-import {
-  WORD_TRAIN_CONTENT_VERSION,
-  WORD_TRAIN_INSTALLED_CONTENT,
-} from '../content/syllableTrain';
-import {
-  STORY_THAT_WAITS_STORY_IDS,
-  STORY_THAT_WAITS_VERSION,
-  type StoryThatWaitsLocale,
-  type StoryThatWaitsStoryId,
-} from '../content/storyThatWaits';
 import { TOY_PHONE_CONTENT_VERSION } from '../content/toyPhone';
 import type { CommunicationActivityId } from '../domain/communicationGame';
 import {
   createInitialCommunicationProgress,
-  recordCommunicationRound,
-  recordCommunicationSessionCompleted,
   type CommunicationProgress,
 } from '../domain/communicationProgress';
 import type {
@@ -26,14 +14,10 @@ import type {
   CommunicationActivityProgressMap,
   DomainProgress,
   ProgressUpdateSummary,
-  RecordedRound,
   ToddlerSettings,
 } from '../domain/types';
 import type { SpeechStatus } from '../services/speech';
-import { SyllableTrainGame } from '../games/SyllableTrainGame';
 import { ToyPhoneGame } from '../games/ToyPhoneGame';
-import type { WordTrainMetrics } from '../games/wordTrainMetrics';
-import { StoryThatWaitsGame } from '../games/StoryThatWaitsGame';
 import { COMMUNICATION_SHELF_REGISTRY } from './registry';
 import {
   evaluateCommunicationRelease,
@@ -42,56 +26,6 @@ import {
   type CommunicationReleaseEvaluation,
 } from './release';
 
-interface PersistedWordTrainMetricCounts {
-  sessions: number;
-  trainsSeen: number;
-  contentIds: string[];
-}
-
-export function applyWordTrainCommunicationMetrics(
-  progress: CommunicationProgress,
-  persisted: Readonly<PersistedWordTrainMetricCounts>,
-  metrics: Readonly<WordTrainMetrics>,
-  playedAt = Date.now(),
-): {
-  progress: CommunicationProgress;
-  persisted: PersistedWordTrainMetricCounts;
-} {
-  let nextProgress = progress;
-  let persistedTrainsSeen = persisted.trainsSeen;
-  const newTrainCount = Math.max(0, metrics.trainsSeen - persisted.trainsSeen);
-  const newContentIds = metrics.recentContentIds
-    .filter((contentId) => !persisted.contentIds.includes(contentId))
-    .slice(-newTrainCount);
-  for (const contentId of newContentIds) {
-    nextProgress = recordCommunicationRound(
-      nextProgress,
-      WORD_TRAIN_CONTENT_VERSION,
-      contentId,
-      playedAt,
-    );
-    persistedTrainsSeen += 1;
-  }
-
-  const newSessionCount = Math.max(0, metrics.sessions - persisted.sessions);
-  for (let index = 0; index < newSessionCount; index += 1) {
-    nextProgress = recordCommunicationSessionCompleted(
-      nextProgress,
-      WORD_TRAIN_CONTENT_VERSION,
-      playedAt,
-    );
-  }
-
-  return {
-    progress: nextProgress,
-    persisted: {
-      sessions: Math.max(persisted.sessions, metrics.sessions),
-      trainsSeen: persistedTrainsSeen,
-      contentIds: [...persisted.contentIds, ...newContentIds],
-    },
-  };
-}
-
 export interface CommunicationGameHostProps {
   activityId: CommunicationActivityId;
   settings: ToddlerSettings;
@@ -99,9 +33,9 @@ export interface CommunicationGameHostProps {
   mediaReady: boolean;
   speechStatus: SpeechStatus;
   progress: CommunicationProgress;
-  syllableTrainDomainProgress: DomainProgress;
+  fallbackDomainProgress: DomainProgress;
   onProgressChange: (progress: CommunicationProgress) => void;
-  onCompleteSyllableTrainRound: (round: RecordedRound) => ProgressUpdateSummary;
+  onCompleteFallbackRound: () => ProgressUpdateSummary;
   onBackToShelf: () => void;
   onHome: () => void;
 }
@@ -161,42 +95,6 @@ const PEEK_RELEASE_READINESS = Object.freeze({
   }),
 } satisfies CommunicationLocaleReadiness);
 
-const TRAIN_RELEASE_READINESS = Object.freeze({
-  'he-IL': Object.freeze({
-    status: 'ready',
-    contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
-    locale: 'he-IL',
-  }),
-  'en-US': Object.freeze({
-    status: 'ready',
-    contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
-    locale: 'en-US',
-  }),
-  'en-GB': Object.freeze({
-    status: 'ready',
-    contentVersion: WORD_TRAIN_INSTALLED_CONTENT.contentVersion,
-    locale: 'en-GB',
-  }),
-} satisfies CommunicationLocaleReadiness);
-
-const STORY_RELEASE_READINESS = Object.freeze({
-  'he-IL': Object.freeze({
-    status: 'ready',
-    contentVersion: STORY_THAT_WAITS_VERSION,
-    locale: 'he-IL',
-  }),
-  'en-US': Object.freeze({
-    status: 'ready',
-    contentVersion: STORY_THAT_WAITS_VERSION,
-    locale: 'en-US',
-  }),
-  'en-GB': Object.freeze({
-    status: 'ready',
-    contentVersion: STORY_THAT_WAITS_VERSION,
-    locale: 'en-GB',
-  }),
-} satisfies CommunicationLocaleReadiness);
-
 const PHONE_RELEASE_READINESS = Object.freeze({
   'he-IL': Object.freeze({
     status: 'ready',
@@ -218,15 +116,11 @@ const PHONE_RELEASE_READINESS = Object.freeze({
 const PROGRESSIVE_COMMUNICATION_RELEASE: CommunicationReleaseConfiguration = Object.freeze({
   explicitlyEnabled: Object.freeze({
     peek: true,
-    train: true,
     phone: true,
-    story: true,
   }),
   readiness: Object.freeze({
     peek: PEEK_RELEASE_READINESS,
-    train: TRAIN_RELEASE_READINESS,
     phone: PHONE_RELEASE_READINESS,
-    story: STORY_RELEASE_READINESS,
   }),
 });
 
@@ -246,86 +140,16 @@ function PeekCommunicationGame({
   });
 }
 
-function TrainCommunicationGame({
-  settings,
-  overallStars,
-  mediaReady,
-  speechStatus,
-  progress,
-  syllableTrainDomainProgress,
-  onCompleteSyllableTrainRound,
-  onProgressChange,
-  onBackToShelf,
-}: CommunicationGameHostProps) {
-  const latestProgressRef = useRef(progress);
-  latestProgressRef.current = progress;
-  const persistedMetricsRef = useRef<PersistedWordTrainMetricCounts>({
-    sessions: 0,
-    trainsSeen: 0,
-    contentIds: [],
-  });
-  const handleCommunicationMetrics = useCallback((metrics: Readonly<WordTrainMetrics>): void => {
-    const result = applyWordTrainCommunicationMetrics(
-      latestProgressRef.current,
-      persistedMetricsRef.current,
-      metrics,
-    );
-    persistedMetricsRef.current = result.persisted;
-    if (result.progress !== latestProgressRef.current) {
-      latestProgressRef.current = result.progress;
-      onProgressChange(result.progress);
-    }
-
-  }, [onProgressChange]);
-
-  return createElement(SyllableTrainGame, {
-    domainProgress: syllableTrainDomainProgress,
-    settings,
-    overallStars,
-    mediaReady,
-    speechStatus,
-    onBack: onBackToShelf,
-    onCompleteRound: onCompleteSyllableTrainRound,
-    onCommunicationMetrics: handleCommunicationMetrics,
-  });
-}
-
-function storyLocale(settings: ToddlerSettings): StoryThatWaitsLocale {
-  return settings.languageMode === 'he' ? 'he-IL' : settings.englishVoiceLocale;
-}
-
-function selectStoryThatWaitsStoryId(progress: CommunicationProgress): StoryThatWaitsStoryId {
-  return STORY_THAT_WAITS_STORY_IDS[
-    progress.sessionsCompleted % STORY_THAT_WAITS_STORY_IDS.length
-  ]!;
-}
-
-function StoryCommunicationGame({
-  settings,
-  progress,
-  onProgressChange,
-  onBackToShelf,
-}: CommunicationGameHostProps) {
-  return createElement(StoryThatWaitsGame, {
-    storyId: selectStoryThatWaitsStoryId(progress),
-    locale: storyLocale(settings),
-    settings,
-    onExit: onBackToShelf,
-    initialProgress: progress,
-    onProgressChange,
-  });
-}
-
 function ToyPhoneCommunicationGame({
   settings,
   overallStars,
   mediaReady,
   speechStatus,
-  syllableTrainDomainProgress,
+  fallbackDomainProgress,
   onBackToShelf,
 }: CommunicationGameHostProps) {
   return createElement(ToyPhoneGame, {
-    domainProgress: syllableTrainDomainProgress,
+    domainProgress: fallbackDomainProgress,
     settings,
     overallStars,
     mediaReady,
@@ -335,8 +159,8 @@ function ToyPhoneCommunicationGame({
       starsEarned: 0,
       leveledUp: false,
       milestone: false,
-      level: syllableTrainDomainProgress.level,
-      mastery: syllableTrainDomainProgress.mastery,
+      level: fallbackDomainProgress.level,
+      mastery: fallbackDomainProgress.mastery,
       firstAttempt: true,
       recommendation: null,
     }),
@@ -406,27 +230,6 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
         ).sessionsCompleted,
       }),
     }),
-    train: Object.freeze({
-      component: TrainCommunicationGame,
-      legacyContentVersion: WORD_TRAIN_CONTENT_VERSION,
-      selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
-        progress,
-        'train',
-        WORD_TRAIN_CONTENT_VERSION,
-      ),
-      selectCaregiverMetrics: (progress: AppProgress) => ({
-        lastPlayedAt: selectCommunicationActivityProgress(
-          progress,
-          'train',
-          WORD_TRAIN_CONTENT_VERSION,
-        ).lastPlayedAt,
-        sessionsCompleted: selectCommunicationActivityProgress(
-          progress,
-          'train',
-          WORD_TRAIN_CONTENT_VERSION,
-        ).sessionsCompleted,
-      }),
-    }),
     phone: Object.freeze({
       component: ToyPhoneCommunicationGame,
       selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
@@ -437,26 +240,6 @@ export const communicationIntegration: CommunicationIntegrationContract = Object
       selectCaregiverMetrics: () => ({
         lastPlayedAt: 0,
         sessionsCompleted: 0,
-      }),
-    }),
-    story: Object.freeze({
-      component: StoryCommunicationGame,
-      selectProgress: (progress: AppProgress) => selectCommunicationActivityProgress(
-        progress,
-        'story',
-        STORY_THAT_WAITS_VERSION,
-      ),
-      selectCaregiverMetrics: (progress: AppProgress) => ({
-        lastPlayedAt: selectCommunicationActivityProgress(
-          progress,
-          'story',
-          STORY_THAT_WAITS_VERSION,
-        ).lastPlayedAt,
-        sessionsCompleted: selectCommunicationActivityProgress(
-          progress,
-          'story',
-          STORY_THAT_WAITS_VERSION,
-        ).sessionsCompleted,
       }),
     }),
   }),

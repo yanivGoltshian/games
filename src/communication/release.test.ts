@@ -58,9 +58,7 @@ describe('communication release readiness', () => {
   it('defaults every activity flag to false without environment-derived behavior', () => {
     expect(DEFAULT_COMMUNICATION_RELEASE.explicitlyEnabled).toEqual({
       peek: false,
-      train: false,
       phone: false,
-      story: false,
     });
     expect(evaluateCommunicationRelease(DEFAULT_COMMUNICATION_RELEASE).activities)
       .toEqual(COMMUNICATION_ACTIVITY_IDS.map((activityId) => ({
@@ -79,9 +77,7 @@ describe('communication release readiness', () => {
     expect(result.requiredLocales).toEqual(['he-IL', 'en-US', 'en-GB']);
     expect(result.activities).toEqual([
       { activityId: 'peek', explicitlyEnabled: true, status: 'ready' },
-      { activityId: 'train', explicitlyEnabled: false, status: 'ready' },
       { activityId: 'phone', explicitlyEnabled: true, status: 'ready' },
-      { activityId: 'story', explicitlyEnabled: false, status: 'ready' },
     ]);
   });
 
@@ -97,9 +93,7 @@ describe('communication release readiness', () => {
 
     expect(result.activities.map(({ activityId, status }) => ({ activityId, status }))).toEqual([
       { activityId: 'peek', status: 'ready' },
-      { activityId: 'train', status: 'ready' },
       { activityId: 'phone', status: 'not-ready' },
-      { activityId: 'story', status: 'ready' },
     ]);
   });
 
@@ -109,17 +103,13 @@ describe('communication release readiness', () => {
       explicitlyEnabled: complete.explicitlyEnabled,
       readiness: {
         peek: complete.readiness.peek,
-        train: complete.readiness.train,
-        story: complete.readiness.story,
       },
     });
 
     expect(() => evaluateCommunicationRelease(malformed)).not.toThrow();
     expect(evaluateCommunicationRelease(malformed).activities).toEqual([
       { activityId: 'peek', explicitlyEnabled: true, status: 'ready' },
-      { activityId: 'train', explicitlyEnabled: true, status: 'ready' },
       { activityId: 'phone', explicitlyEnabled: true, status: 'not-ready' },
-      { activityId: 'story', explicitlyEnabled: true, status: 'ready' },
     ]);
   });
 
@@ -138,9 +128,7 @@ describe('communication release readiness', () => {
       explicitlyEnabled,
     }))).toEqual([
       { activityId: 'peek', explicitlyEnabled: true },
-      { activityId: 'train', explicitlyEnabled: false },
       { activityId: 'phone', explicitlyEnabled: false },
-      { activityId: 'story', explicitlyEnabled: false },
     ]);
   });
 
@@ -168,7 +156,7 @@ describe('communication release readiness', () => {
       phone: complete.readiness.phone,
     }) as Record<string, unknown>;
     readiness.peek = complete.readiness.peek;
-    Object.defineProperty(readiness, 'train', {
+    Object.defineProperty(readiness, 'story', {
       enumerable: true,
       get: () => {
         throw new Error('malformed readiness getter must not run');
@@ -182,9 +170,7 @@ describe('communication release readiness', () => {
     expect(() => evaluateCommunicationRelease(malformed)).not.toThrow();
     expect(evaluateCommunicationRelease(malformed).activities).toEqual([
       { activityId: 'peek', explicitlyEnabled: true, status: 'ready' },
-      { activityId: 'train', explicitlyEnabled: false, status: 'not-ready' },
       { activityId: 'phone', explicitlyEnabled: false, status: 'not-ready' },
-      { activityId: 'story', explicitlyEnabled: false, status: 'not-ready' },
     ]);
   });
 

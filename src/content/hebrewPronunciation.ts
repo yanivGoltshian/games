@@ -8,7 +8,6 @@ import {
   getCountingQuestion,
   getCountingQuestionSpoken,
 } from './countingQuantity';
-import { STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS } from './storyThatWaitsHebrew';
 
 /**
  * Hebrew pronunciation layer for the recorded-speech fallback.
@@ -108,9 +107,6 @@ export const HEBREW_PRONUNCIATIONS: Readonly<Record<string, string>> = {
 
   // Web Speech unlock primer.
   [HEBREW_UNLOCK_PRIMER.sourceText]: HEBREW_UNLOCK_PRIMER.spokenText,
-
-  // Story That Waits — staged for human review; not yet in the recorded catalog.
-  ...STORY_THAT_WAITS_HEBREW_PRODUCTION_TEXTS,
 
   // Nouns / concept words.
   'אוטו': 'אוֹטוֹ',

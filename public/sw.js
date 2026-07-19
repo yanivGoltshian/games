@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v24';
+const CACHE_NAME = 'sean-learning-adventure-v25';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -31,10 +31,6 @@ const APP_SHELL = [
   '/speech/he-IL.mp3',
   '/speech/en-US.mp3',
   '/speech/en-GB.mp3',
-  '/speech/story-that-waits-v1.manifest.json',
-  '/speech/story-that-waits-he-IL-v1.mp3',
-  '/speech/story-that-waits-en-US-v1.mp3',
-  '/speech/story-that-waits-en-GB-v1.mp3',
   '/speech/toy-phone-he-IL-v1.mp3',
   '/speech/toy-phone-en-US-v1.mp3',
   '/speech/toy-phone-en-GB-v1.mp3',

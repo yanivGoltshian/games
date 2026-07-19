@@ -1,9 +1,8 @@
 import type { CommunicationActivityId } from '../domain/communicationGame';
-import { STORY_THAT_WAITS_SHELF_METADATA } from '../content/storyThatWaits';
 
 export const COMMUNICATION_SHELF_PATH = '/communication' as const;
 
-export type CommunicationDoorPalette = 'coral' | 'ocean' | 'leaf' | 'honey';
+export type CommunicationDoorPalette = 'coral' | 'leaf';
 
 export interface CommunicationShelfEntry {
   activityId: CommunicationActivityId;
@@ -20,7 +19,7 @@ export interface CommunicationShelfEntry {
   };
 }
 
-export const COMMUNICATION_SHELF_REGISTRY = [
+export const COMMUNICATION_SHELF_REGISTRY: readonly CommunicationShelfEntry[] = [
   {
     activityId: 'peek',
     slug: 'peek-and-discover',
@@ -29,16 +28,6 @@ export const COMMUNICATION_SHELF_REGISTRY = [
     title: {
       he: 'מציצים ומגלים',
       en: 'Peek and Discover',
-    },
-  },
-  {
-    activityId: 'train',
-    slug: 'word-train',
-    path: '/communication/word-train',
-    palette: 'ocean',
-    title: {
-      he: 'רכבת המילים',
-      en: 'Word Train',
     },
   },
   {
@@ -51,21 +40,7 @@ export const COMMUNICATION_SHELF_REGISTRY = [
       en: 'Toy Phone',
     },
   },
-  {
-    activityId: 'story',
-    slug: 'story-that-waits',
-    path: '/communication/story-that-waits',
-    palette: 'honey',
-    title: {
-      he: STORY_THAT_WAITS_SHELF_METADATA['he-IL'].title,
-      en: 'Story That Waits',
-    },
-    description: {
-      he: STORY_THAT_WAITS_SHELF_METADATA['he-IL'].description,
-      en: STORY_THAT_WAITS_SHELF_METADATA['en-US'].description,
-    },
-  },
-] as const satisfies readonly CommunicationShelfEntry[];
+] as const;
 
 export type CommunicationShelfSlug = (typeof COMMUNICATION_SHELF_REGISTRY)[number]['slug'];
 export type CommunicationActivityPath = (typeof COMMUNICATION_SHELF_REGISTRY)[number]['path'];
