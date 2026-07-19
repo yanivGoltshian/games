@@ -17,7 +17,7 @@ import type {
 } from './communication/release';
 import { speechService } from './services/speech';
 
-const activityIds = ['peek', 'train', 'phone', 'story'] as const;
+const activityIds = ['peek', 'phone'] as const;
 const requiredLocales = ['he-IL', 'en-US', 'en-GB'] as const;
 
 function RegisteredGame({ activityId }: CommunicationGameHostProps) {
@@ -182,29 +182,28 @@ describe('App progressive communication release routing', () => {
     ));
 
     const domains = homeDomains(container);
-    expect(domains).toHaveLength(8);
-    expect(domains.at(-1)).toBe('syllableTrain');
+    expect(domains).toHaveLength(7);
     expect(domains).not.toContain('communication');
   });
 
   it('renders only the one public activity on a progressive shelf', async () => {
     window.history.replaceState(null, '', '#/communication');
     await act(async () => root?.render(
-      <App communication={readyIntegration({ enabledActivityIds: ['story'] })} />,
+      <App communication={readyIntegration({ enabledActivityIds: ['phone'] })} />,
     ));
 
-    expect(shelfDoorIds(container)).toEqual(['story']);
+    expect(shelfDoorIds(container)).toEqual(['phone']);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
       .toBe('1');
   });
 
-  it('renders exactly the production Peek, Train, Toy Phone, and Story doors on the default shelf', async () => {
+  it('renders exactly the production Peek and Toy Phone doors on the default shelf', async () => {
     window.history.replaceState(null, '', '#/communication');
     await act(async () => root?.render(<App />));
 
-    expect(shelfDoorIds(container)).toEqual(['peek', 'train', 'phone', 'story']);
+    expect(shelfDoorIds(container)).toEqual(['peek', 'phone']);
     expect(container.querySelector('.communication-shelf__doors')?.getAttribute('data-door-count'))
-      .toBe('4');
+      .toBe('2');
   });
 
   it('adds later public activities without changing App or route wiring', async () => {
@@ -220,11 +219,11 @@ describe('App progressive communication release routing', () => {
     expect(shelfDoorIds(container)).toEqual(['peek', 'phone']);
   });
 
-  it('renders all four public doors in fixed registry order', async () => {
+  it('renders all public doors in fixed registry order', async () => {
     window.history.replaceState(null, '', '#/communication');
     await act(async () => root?.render(<App communication={readyIntegration()} />));
 
-    expect(shelfDoorIds(container)).toEqual(['peek', 'train', 'phone', 'story']);
+    expect(shelfDoorIds(container)).toEqual(['peek', 'phone']);
   });
 
   it('redirects a shelf with no public activities without media or permission side effects', async () => {
@@ -232,9 +231,9 @@ describe('App progressive communication release routing', () => {
     const cancelAll = vi.spyOn(speechService, 'cancelAll');
     const unlock = vi.spyOn(speechService, 'unlock');
     const unavailable = readyIntegration({
-      enabledActivityIds: ['story'],
+      enabledActivityIds: ['phone'],
       readinessPatch: {
-        story: {
+        phone: {
           'he-IL': ready('he-IL'),
           'en-US': ready('en-US'),
         },
@@ -244,7 +243,7 @@ describe('App progressive communication release routing', () => {
     await act(async () => root?.render(<App communication={unavailable} />));
 
     expect(window.location.hash).toBe('#/');
-    expect(homeDomains(container)).toHaveLength(8);
+    expect(homeDomains(container)).toHaveLength(7);
     expect(container.querySelector('[data-domain="communication"]')).toBeNull();
     expect(cancelAll).not.toHaveBeenCalled();
     expect(unlock).not.toHaveBeenCalled();
@@ -304,9 +303,7 @@ describe('App progressive communication release routing', () => {
         ...contract.release,
         readiness: {
           peek: contract.release.readiness.peek,
-          train: contract.release.readiness.train,
           phone: undefined,
-          story: contract.release.readiness.story,
         },
       },
     } as unknown as CommunicationIntegrationContract;
@@ -339,23 +336,22 @@ describe('App progressive communication release routing', () => {
     expect(container.querySelector('[data-mounted-communication-game="phone"]')).not.toBeNull();
   });
 
-  it('opens the production Train route through the communication host', async () => {
+  it('fails the deleted Train route closed without mounting a communication host', async () => {
     window.history.replaceState(null, '', '#/communication/word-train');
     await act(async () => root?.render(<App />));
 
-    expect(window.location.hash).toBe('#/communication/word-train');
-    expect(container.textContent).toContain('רכבת המילים');
-    expect(container.textContent).toContain('מחברים קרונות ושומעים מילה שלמה');
-    expect(container.textContent).not.toMatch(/הברה|הברות|syllable|fragment|chunk/i);
+    expect(window.location.hash).toBe('#/');
+    expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
+    expect(container.textContent).not.toContain('רכבת המילים');
   });
 
-  it('opens the legacy Train route through the communication host when Train is public', async () => {
+  it('fails the legacy Train route closed without restoring the old game', async () => {
     window.history.replaceState(null, '', '#/games/syllableTrain');
     await act(async () => root?.render(<App />));
 
-    expect(container.textContent).toContain('רכבת המילים');
-    expect(container.textContent).toContain('מחברים קרונות ושומעים מילה שלמה');
-    expect(container.textContent).not.toMatch(/הברה|הברות|syllable|fragment|chunk/i);
+    expect(window.location.hash).toBe('#/games/syllableTrain');
+    expect(container.textContent).not.toContain('רכבת המילים');
+    expect(container.querySelector('[data-mounted-communication-game]')).toBeNull();
   });
 
   it('does not resurrect a normalized activity deep link after that activity becomes public', async () => {
@@ -366,7 +362,7 @@ describe('App progressive communication release routing', () => {
     expect(window.location.hash).toBe('#/');
 
     await act(async () => root?.render(
-      <App communication={readyIntegration({ enabledActivityIds: ['peek', 'story'] })} />,
+      <App communication={readyIntegration({ enabledActivityIds: ['peek', 'phone'] })} />,
     ));
 
     expect(window.location.hash).toBe('#/');

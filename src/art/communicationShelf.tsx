@@ -66,16 +66,6 @@ export function CommunicationDoorArt({
           <circle cx="86" cy="75" r="4" fill="#ffffff" />
         </>
       ) : null}
-      {activityId === 'train' ? (
-        <>
-          <rect x="28" y="64" width="82" height="52" rx="14" fill="#68afd0" />
-          <path d="M110 78 H142 L154 116 H110 Z" fill="#ef826d" />
-          <rect x="47" y="38" width="36" height="32" rx="7" fill="#f1c75c" />
-          <path d="M22 122 H158" stroke="#584357" strokeWidth="7" strokeLinecap="round" />
-          <circle cx="52" cy="120" r="14" fill="#584357" />
-          <circle cx="126" cy="120" r="14" fill="#584357" />
-        </>
-      ) : null}
       {activityId === 'phone' ? (
         <>
           <rect x="45" y="22" width="90" height="122" rx="24" fill="#78bd78" stroke="#426b52" strokeWidth="7" />
@@ -95,21 +85,6 @@ export function CommunicationDoorArt({
               fill="#fff6cb"
             />
           )))}
-        </>
-      ) : null}
-      {activityId === 'story' ? (
-        <>
-          <defs>
-            <linearGradient id={ids.page} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#fffaf0" />
-              <stop offset="100%" stopColor="#f5dfac" />
-            </linearGradient>
-          </defs>
-          <path d="M22 42 Q60 26 88 48 V134 Q58 112 22 126 Z" fill={`url(#${ids.page})`} stroke="#8d6729" strokeWidth="6" />
-          <path d="M158 42 Q120 26 92 48 V134 Q122 112 158 126 Z" fill={`url(#${ids.page})`} stroke="#8d6729" strokeWidth="6" />
-          <path d="M90 49 V135" stroke="#8d6729" strokeWidth="6" />
-          <circle cx="56" cy="76" r="12" fill="#ef826d" />
-          <path d="M111 72 H142 M111 92 H136" stroke="#68afd0" strokeWidth="7" strokeLinecap="round" />
         </>
       ) : null}
     </svg>

@@ -26,26 +26,6 @@ describe('HomeScreen', () => {
     }
   });
 
-  it('renders exact whole-word Train metadata without segmentation wording', () => {
-    const html = renderToStaticMarkup(
-      <HomeScreen
-        onOpenCommunication={() => undefined}
-        onOpenGame={() => undefined}
-        settings={settings}
-      />,
-    );
-    const childVisibleText = html.replace(/<[^>]+>/g, ' ');
-
-    expect(gameMeta.syllableTrain).toMatchObject({
-      title: 'רכבת המילים',
-      subtitle: 'מחברים קרונות ושומעים מילה שלמה',
-    });
-    expect(html).toContain('רכבת המילים');
-    expect(`${childVisibleText} ${gameMeta.syllableTrain.subtitle}`).not.toMatch(
-      /הברה|הברות|syllable|fragment|chunk/i,
-    );
-  });
-
   it('staggers portal entrance via a per-card --enter-index custom property', () => {
     const html = renderHome();
     expect(html).toContain('--enter-index:0');
@@ -58,8 +38,8 @@ describe('HomeScreen', () => {
     expect(html).toMatch(/portal-card__sparkles[^>]*aria-hidden="true"/);
   });
 
-  it('keeps the exact current eight tiles when communication is unavailable', () => {
-    const document = new DOMParser().parseFromString(renderHome(), 'text/html');
+  it('keeps the exact current eight tiles when communication is available', () => {
+    const document = new DOMParser().parseFromString(renderHome(true), 'text/html');
     const domains = [...document.querySelectorAll<HTMLElement>('.portal-grid__item')]
       .map((item) => item.dataset.domain);
 
@@ -71,11 +51,11 @@ describe('HomeScreen', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
-      'syllableTrain',
+      'communication',
     ]);
   });
 
-  it('replaces Train with one shelf tile while preserving exactly eight positions', () => {
+  it('does not restore Train while preserving exactly eight positions', () => {
     const document = new DOMParser().parseFromString(renderHome(true), 'text/html');
     const domains = [...document.querySelectorAll<HTMLElement>('.portal-grid__item')]
       .map((item) => item.dataset.domain);
@@ -91,7 +71,7 @@ describe('HomeScreen', () => {
       'communication',
     ]);
     expect(document.body.textContent).toContain('מדף התקשורת');
-    expect(document.body.textContent).not.toContain(gameMeta.syllableTrain.title);
+    expect(document.body.textContent).not.toContain('רכבת המילים');
   });
 });
 

@@ -128,15 +128,13 @@ describe('CaregiverPanel child name', () => {
     expect(container.textContent).toContain('Azure אינו מסווג קול ילד עברי');
   });
 
-  it('groups seven core games and four communication games with caregiver-safe metrics only', async () => {
+  it('groups seven core games and two communication games with caregiver-safe metrics only', async () => {
     await act(async () => {
       root.render(
         <CaregiverPanel
           communicationItems={[
             { activityId: 'peek', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'ready' },
-            { activityId: 'train', lastPlayedAt: 100, sessionsCompleted: 2, readiness: 'ready' },
             { activityId: 'phone', lastPlayedAt: 200, sessionsCompleted: 3, readiness: 'ready' },
-            { activityId: 'story', lastPlayedAt: 300, sessionsCompleted: 4, readiness: 'ready' },
           ]}
           communicationReleaseAvailable
           progress={createInitialProgress(false, 1)}
@@ -152,9 +150,7 @@ describe('CaregiverPanel child name', () => {
     const items = [...group.querySelectorAll<HTMLElement>('.communication-caregiver-item')];
     expect(items.map((item) => item.dataset.activityId)).toEqual([
       'peek',
-      'train',
       'phone',
-      'story',
     ]);
     expect(group.textContent).toContain('הפעלה אחרונה');
     expect(group.textContent).toContain('מספר הפעלות');
@@ -165,15 +161,13 @@ describe('CaregiverPanel child name', () => {
       .every((art) => art.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
-  it('preserves all eight current domain metrics while pre-release diagnostics stay unavailable', async () => {
+  it('preserves all seven current domain metrics while pre-release diagnostics stay unavailable', async () => {
     await act(async () => {
       root.render(
         <CaregiverPanel
           communicationItems={[
             { activityId: 'peek', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'not-ready' },
-            { activityId: 'train', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'not-ready' },
             { activityId: 'phone', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'not-ready' },
-            { activityId: 'story', lastPlayedAt: 0, sessionsCompleted: 0, readiness: 'not-ready' },
           ]}
           progress={createInitialProgress(false, 1)}
           onBack={() => undefined}
@@ -183,8 +177,8 @@ describe('CaregiverPanel child name', () => {
       );
     });
 
-    expect(container.querySelectorAll('.domain-progress-item')).toHaveLength(8);
-    expect(container.querySelectorAll('.communication-caregiver-item')).toHaveLength(4);
+    expect(container.querySelectorAll('.domain-progress-item')).toHaveLength(7);
+    expect(container.querySelectorAll('.communication-caregiver-item')).toHaveLength(2);
     expect(container.querySelector('.communication-caregiver-group')?.textContent)
       .toContain('עדיין לא מוכן');
   });

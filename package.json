@@ -8,7 +8,6 @@
     "build": "tsc -b && vite build",
     "generate:speech": "vite-node scripts/generate-speech-assets.ts",
     "validate:speech": "vite-node scripts/validate-speech-assets.ts",
-    "validate:story-speech": "vite-node scripts/validate-story-that-waits-speech.ts",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.scripts.json",
     "lint": "eslint .",
     "test": "vitest run",

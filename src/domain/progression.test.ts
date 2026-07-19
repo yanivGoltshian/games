@@ -10,7 +10,7 @@ import {
 import { DOMAIN_KEYS } from './types';
 
 describe('progression', () => {
-  it('keeps silly alien as the seventh domain and syllable train as the last', () => {
+  it('keeps silly alien as the seventh and final direct game domain', () => {
     expect(DOMAIN_KEYS).toEqual([
       'listening',
       'counting',
@@ -19,7 +19,6 @@ describe('progression', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
-      'syllableTrain',
     ]);
   });
 

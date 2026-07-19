@@ -1,7 +1,7 @@
 import type { CommunicationProgress } from './communicationProgress';
 import type { CommunicationActivityId } from './communicationGame';
 
-export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'syllableTrain'] as const;
+export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien'] as const;
 
 export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';
@@ -238,13 +238,5 @@ export interface SillyAlienRound {
   droppedLetterHe: string;
   promptHe: string;
   promptEn: string;
-  signature: string;
-}
-
-export interface SyllableTrainRound {
-  conceptId: string;
-  contentVersion: string;
-  image: string;
-  recordings: Readonly<Record<SpeechLocale, string>>;
   signature: string;
 }

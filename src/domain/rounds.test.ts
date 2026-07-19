@@ -6,23 +6,18 @@ import { getCountingQuestion, type CountingConceptId } from '../content/counting
 import { createInitialDomainProgress } from './progression';
 import {
   NUMBER_PAIRS_GENERATION_ATTEMPTS,
-  SYLLABLE_TRAIN_GENERATION_ATTEMPTS,
   generateCountingRound,
   generateListeningRound,
   generateMemoryRound,
   generateNumberPairsRound,
   generatePuzzleRound,
   generateSortingRound,
-  generateSyllableTrainRound,
   getCountingRoundSignature,
   getListeningRoundSignature,
   getMemoryRoundSignature,
   getNumberPairsRoundSignature,
   getPuzzleRoundSignature,
-  getSyllableTrainRoundSignature,
 } from './rounds';
-import { SYLLABLE_TRAIN_WORDS } from '../content/syllableTrain';
-import { requireLearningConcept } from '../content/concepts';
 
 const NEW_CONCEPT_IDS = [
   'duck',
@@ -448,61 +443,6 @@ describe('round generation', () => {
       expect(first).toEqual(second);
       expect(exhaustiveHistory).toContain(first.signature);
       expect(first.topRow).not.toEqual(first.bottomRow);
-    });
-  });
-
-  describe('syllable train', () => {
-    it('produces whole-word V2 rounds with exact locale recordings and images', () => {
-      const domain = createInitialDomainProgress();
-
-      for (let index = 0; index < 40; index += 1) {
-        const round = generateSyllableTrainRound(domain, `syllable-train-${index}`);
-        const concept = requireLearningConcept(round.conceptId);
-
-        expect(round.image).toBe(concept.image);
-        expect(round.recordings).toEqual({
-          'he-IL': concept.he,
-          'en-US': concept.en,
-          'en-GB': concept.en,
-        });
-        expect(round).not.toHaveProperty('firstHe');
-        expect(round).not.toHaveProperty('restHe');
-        expect(round).not.toHaveProperty('promptHe');
-        expect(round.signature).toBe(getSyllableTrainRoundSignature(round));
-        expect(round.signature).toBe(round.conceptId);
-      }
-    });
-
-    it('is deterministic for the same seed and signature history', () => {
-      const domain = createInitialDomainProgress();
-      const history = ['unrelated-signature'];
-
-      expect(generateSyllableTrainRound(domain, 'stable-train', history)).toEqual(
-        generateSyllableTrainRound(domain, 'stable-train', history),
-      );
-    });
-
-    it('avoids immediate and local repeats deterministically', () => {
-      const domain = createInitialDomainProgress();
-      let signatures: string[] = [];
-
-      for (let index = 0; index < 24; index += 1) {
-        const round = generateSyllableTrainRound(domain, 'repeat-safe-train', signatures);
-        expect(signatures).not.toContain(round.signature);
-        signatures = [...signatures, round.signature].slice(-SYLLABLE_TRAIN_WORDS.length + 1);
-      }
-    });
-
-    it('terminates with a deterministic fallback when every word is in history', () => {
-      const domain = createInitialDomainProgress();
-      const exhaustiveHistory = SYLLABLE_TRAIN_WORDS.map((word) => word.conceptId);
-
-      expect(SYLLABLE_TRAIN_GENERATION_ATTEMPTS).toBeGreaterThan(0);
-      const first = generateSyllableTrainRound(domain, 'bounded-train', exhaustiveHistory);
-      const second = generateSyllableTrainRound(domain, 'bounded-train', exhaustiveHistory);
-
-      expect(first).toEqual(second);
-      expect(exhaustiveHistory).toContain(first.signature);
     });
   });
 });

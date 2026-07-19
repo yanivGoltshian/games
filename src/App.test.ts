@@ -9,7 +9,7 @@ import {
 } from './routes';
 
 describe('child navigation', () => {
-  it('exposes exactly eight stable activity destinations with art and metadata', () => {
+  it('exposes seven direct game destinations with art and metadata', () => {
     expect(DOMAIN_KEYS).toEqual([
       'listening',
       'counting',
@@ -18,7 +18,6 @@ describe('child navigation', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
-      'syllableTrain',
     ]);
     expect(Object.keys(gameMeta)).toEqual(DOMAIN_KEYS);
     for (const domain of DOMAIN_KEYS) {
@@ -45,10 +44,8 @@ describe('child navigation', () => {
       kind: 'communication-game',
       activityId: 'phone',
     });
-    expect(parseHash('#/communication/story-that-waits')).toEqual({
-      kind: 'communication-game',
-      activityId: 'story',
-    });
+    expect(parseHash('#/communication/story-that-waits')).toEqual({ kind: 'home' });
+    expect(parseHash('#/communication/word-train')).toEqual({ kind: 'home' });
     expect(parseHash('#/communication/unknown')).toEqual({ kind: 'home' });
     expect(parseHash('#/communication/toy-phone/')).toEqual({ kind: 'home' });
     expect(parseHash('#/communication/toy-phone?mode=child')).toEqual({ kind: 'home' });
@@ -56,7 +53,7 @@ describe('child navigation', () => {
 
   it('fails direct communication routes closed until release and integration are ready', () => {
     const shelf = parseHash('#/communication');
-    const game = parseHash('#/communication/word-train');
+    const game = parseHash('#/communication/toy-phone');
 
     expect(resolveRouteForCommunicationAvailability(shelf, [])).toEqual({
       kind: 'home',
@@ -64,37 +61,38 @@ describe('child navigation', () => {
     expect(resolveRouteForCommunicationAvailability(game, ['peek'])).toEqual({
       kind: 'home',
     });
-    expect(resolveRouteForCommunicationAvailability(game, ['train'])).toEqual(game);
+    expect(resolveRouteForCommunicationAvailability(game, ['phone'])).toEqual(game);
     expect(resolveRouteForCommunicationAvailability(
       parseHash('#/communication/toy-phone'),
-      ['peek', 'train', 'phone'],
+      ['peek', 'phone'],
     )).toEqual({
       kind: 'communication-game',
       activityId: 'phone',
     });
     expect(resolveRouteForCommunicationAvailability(
       parseHash('#/communication/story-that-waits'),
-      ['peek', 'train', 'phone'],
+      ['peek', 'phone'],
     )).toEqual({ kind: 'home' });
   });
 
-  it('keeps Phone routes closed while Story is released through availability', () => {
+  it('keeps old Story routes closed even when other communication activities are available', () => {
     const phone = parseHash('#/communication/toy-phone');
     const story = parseHash('#/communication/story-that-waits');
 
-    expect(resolveRouteForCommunicationAvailability(phone, ['peek', 'train', 'story'])).toEqual({
+    expect(resolveRouteForCommunicationAvailability(phone, ['peek'])).toEqual({
       kind: 'home',
     });
-    expect(resolveRouteForCommunicationAvailability(story, ['peek', 'train', 'story'])).toEqual(story);
+    expect(resolveRouteForCommunicationAvailability(story, ['peek', 'phone'])).toEqual({
+      kind: 'home',
+    });
   });
 
-  it('routes the legacy Train URL through the communication release surface when public', () => {
+  it('fails the legacy Train URL closed instead of restoring Train', () => {
     const legacyTrain = parseHash('#/games/syllableTrain');
 
-    expect(resolveRouteForCommunicationAvailability(legacyTrain, [])).toEqual(legacyTrain);
-    expect(resolveRouteForCommunicationAvailability(legacyTrain, ['train'])).toEqual({
-      kind: 'communication-game',
-      activityId: 'train',
+    expect(legacyTrain).toEqual({ kind: 'home' });
+    expect(resolveRouteForCommunicationAvailability(legacyTrain, ['peek', 'phone'])).toEqual({
+      kind: 'home',
     });
   });
 

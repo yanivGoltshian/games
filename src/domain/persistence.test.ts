@@ -331,7 +331,7 @@ describe('persistence migration', () => {
     }, { now: 999 });
 
     expect(progress.version).toBe(6);
-    expect(progress.domains.syllableTrain).toEqual(trainHistory);
+    expect(progress.domains).not.toHaveProperty('syllableTrain');
     expect(progress.communication).toEqual({
       version: 1,
       contentVersion: null,
@@ -411,14 +411,6 @@ describe('persistence migration', () => {
         roundsSeen: 3,
         recentContentIds: ['peek-a'],
         lastPlayedAt: 100,
-      },
-      train: {
-        version: 1,
-        contentVersion: 'train-v1',
-        sessionsCompleted: 1,
-        roundsSeen: 4,
-        recentContentIds: ['ball'],
-        lastPlayedAt: 200,
       },
       phone: {
         version: 1,
