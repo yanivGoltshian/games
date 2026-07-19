@@ -34,7 +34,6 @@ import {
   SORTING_SHAPE_LABELS,
 } from '../domain/rounds';
 import { getHebrewPronunciation } from './hebrewPronunciation';
-import { TOY_PHONE_RECORDING_INVENTORY } from './toyPhone';
 import type { SpeechLocale } from '../domain/types';
 
 export interface RecordedSpeechCatalogEntry {
@@ -142,10 +141,6 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
     add('en-US', line.text);
     add('en-GB', line.text);
   });
-  TOY_PHONE_RECORDING_INVENTORY.forEach((entry) => {
-    add(entry.locale, entry.text);
-  });
-
   return [...entries.values()].sort((left, right) => (
     left.locale.localeCompare(right.locale)
     || left.text.localeCompare(right.text)

@@ -5,7 +5,7 @@ import {
   type AppLifecycleState,
 } from '../platform/useAppLifecycle';
 import {
-  communicationMicrophoneGuard,
+  interactionMicrophoneGuard,
   type MicrophonePlaybackGuardContract,
 } from '../services/microphonePlaybackGuard';
 import type { GenerationToken } from './useGenerationToken';
@@ -129,7 +129,7 @@ export function useMicEffort(
   const acquisitionGenerationRef = useRef(0);
   const pendingAcquisitionRef = useRef<MicAcquisition | null>(null);
   const activeAcquisitionRef = useRef<MicAcquisition | null>(null);
-  const playbackGuard = options.playbackGuard ?? communicationMicrophoneGuard;
+  const playbackGuard = options.playbackGuard ?? interactionMicrophoneGuard;
   const subscribeLifecycle = options.subscribeLifecycle ?? subscribeAppLifecycle;
   const supported = microphoneSupported();
 
@@ -211,7 +211,7 @@ export function useMicEffort(
     acquisitionGenerationRef.current = generation;
     teardown();
     const generationGuard = optionsRef.current.generation;
-    const guard = optionsRef.current.playbackGuard ?? communicationMicrophoneGuard;
+    const guard = optionsRef.current.playbackGuard ?? interactionMicrophoneGuard;
     const initialBlock = currentBlock(generation, generationGuard, guard);
     if (initialBlock) {
       return initialBlock;

@@ -31,9 +31,6 @@ const APP_SHELL = [
   '/speech/he-IL.mp3',
   '/speech/en-US.mp3',
   '/speech/en-GB.mp3',
-  '/speech/toy-phone-he-IL-v1.mp3',
-  '/speech/toy-phone-en-US-v1.mp3',
-  '/speech/toy-phone-en-GB-v1.mp3',
 ];
 
 self.addEventListener('install', (event) => {

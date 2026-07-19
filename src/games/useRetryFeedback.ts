@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RetryScope } from '../content/retry';
-import type { CommunicationGameScope } from '../domain/communicationGame';
+import type { InteractionScope } from '../domain/interactionScope';
 import { SessionRetryHistory } from '../domain/retry';
 import type { ToddlerSettings } from '../domain/types';
 import {
@@ -24,7 +24,7 @@ interface RetryFeedbackOptions {
   settings: ToddlerSettings;
   coordinatedSpeech?: {
     intentIdPrefix: string;
-    scope: CommunicationGameScope;
+    scope: InteractionScope;
   };
 }
 

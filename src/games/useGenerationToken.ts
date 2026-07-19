@@ -1,19 +1,19 @@
 import { useEffect, useRef } from 'react';
 import {
-  communicationScopeKey,
-  type CommunicationGameScope,
-} from '../domain/communicationGame';
+  interactionScopeKey,
+  type InteractionScope,
+} from '../domain/interactionScope';
 
 export interface GenerationToken {
   readonly generation: number;
-  readonly scope: CommunicationGameScope;
+  readonly scope: InteractionScope;
 }
 
 export class GenerationTokenController {
   private generation = 0;
   private currentToken: GenerationToken | null = null;
 
-  issue(scope: CommunicationGameScope): GenerationToken {
+  issue(scope: InteractionScope): GenerationToken {
     this.generation += 1;
     this.currentToken = {
       generation: this.generation,
@@ -43,7 +43,7 @@ export class GenerationTokenController {
     return (
       this.currentToken === token
       && token.generation === this.generation
-      && communicationScopeKey(token.scope) === communicationScopeKey(this.currentToken.scope)
+      && interactionScopeKey(token.scope) === interactionScopeKey(this.currentToken.scope)
     );
   }
 
@@ -61,12 +61,12 @@ export interface GenerationTokenHandle {
   invalidate: () => void;
 }
 
-export function useGenerationToken(scope: CommunicationGameScope): GenerationTokenHandle {
+export function useGenerationToken(scope: InteractionScope): GenerationTokenHandle {
   const controllerRef = useRef<GenerationTokenController | null>(null);
   const tokenRef = useRef<{ key: string; token: GenerationToken } | null>(null);
   controllerRef.current ??= new GenerationTokenController();
 
-  const key = communicationScopeKey(scope);
+  const key = interactionScopeKey(scope);
   if (tokenRef.current?.key !== key) {
     tokenRef.current = {
       key,

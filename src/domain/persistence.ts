@@ -6,16 +6,8 @@ import {
 } from './progression';
 import { normalizeChildName } from './childName';
 import { DEFAULT_ENGLISH_VOICE_LOCALE } from './narrationVoice';
-import {
-  createInitialCommunicationProgress,
-  COMMUNICATION_PROGRESS_VERSION,
-  RECENT_COMMUNICATION_CONTENT_LIMIT,
-  type CommunicationProgress,
-} from './communicationProgress';
-import { COMMUNICATION_ACTIVITY_IDS } from './communicationGame';
 import type {
   AppProgress,
-  CommunicationActivityProgressMap,
   ConceptStat,
   DomainProgress,
   RecentRoundResult,
@@ -175,55 +167,6 @@ function sanitizeDomains(source: unknown, template: AppProgress['domains']): App
   return output;
 }
 
-function sanitizeCommunicationProgress(
-  value: unknown,
-  fallback: CommunicationProgress,
-): CommunicationProgress {
-  if (!isRecord(value)) {
-    return fallback;
-  }
-
-  const contentVersion = typeof value.contentVersion === 'string' && value.contentVersion.trim()
-    ? value.contentVersion.trim()
-    : null;
-  const recentSource = Array.isArray(value.recentContentIds) ? value.recentContentIds : [];
-  const recentContentIds = Array.from(new Set(
-    recentSource.filter((contentId): contentId is string => (
-      typeof contentId === 'string' && contentId.trim().length > 0
-    )).map((contentId) => contentId.trim()),
-  )).slice(-RECENT_COMMUNICATION_CONTENT_LIMIT);
-
-  return {
-    version: COMMUNICATION_PROGRESS_VERSION,
-    contentVersion,
-    sessionsCompleted: Math.max(0, Math.round(asNumber(value.sessionsCompleted, 0))),
-    roundsSeen: Math.max(0, Math.round(asNumber(value.roundsSeen, 0))),
-    recentContentIds,
-    lastPlayedAt: Math.max(0, Math.round(asNumber(value.lastPlayedAt, 0))),
-  };
-}
-
-function sanitizeCommunicationActivityProgress(
-  value: unknown,
-  fallback: CommunicationActivityProgressMap = {},
-): CommunicationActivityProgressMap {
-  if (!isRecord(value)) {
-    return fallback;
-  }
-
-  return Object.fromEntries(
-    COMMUNICATION_ACTIVITY_IDS
-      .filter((activityId) => value[activityId] !== undefined)
-      .map((activityId) => [
-        activityId,
-        sanitizeCommunicationProgress(
-          value[activityId],
-          fallback[activityId] ?? createInitialCommunicationProgress(),
-        ),
-      ]),
-  ) as CommunicationActivityProgressMap;
-}
-
 export function migrateStoredProgress(
   raw: unknown,
   options: { prefersReducedMotion?: boolean; now?: number } = {},
@@ -253,11 +196,6 @@ export function migrateStoredProgress(
       totalStars: sanitizeTotalStars(raw.totalStars, domainStars),
       settings,
       domains,
-      communication: sanitizeCommunicationProgress(raw.communication, base.communication),
-      communicationActivities: sanitizeCommunicationActivityProgress(
-        raw.communicationActivities,
-        base.communicationActivities ?? {},
-      ),
     };
   }
 
@@ -272,8 +210,6 @@ export function migrateStoredProgress(
     totalStars: sanitizeTotalStars(raw.totalStars, domainStars),
     settings,
     domains,
-    communication: base.communication,
-    communicationActivities: base.communicationActivities ?? {},
   };
 }
 

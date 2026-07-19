@@ -3,7 +3,6 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { collectRecordedSpeechCatalog } from './recordedSpeechCatalog';
 import { learningConcepts } from './concepts';
-import { TOY_PHONE_RECORDING_INVENTORY } from './toyPhone';
 import { RECORDED_NARRATION_VOICE_NAMES } from '../domain/narrationVoice';
 import {
   getHebrewPronunciationSkeleton,
@@ -39,9 +38,6 @@ describe('recorded speech asset coverage', () => {
         '/speech/he-IL.mp3',
         '/speech/en-US.mp3',
         '/speech/en-GB.mp3',
-        '/speech/toy-phone-he-IL-v1.mp3',
-        '/speech/toy-phone-en-US-v1.mp3',
-        '/speech/toy-phone-en-GB-v1.mp3',
       ]),
     );
     for (const entry of Object.values(manifest.entries)) {
@@ -50,7 +46,7 @@ describe('recorded speech asset coverage', () => {
     }
   });
 
-  it('pre-caches the manifest and all six sprites for installed offline use', () => {
+  it('pre-caches the manifest and the three retained legacy sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
     expect(serviceWorker).toContain("sean-learning-adventure-v25");
@@ -58,9 +54,7 @@ describe('recorded speech asset coverage', () => {
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");
     expect(serviceWorker).toContain("'/speech/en-GB.mp3'");
-    expect(serviceWorker).toContain("'/speech/toy-phone-he-IL-v1.mp3'");
-    expect(serviceWorker).toContain("'/speech/toy-phone-en-US-v1.mp3'");
-    expect(serviceWorker).toContain("'/speech/toy-phone-en-GB-v1.mp3'");
+    expect(serviceWorker).not.toContain('toy-phone');
     for (const concept of learningConcepts) {
       expect(serviceWorker).toContain(`'${concept.image}'`);
     }
@@ -71,18 +65,18 @@ describe('recorded speech pronunciation layer', () => {
   const catalog = collectRecordedSpeechCatalog();
   const byLocale = (locale: string) => catalog.filter((entry) => entry.locale === locale);
 
-  it('keeps a stable count of 508 unique phrases per locale after adding Toy Phone', () => {
+  it('keeps a stable count of 490 unique phrases per locale after removing communication activities', () => {
     for (const locale of ['he-IL', 'en-US', 'en-GB']) {
       const entries = byLocale(locale);
-      expect(entries).toHaveLength(508);
+      expect(entries).toHaveLength(490);
       const keys = entries.map((entry) => entry.text);
-      expect(new Set(keys).size).toBe(508);
+      expect(new Set(keys).size).toBe(490);
     }
   });
 
   it('gives every Hebrew entry a pointed spokenText that strips back to the source', () => {
     const hebrew = byLocale('he-IL');
-    expect(hebrew).toHaveLength(508);
+    expect(hebrew).toHaveLength(490);
     for (const entry of hebrew) {
       expect(entry.spokenText, `missing spokenText for ${entry.text}`).toBeTruthy();
       const spoken = entry.spokenText as string;
@@ -112,17 +106,13 @@ describe('recorded speech pronunciation layer', () => {
     }
   });
 
-  it('adds exactly the reviewed Toy Phone phrases on immutable dedicated sprites', () => {
+  it('does not include removed Toy Phone dedicated sprite entries', () => {
     const manifest = JSON.parse(
       readFileSync(resolve('public/speech/manifest.json'), 'utf8'),
     ) as Manifest;
-    expect(Object.keys(manifest.entries)).toHaveLength(1524);
+    expect(Object.keys(manifest.entries)).toHaveLength(1470);
 
-    for (const entry of TOY_PHONE_RECORDING_INVENTORY) {
-      expect(manifest.entries[entry.recordingKey]).toMatchObject({
-        src: `/speech/toy-phone-${entry.locale}-v1.mp3`,
-      });
-    }
+    expect(JSON.stringify(manifest.entries)).not.toContain('toy-phone');
   });
 
   it('never points the source text, English entries, or manifest lookup keys', () => {

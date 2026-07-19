@@ -39,7 +39,7 @@ class FakeRecordedSpeech implements RecordedSpeechBackend {
 
 const settings = createInitialSettings();
 const options = {
-  scope: 'communication:peek:session:peek:prompt-1',
+  scope: 'interaction:counting:session:round:prompt-1',
   onStart: vi.fn(),
 };
 

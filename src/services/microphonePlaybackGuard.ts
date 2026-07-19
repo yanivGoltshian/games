@@ -70,4 +70,4 @@ export class MicrophonePlaybackGuard implements MicrophonePlaybackGuardContract 
   }
 }
 
-export const communicationMicrophoneGuard = new MicrophonePlaybackGuard();
+export const interactionMicrophoneGuard = new MicrophonePlaybackGuard();

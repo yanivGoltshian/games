@@ -214,7 +214,7 @@ describe('CountingGame — count-out-loud voice affordance', () => {
 
     expect(doubles.speakSegments).toHaveBeenCalledOnce();
     expect(doubles.speakSegments.mock.calls[0]?.[2]).toMatchObject({
-      scope: expect.stringContaining('communication:counting'),
+      scope: expect.stringContaining('interaction:counting'),
       priority: 'prompt',
     });
     expect(micDouble.start).not.toHaveBeenCalled();
