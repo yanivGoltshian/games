@@ -4,6 +4,7 @@ export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';
 export type EnglishVoiceLocale = 'en-US' | 'en-GB';
 export type SpeechLocale = 'he-IL' | EnglishVoiceLocale;
+export type DomainLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type ColorId = 'red' | 'blue' | 'green' | 'yellow';
 export type ShapeId = 'circle' | 'square' | 'triangle' | 'star';
 export type SortingRule = 'color' | 'shape';
@@ -12,6 +13,7 @@ export type ConceptCategory =
   | 'clothing'
   | 'furniture'
   | 'fruit'
+  | 'emotion'
   | 'nature'
   | 'tableware'
   | 'toy'
@@ -39,7 +41,7 @@ export type ProgressionChoice = 'next' | 'replay';
 
 export interface RecentRoundResult {
   completedAt: number;
-  level: 1 | 2 | 3;
+  level: DomainLevel;
   success: boolean;
   firstAttempt: boolean;
   attempts: number;
@@ -49,8 +51,8 @@ export interface DomainProgress {
   attempts: number;
   successes: number;
   streak: number;
-  level: 1 | 2 | 3;
-  highestLevel: 1 | 2 | 3;
+  level: DomainLevel;
+  highestLevel: DomainLevel;
   completedRounds: number;
   firstAttemptSuccesses: number;
   totalAttempts: number;

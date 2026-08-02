@@ -449,12 +449,91 @@ export const learningConcepts = [
     }),
     audio: {},
   },
+  {
+    id: 'emotion-happy',
+    category: 'emotion',
+    he: 'שמח',
+    spokenHe: 'שָׂמֵחַ',
+    en: 'happy',
+    image: '/assets/vocabulary/emotion-happy.svg',
+    introducedAtLevel: 1,
+    puzzle: false,
+    quantity: null,
+    audio: {},
+  },
+  {
+    id: 'emotion-sad',
+    category: 'emotion',
+    he: 'עצוב',
+    spokenHe: 'עָצוּב',
+    en: 'sad',
+    image: '/assets/vocabulary/emotion-sad.svg',
+    introducedAtLevel: 1,
+    puzzle: false,
+    quantity: null,
+    audio: {},
+  },
+  {
+    id: 'emotion-crying',
+    category: 'emotion',
+    he: 'בוכה',
+    spokenHe: 'בּוֹכֶה',
+    en: 'crying',
+    image: '/assets/vocabulary/emotion-crying.svg',
+    introducedAtLevel: 1,
+    puzzle: false,
+    quantity: null,
+    audio: {},
+  },
+  {
+    id: 'emotion-angry',
+    category: 'emotion',
+    he: 'כועס',
+    spokenHe: 'כּוֹעֵס',
+    en: 'angry',
+    image: '/assets/vocabulary/emotion-angry.svg',
+    introducedAtLevel: 1,
+    puzzle: false,
+    quantity: null,
+    audio: {},
+  },
+  {
+    id: 'emotion-surprised',
+    category: 'emotion',
+    he: 'מופתע',
+    spokenHe: 'מוּפְתָּע',
+    en: 'surprised',
+    image: '/assets/vocabulary/emotion-surprised.svg',
+    introducedAtLevel: 1,
+    puzzle: false,
+    quantity: null,
+    audio: {},
+  },
+  {
+    id: 'emotion-scared',
+    category: 'emotion',
+    he: 'מפחד',
+    spokenHe: 'מְפַחֵד',
+    en: 'scared',
+    image: '/assets/vocabulary/emotion-scared.svg',
+    introducedAtLevel: 1,
+    puzzle: false,
+    quantity: null,
+    audio: {},
+  },
 ] as const satisfies readonly LearningConcept[];
 
 export type LearningConceptDefinition = (typeof learningConcepts)[number];
 export type LearningConceptId = LearningConceptDefinition['id'];
 export type CountingConceptDefinition = Extract<LearningConceptDefinition, { quantity: object }>;
 export type CountingConceptId = CountingConceptDefinition['id'];
+
+export const emotionConcepts = learningConcepts.filter(
+  (concept) => concept.category === 'emotion',
+);
+export const emotionConceptIds: readonly LearningConceptId[] = emotionConcepts.map(
+  (concept) => concept.id,
+);
 
 export const countingConcepts = learningConcepts.filter(
   (concept): concept is CountingConceptDefinition => concept.quantity !== null,

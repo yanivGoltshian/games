@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   INITIAL_MEMORY_CELEBRATION_STATE,
+  MEMORY_REVEAL_FALLBACK_MS,
   MEMORY_MISMATCH_HOLD_MS,
   REDUCED_MOTION_MISMATCH_HOLD_MS,
   REDUCED_MOTION_REVEAL_HOLD_MS,
@@ -41,12 +42,13 @@ describe('memory final-pair reveal', () => {
   });
 
   it('uses an intentional visual hold when card transitions are disabled', () => {
-    expect(memoryRevealFallbackMs(false, false)).toBeNull();
+    expect(memoryRevealFallbackMs(false, false)).toBe(MEMORY_REVEAL_FALLBACK_MS);
     expect(memoryRevealFallbackMs(true, false)).toBe(REDUCED_MOTION_REVEAL_HOLD_MS);
     expect(memoryRevealFallbackMs(false, true)).toBe(REDUCED_MOTION_REVEAL_HOLD_MS);
+    expect(MEMORY_REVEAL_FALLBACK_MS).toBeGreaterThan(REDUCED_MOTION_REVEAL_HOLD_MS);
   });
 
-  it('cancels the reduced-motion fallback without a late state update after exit', () => {
+  it('cancels the reveal fallback without a late state update after exit', () => {
     let runScheduled = (): void => undefined;
     const clearTimeout = vi.fn();
     const onComplete = vi.fn();

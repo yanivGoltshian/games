@@ -32,5 +32,7 @@ export interface CelebrationInfo {
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;
   celebrationVariant?: CelebrationVariant;
+  soundVariant?: 'standard' | 'memory';
+  soundTiming?: 'start' | 'after-speech';
   followUpSegments?: SpeechSegment[];
 }

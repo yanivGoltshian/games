@@ -1,6 +1,8 @@
 import type { CelebrationInfo } from './types';
 
 export const REDUCED_MOTION_REVEAL_HOLD_MS = 450;
+export const MEMORY_REVEAL_FALLBACK_MS = 500;
+export const MEMORY_PAIR_SOUND_HOLD_MS = 360;
 
 // Deliberate toddler-facing hold that keeps a non-matching pair visible before it
 // flips back. Closing is driven purely by this timeout so it is guaranteed even on
@@ -59,10 +61,10 @@ export function reduceMemoryCelebration(
 export function memoryRevealFallbackMs(
   caregiverReducedMotion: boolean,
   systemReducedMotion: boolean,
-): number | null {
+): number {
   return caregiverReducedMotion || systemReducedMotion
     ? REDUCED_MOTION_REVEAL_HOLD_MS
-    : null;
+    : MEMORY_REVEAL_FALLBACK_MS;
 }
 
 export function scheduleMemoryRevealFallback(

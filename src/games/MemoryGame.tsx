@@ -9,6 +9,7 @@ import { buildPhraseSegments, speechService, type SpeechResult } from '../servic
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import {
   INITIAL_MEMORY_CELEBRATION_STATE,
+  MEMORY_PAIR_SOUND_HOLD_MS,
   memoryMismatchHoldMs,
   memoryRevealFallbackMs,
   reduceMemoryCelebration,
@@ -36,9 +37,12 @@ export function MemoryGame({
   );
   const [flippedIds, setFlippedIds] = useState<string[]>([]);
   const [matchedPairIds, setMatchedPairIds] = useState<string[]>([]);
+  const [celebratedPairIds, setCelebratedPairIds] = useState<string[]>([]);
+  const [narrationBusy, setNarrationBusy] = useState(false);
   const [mismatch, setMismatch] = useState<{ token: number } | null>(null);
   const mismatchTokenRef = useRef(0);
   const firstLabelPromiseRef = useRef<Promise<SpeechResult> | null>(null);
+  const pairFeedbackTimerRef = useRef<number | null>(null);
   const roundGenerationRef = useRef(0);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound(
@@ -75,16 +79,30 @@ export function MemoryGame({
     dispatchCelebration({ type: 'reset' });
     setFlippedIds([]);
     setMatchedPairIds([]);
+    setCelebratedPairIds([]);
+    setNarrationBusy(false);
     setMismatch(null);
     firstLabelPromiseRef.current = null;
+    if (pairFeedbackTimerRef.current !== null) {
+      window.clearTimeout(pairFeedbackTimerRef.current);
+      pairFeedbackTimerRef.current = null;
+    }
     roundGenerationRef.current += 1;
     if (mediaReady) {
       void speakPromptRef.current();
     }
   }, [mediaReady, roundKey]);
 
+  useEffect(() => () => {
+    roundGenerationRef.current += 1;
+    if (pairFeedbackTimerRef.current !== null) {
+      window.clearTimeout(pairFeedbackTimerRef.current);
+      pairFeedbackTimerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (!pendingCelebration || revealFallbackMs === null) {
+    if (!pendingCelebration) {
       return;
     }
 
@@ -124,7 +142,14 @@ export function MemoryGame({
   }, [mismatch, mismatchHoldMs]);
 
   const handleCardClick = (cardId: string) => {
-    if (celebration || pendingCelebration || mismatch || flippedIds.includes(cardId)) {
+    if (
+      celebration
+      || pendingCelebration
+      || mismatch
+      || retryBusy
+      || narrationBusy
+      || flippedIds.includes(cardId)
+    ) {
       return;
     }
 
@@ -134,17 +159,25 @@ export function MemoryGame({
     }
 
     soundService.playTap(settings);
+    const generation = roundGenerationRef.current;
     const concept = learningConcepts.find((item) => item.id === card.conceptId);
     const nextFlipped = [...flippedIds, cardId];
     setFlippedIds(nextFlipped);
 
     if (nextFlipped.length < 2) {
       if (concept) {
-        firstLabelPromiseRef.current = speechService.speakSegments(
+        const firstLabelPromise = speechService.speakSegments(
           buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
           settings,
           { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label' },
         );
+        firstLabelPromiseRef.current = firstLabelPromise;
+        setNarrationBusy(true);
+        void firstLabelPromise.then(() => {
+          if (generation === roundGenerationRef.current) {
+            setNarrationBusy(false);
+          }
+        });
       }
       return;
     }
@@ -158,8 +191,20 @@ export function MemoryGame({
     if (firstCard.pairId === card.pairId) {
       const nextMatched = [...matchedPairIds, card.pairId];
       setMatchedPairIds(nextMatched);
+      setCelebratedPairIds((current) => current.includes(card.pairId)
+        ? current
+        : [...current, card.pairId]);
       setFlippedIds([]);
-      soundService.playSuccess(settings);
+      const secondLabelPromise = concept
+        ? speechService.speakSegments(
+          buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
+          settings,
+          { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label' },
+        )
+        : null;
+      if (secondLabelPromise) {
+        setNarrationBusy(true);
+      }
       if (nextMatched.length === round.pairConceptIds.length) {
         const summary = onCompleteRound({
           attempts: nextAttempts,
@@ -168,23 +213,39 @@ export function MemoryGame({
         });
         const info: CelebrationInfo = {
           seed: `memory-${round.pairConceptIds.join('-')}-${nextAttempts}`,
-          targetSegments: concept
-            ? buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale)
-            : [],
+          targetSegments: [],
+          ...(secondLabelPromise ? { beforeSpeech: secondLabelPromise } : {}),
           tier: summary.milestone ? 'milestone' : 'standard',
           recommendation: summary.recommendation,
+          celebrationVariant: 'memory-fireworks',
+          soundVariant: 'memory',
+          soundTiming: 'after-speech',
         };
         dispatchCelebration({
           type: 'queue',
           finalCardId: cardId,
           info,
         });
-      } else if (concept) {
-        void speechService.speakSegments(
-          buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
-          settings,
-          { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label' },
-        );
+      } else if (secondLabelPromise) {
+        void secondLabelPromise.then((result) => {
+          if (generation !== roundGenerationRef.current) {
+            return;
+          }
+          if (result.status !== 'cancelled' && result.status !== 'superseded') {
+            soundService.playMemoryPair(settings);
+          }
+          const soundEnabled = !settings.quietMode && settings.soundLevel > 0;
+          if (!soundEnabled) {
+            setNarrationBusy(false);
+            return;
+          }
+          pairFeedbackTimerRef.current = window.setTimeout(() => {
+            pairFeedbackTimerRef.current = null;
+            if (generation === roundGenerationRef.current) {
+              setNarrationBusy(false);
+            }
+          }, MEMORY_PAIR_SOUND_HOLD_MS);
+        });
       }
       firstLabelPromiseRef.current = null;
       return;
@@ -207,7 +268,7 @@ export function MemoryGame({
       modelLines,
       phraseScope: 'memory-search',
       beforeSpeech: firstLabel,
-      lockUntilComplete: false,
+      lockUntilComplete: true,
     });
   };
 
@@ -248,15 +309,22 @@ export function MemoryGame({
         ) : undefined
       }
     >
-      <div className="memory-grid" role="group" aria-label={prompt}>
+      <div
+        className="memory-grid"
+        role="group"
+        aria-label={prompt}
+        data-card-count={round.cards.length}
+      >
         {round.cards.map((card) => {
           const concept = learningConcepts.find((item) => item.id === card.conceptId)!;
-          const flipped = flippedIds.includes(card.id) || matchedPairIds.includes(card.pairId);
+          const matched = matchedPairIds.includes(card.pairId);
+          const flipped = flippedIds.includes(card.id) || matched;
+          const celebrated = celebratedPairIds.includes(card.pairId);
           return (
             <button
               key={card.id}
-              className={`memory-card ${flipped ? 'memory-card--flipped' : ''}`}
-              disabled={mismatch !== null}
+              className={`memory-card ${flipped ? 'memory-card--flipped' : ''} ${celebrated ? 'memory-card--celebrated' : ''}`}
+              disabled={mismatch !== null || retryBusy || narrationBusy || matched}
               onClick={() => handleCardClick(card.id)}
               type="button"
               aria-label={flipped ? (englishOnly ? concept.en : concept.he) : (englishOnly ? 'Hidden card' : 'קלף סגור')}
@@ -266,11 +334,19 @@ export function MemoryGame({
                 className="memory-card__inner"
                 onTransitionEnd={(event) => handleFlipTransitionEnd(card.id, event)}
               >
-                <span className="memory-face memory-face--front">
+                <span
+                  className="memory-face memory-face--front"
+                  aria-hidden={flipped ? undefined : true}
+                >
                   <ConceptArt conceptId={concept.id} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />
                 </span>
                 <span className="memory-face memory-face--back" aria-hidden="true" />
               </span>
+              {celebrated ? (
+                <span className="memory-card__sparkles" aria-hidden="true">
+                  <i /><i /><i /><i /><i />
+                </span>
+              ) : null}
             </button>
           );
         })}

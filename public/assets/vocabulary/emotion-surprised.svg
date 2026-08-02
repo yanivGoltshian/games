@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title">
+  <title id="title">Surprised illustrated face</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#e8ddff"/>
+      <stop offset="1" stop-color="#ffcfeb"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#f4c69c"/>
+      <stop offset="1" stop-color="#cf8965"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="900" rx="180" fill="url(#bg)"/>
+  <path d="M218 349c11-152 112-242 253-238 138 4 227 106 216 260-11 151-96 304-253 298-158-6-227-174-216-320Z" fill="url(#skin)" stroke="#564657" stroke-width="20"/>
+  <path d="M237 294c42-136 172-196 295-160 78 23 133 79 155 153-65-1-126-31-171-82-67 62-159 94-279 89Z" fill="#4a3d43" stroke="#352b30" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M293 392c40-36 83-40 129-10" fill="none" stroke="#5d4245" stroke-width="19" stroke-linecap="round"/>
+  <path d="M478 382c46-30 89-26 129 10" fill="none" stroke="#5d4245" stroke-width="19" stroke-linecap="round"/>
+  <ellipse cx="359" cy="461" rx="42" ry="53" fill="#fff" stroke="#68494b" stroke-width="13"/>
+  <ellipse cx="541" cy="461" rx="42" ry="53" fill="#fff" stroke="#68494b" stroke-width="13"/>
+  <ellipse cx="359" cy="470" rx="18" ry="25" fill="#423237"/>
+  <ellipse cx="541" cy="470" rx="18" ry="25" fill="#423237"/>
+  <circle cx="352" cy="460" r="6" fill="#fff"/>
+  <circle cx="534" cy="460" r="6" fill="#fff"/>
+  <ellipse cx="450" cy="582" rx="57" ry="74" fill="#723e4d" stroke="#5c3140" stroke-width="18"/>
+  <ellipse cx="304" cy="536" rx="43" ry="21" fill="#dc7d85" opacity=".42"/>
+  <ellipse cx="596" cy="536" rx="43" ry="21" fill="#dc7d85" opacity=".42"/>
+  <circle cx="155" cy="190" r="22" fill="#fff" opacity=".72"/>
+  <path d="M738 164v85M696 206h85" stroke="#fff" stroke-width="22" stroke-linecap="round" opacity=".8"/>
+</svg>

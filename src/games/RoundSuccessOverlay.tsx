@@ -43,6 +43,8 @@ export function RoundSuccessOverlay({
       {...(celebration.celebrationVariant
         ? { celebrationVariant: celebration.celebrationVariant }
         : {})}
+      {...(celebration.soundVariant ? { soundVariant: celebration.soundVariant } : {})}
+      {...(celebration.soundTiming ? { soundTiming: celebration.soundTiming } : {})}
       {...(celebration.followUpSegments
         ? { followUpSegments: celebration.followUpSegments }
         : {})}

@@ -52,6 +52,21 @@ describe('persistence migration', () => {
     expect(JSON.parse(raw).updatedAt).toBe(88);
   });
 
+  it('preserves memory level seven but clamps standard domains to level three', () => {
+    const progress = migrateStoredProgress({
+      version: 6,
+      domains: {
+        memory: { level: 7, highestLevel: 7 },
+        listening: { level: 7, highestLevel: 7 },
+      },
+    }, { now: 90 });
+
+    expect(progress.domains.memory.level).toBe(7);
+    expect(progress.domains.memory.highestLevel).toBe(7);
+    expect(progress.domains.listening.level).toBe(1);
+    expect(progress.domains.listening.highestLevel).toBe(1);
+  });
+
   it('sanitizes corrupt current-schema values without losing valid settings', () => {
     const progress = migrateStoredProgress({
       version: 2,

@@ -1,6 +1,7 @@
 import {
   createInitialProgress,
   createInitialSettings,
+  getDomainMaxLevel,
   RECENT_RESULT_LIMIT,
   STORAGE_SCHEMA_VERSION,
 } from './progression';
@@ -27,9 +28,17 @@ function sanitizeTotalStars(value: unknown, domainStars: number): number {
   return Math.max(domainStars, 0, Math.ceil(asNumber(value, domainStars)));
 }
 
-function clampLevel(value: unknown): DomainProgress['level'] {
-  if (value === 2 || value === 3) {
-    return value;
+function clampLevel(
+  value: unknown,
+  maxLevel: DomainProgress['level'],
+): DomainProgress['level'] {
+  if (
+    typeof value === 'number'
+    && Number.isInteger(value)
+    && value >= 1
+    && value <= maxLevel
+  ) {
+    return value as DomainProgress['level'];
   }
   return 1;
 }
@@ -78,7 +87,10 @@ function sanitizeSettings(input: unknown, prefersReducedMotion: boolean): Toddle
   };
 }
 
-function sanitizeRecentResult(value: unknown): RecentRoundResult | null {
+function sanitizeRecentResult(
+  value: unknown,
+  maxLevel: DomainProgress['level'],
+): RecentRoundResult | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -86,14 +98,18 @@ function sanitizeRecentResult(value: unknown): RecentRoundResult | null {
   const success = value.success === true;
   return {
     completedAt: Math.max(0, Math.round(asNumber(value.completedAt, 0))),
-    level: clampLevel(value.level),
+    level: clampLevel(value.level, maxLevel),
     success,
     firstAttempt: success && value.firstAttempt === true,
     attempts: Math.max(1, Math.round(asNumber(value.attempts, 1))),
   };
 }
 
-function sanitizeDomain(value: unknown, fallback: DomainProgress): DomainProgress {
+function sanitizeDomain(
+  value: unknown,
+  fallback: DomainProgress,
+  domainKey: (typeof DOMAIN_KEYS)[number],
+): DomainProgress {
   if (!isRecord(value)) {
     return fallback;
   }
@@ -104,10 +120,11 @@ function sanitizeDomain(value: unknown, fallback: DomainProgress): DomainProgres
   );
   const attempts = Math.max(0, Math.round(asNumber(value.attempts, fallback.attempts)));
   const successes = Math.max(0, Math.min(attempts, Math.round(asNumber(value.successes, fallback.successes))));
-  const level = clampLevel(value.level);
+  const maxLevel = getDomainMaxLevel(domainKey);
+  const level = clampLevel(value.level, maxLevel);
   const recentSource = Array.isArray(value.recentResults) ? value.recentResults : [];
   const recentResults = recentSource
-    .map(sanitizeRecentResult)
+    .map((result) => sanitizeRecentResult(result, maxLevel))
     .filter((result): result is RecentRoundResult => result !== null)
     .slice(-RECENT_RESULT_LIMIT);
   const completedRounds = Math.max(
@@ -124,7 +141,10 @@ function sanitizeDomain(value: unknown, fallback: DomainProgress): DomainProgres
     successes,
     streak: Math.max(0, Math.round(asNumber(value.streak, fallback.streak))),
     level,
-    highestLevel: Math.max(level, clampLevel(value.highestLevel)) as DomainProgress['highestLevel'],
+    highestLevel: Math.max(
+      level,
+      clampLevel(value.highestLevel, maxLevel),
+    ) as DomainProgress['highestLevel'],
     completedRounds,
     firstAttemptSuccesses,
     totalAttempts: Math.max(attempts, Math.round(asNumber(value.totalAttempts, attempts))),
@@ -161,7 +181,7 @@ function sanitizeDomains(source: unknown, template: AppProgress['domains']): App
   }
 
   for (const domain of DOMAIN_KEYS) {
-    output[domain] = sanitizeDomain(source[domain], template[domain]);
+    output[domain] = sanitizeDomain(source[domain], template[domain], domain);
   }
 
   return output;

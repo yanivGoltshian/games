@@ -1,5 +1,6 @@
 import {
   countingConceptIds,
+  emotionConceptIds,
   learningConcepts,
   originalPuzzleScenes,
   requireLearningConcept,
@@ -34,8 +35,23 @@ export const SILLY_ALIEN_GENERATION_ATTEMPTS = 32;
 export const LEARNING_ROUND_GENERATION_ATTEMPTS = 32;
 
 const learningStages: string[][] = ([1, 2, 3] as const).map((level) => learningConcepts
+  .filter((concept) => concept.category !== 'emotion' && concept.introducedAtLevel <= level)
+  .map((concept) => concept.id));
+
+const memoryStages: string[][] = ([1, 2, 3] as const).map((level) => learningConcepts
   .filter((concept) => concept.introducedAtLevel <= level)
   .map((concept) => concept.id));
+const emotionConceptIdSet = new Set<string>(emotionConceptIds);
+
+export const MEMORY_MAX_PAIR_COUNT = 8;
+
+export function memoryPairCountForLevel(level: DomainProgress['level']): number {
+  return Math.min(MEMORY_MAX_PAIR_COUNT, level + 1);
+}
+
+export function minimumMemoryEmotionPairs(pairCount: number): number {
+  return pairCount >= 4 ? 2 : 1;
+}
 
 export const SORTING_COLOR_LABELS: Record<ColorId, { he: string; en: string }> = {
   red: { he: 'אדום', en: 'red' },
@@ -302,11 +318,29 @@ export function generatePuzzleRound(
 
 function createMemoryCandidate(domain: DomainProgress, seed: string | number): MemoryRound {
   const random = createSeededRandom(seed);
-  const stageIndex = Math.min(learningStages.length - 1, Math.max(0, domain.level - 1));
-  const pairCount = domain.level === 1 ? 2 : domain.level === 2 ? 3 : 4;
-  const available = [...learningStages[stageIndex]!];
+  const stageIndex = Math.min(memoryStages.length - 1, Math.max(0, domain.level - 1));
+  const pairCount = memoryPairCountForLevel(domain.level);
+  const available = [...memoryStages[stageIndex]!];
   const weights = buildPracticeWeights(domain, available);
-  const pairConceptIds = pickWeightedUnique(available, weights, pairCount, random);
+  const availableEmotionIds = available.filter((conceptId) => emotionConceptIdSet.has(conceptId));
+  const availableWordIds = available.filter((conceptId) => !emotionConceptIdSet.has(conceptId));
+  const emotionPairCount = Math.min(
+    minimumMemoryEmotionPairs(pairCount),
+    availableEmotionIds.length,
+  );
+  const selectedEmotions = pickWeightedUnique(
+    availableEmotionIds,
+    weights,
+    emotionPairCount,
+    random,
+  );
+  const selectedWords = pickWeightedUnique(
+    availableWordIds,
+    weights,
+    pairCount - selectedEmotions.length,
+    random,
+  );
+  const pairConceptIds = random.shuffle([...selectedEmotions, ...selectedWords]);
   const cards = random.shuffle(
     pairConceptIds.flatMap((conceptId, index) => [
       { id: `a-${index}-${conceptId}`, pairId: conceptId, conceptId },
