@@ -28,6 +28,14 @@ const NEW_CONCEPT_IDS = [
   'flower',
   'tree',
 ] as const satisfies readonly LearningConceptId[];
+const EMOTION_CONCEPT_IDS = [
+  'emotion-happy',
+  'emotion-sad',
+  'emotion-crying',
+  'emotion-angry',
+  'emotion-surprised',
+  'emotion-scared',
+] as const satisfies readonly LearningConceptId[];
 
 function webpDimensions(buffer: Buffer): { width: number; height: number } {
   expect(buffer.subarray(0, 4).toString('ascii')).toBe('RIFF');
@@ -44,8 +52,9 @@ describe('authoritative learning concept catalog', () => {
   it('keeps stable unique ids and exactly the approved expansion concepts', () => {
     const ids = learningConcepts.map((concept) => concept.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(21);
+    expect(ids).toHaveLength(27);
     expect(ids).toEqual(expect.arrayContaining([...NEW_CONCEPT_IDS]));
+    expect(ids).toEqual(expect.arrayContaining([...EMOTION_CONCEPT_IDS]));
   });
 
   it('keeps visual Hebrew unpointed and every spoken Hebrew label fully pointed', () => {
@@ -78,10 +87,10 @@ describe('authoritative learning concept catalog', () => {
     }
   });
 
-  it('maps every concept to one local opaque 900x900 WebP asset', () => {
+  it('maps every concept to one local opaque 900x900 image asset', () => {
     const expectedFiles = learningConcepts.map((concept) => basename(concept.image)).sort();
     const actualFiles = readdirSync(resolve('public/assets/vocabulary'))
-      .filter((name) => name.endsWith('.webp'))
+      .filter((name) => name.endsWith('.webp') || name.endsWith('.svg'))
       .sort();
     expect(actualFiles).toEqual(expectedFiles);
 
@@ -89,10 +98,40 @@ describe('authoritative learning concept catalog', () => {
       const path = resolve('public', concept.image.slice(1));
       const stats = statSync(path);
       const buffer = readFileSync(path);
-      expect(stats.size).toBeGreaterThan(5_000);
-      expect(stats.size).toBeLessThan(250_000);
-      expect(webpDimensions(buffer)).toEqual({ width: 900, height: 900 });
+      if (concept.image.endsWith('.svg')) {
+        const svg = buffer.toString('utf8');
+        expect(stats.size).toBeGreaterThan(1_000);
+        expect(svg).toContain('viewBox="0 0 900 900"');
+        expect(svg).toContain('<rect width="900" height="900"');
+        expect(svg).not.toMatch(/(?:href|src)="https?:\/\//);
+      } else {
+        expect(stats.size).toBeGreaterThan(5_000);
+        expect(stats.size).toBeLessThan(250_000);
+        expect(webpDimensions(buffer)).toEqual({ width: 900, height: 900 });
+      }
     }
+  });
+
+  it('keeps all six emotion concepts memory-only and precisely named', () => {
+    const emotions = learningConcepts.filter((concept) => concept.category === 'emotion');
+    expect(emotions.map((concept) => concept.id)).toEqual(EMOTION_CONCEPT_IDS);
+    expect(emotions.map((concept) => concept.he)).toEqual([
+      'שמח',
+      'עצוב',
+      'בוכה',
+      'כועס',
+      'מופתע',
+      'מפחד',
+    ]);
+    expect(emotions.map((concept) => concept.en)).toEqual([
+      'happy',
+      'sad',
+      'crying',
+      'angry',
+      'surprised',
+      'scared',
+    ]);
+    expect(emotions.every((concept) => !concept.puzzle && concept.quantity === null)).toBe(true);
   });
 
   it('makes every approved new concept countable and available as an object puzzle', () => {

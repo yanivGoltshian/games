@@ -29,3 +29,10 @@ parts so each concept remains immediately recognizable to a young child.
 The estimated total Azure generation cost for this approved batch was $0.2114.
 The original PNG outputs remain in the generating session artifacts rather
 than the application bundle.
+
+## Original emotion illustrations
+
+The six files matching `public/assets/vocabulary/emotion-*.svg` are original
+local vector illustrations created specifically for this repository. They have
+no third-party source, no network dependency, and may be distributed under this
+repository's license.

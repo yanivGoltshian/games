@@ -64,7 +64,7 @@ interface GeneratedClip {
 interface ExistingLocaleAssets {
   manifest: RecordedSpeechManifest;
   spritePath: string;
-  regenerateMatch: string;
+  regenerateTexts: ReadonlySet<string>;
 }
 
 function run(command: string, args: string[]): { stdout: string; stderr: string } {
@@ -275,7 +275,7 @@ async function generateLocale(
         const prefix = String(index).padStart(3, '0');
         const responsePath = join(tempDirectory, `${prefix}-azure.wav`);
         const normalizedPath = join(tempDirectory, `${prefix}.wav`);
-        const shouldRegenerate = !existing || entry.text.includes(existing.regenerateMatch);
+        const shouldRegenerate = !existing || existing.regenerateTexts.has(entry.text);
         if (shouldRegenerate) {
           const audio = await synthesize(endpoint, authorizer, locale, spokenText);
           writeFileSync(responsePath, audio);
@@ -369,6 +369,12 @@ async function main(): Promise<void> {
     (grouped[entry.locale] ??= []).push(entry);
   }
   const regenerateMatch = process.env.AZURE_SPEECH_REGENERATE_MATCH?.trim();
+  const generateMissing = process.env.AZURE_SPEECH_GENERATE_MISSING === 'true';
+  if (regenerateMatch && generateMissing) {
+    throw new Error(
+      'Use either AZURE_SPEECH_REGENERATE_MATCH or AZURE_SPEECH_GENERATE_MISSING, not both.',
+    );
+  }
   let manifest: RecordedSpeechManifest = {
     version: 2,
     voices: { ...RECORDED_NARRATION_VOICE_NAMES },
@@ -376,30 +382,58 @@ async function main(): Promise<void> {
   };
 
   mkdirSync(outputDirectory, { recursive: true });
-  if (regenerateMatch) {
+  if (regenerateMatch || generateMissing) {
     const manifestPath = join(outputDirectory, 'manifest.json');
     const existingManifest = JSON.parse(
       readFileSync(manifestPath, 'utf8'),
     ) as RecordedSpeechManifest;
-    const locale: SpeechLocale = 'he-IL';
-    const localeEntries = grouped[locale] ?? [];
-    const selectedEntries = localeEntries.filter((entry) => entry.text.includes(regenerateMatch));
-    if (selectedEntries.length === 0) {
-      throw new Error(`No Hebrew speech entries match: ${regenerateMatch}`);
-    }
     manifest = {
       version: 2,
       voices: { ...RECORDED_NARRATION_VOICE_NAMES },
       entries: { ...existingManifest.entries },
     };
-    console.log(
-      `Regenerating ${selectedEntries.length} matching ${locale} clips with ${NEURAL_VOICES[locale].name}`,
-    );
-    await generateLocale(locale, localeEntries, manifest, endpoint, authorizer, {
-      manifest: existingManifest,
-      spritePath: join(outputDirectory, `${locale}.mp3`),
-      regenerateMatch,
-    });
+
+    const locales = regenerateMatch
+      ? (['he-IL'] as const)
+      : (Object.keys(NEURAL_VOICES) as SpeechLocale[]);
+    let selectedCount = 0;
+    for (const locale of locales) {
+      const localeEntries = grouped[locale] ?? [];
+      const regenerateTexts = new Set(
+        localeEntries
+          .filter((entry) => regenerateMatch
+            ? entry.text.includes(regenerateMatch)
+            : !existingManifest.entries[manifestKey(locale, entry.text)])
+          .map((entry) => entry.text),
+      );
+      if (regenerateTexts.size === 0) {
+        console.log(`No missing ${locale} clips; preserving the existing sprite.`);
+        continue;
+      }
+      selectedCount += regenerateTexts.size;
+      console.log(
+        `Generating ${regenerateTexts.size} selected ${locale} clips with ${NEURAL_VOICES[locale].name}`,
+      );
+      await generateLocale(locale, localeEntries, manifest, endpoint, authorizer, {
+        manifest: existingManifest,
+        spritePath: join(outputDirectory, `${locale}.mp3`),
+        regenerateTexts,
+      });
+    }
+    if (selectedCount === 0) {
+      throw new Error(
+        regenerateMatch
+          ? `No Hebrew speech entries match: ${regenerateMatch}`
+          : 'The recorded speech manifest already covers the complete catalog.',
+      );
+    }
+
+    const expectedKeys = new Set(catalog.map((entry) => manifestKey(entry.locale, entry.text)));
+    for (const key of Object.keys(manifest.entries)) {
+      if (!expectedKeys.has(key)) {
+        delete manifest.entries[key];
+      }
+    }
   } else {
     for (const locale of Object.keys(NEURAL_VOICES) as SpeechLocale[]) {
       const localeEntries = grouped[locale] ?? [];
@@ -413,9 +447,9 @@ async function main(): Promise<void> {
     join(outputDirectory, 'manifest.json'),
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
-  if (regenerateMatch) {
+  if (regenerateMatch || generateMissing) {
     console.log(
-      `Rebuilt the he-IL sprite and preserved ${catalog.length} manifest clips.`,
+      `Rebuilt selected sprites and preserved ${catalog.length} manifest clips.`,
     );
   } else {
     console.log(

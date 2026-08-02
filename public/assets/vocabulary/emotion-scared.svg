@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title">
+  <title id="title">Scared illustrated face</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#d8f5e8"/>
+      <stop offset="1" stop-color="#b8c8f3"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ffe0b9"/>
+      <stop offset="1" stop-color="#efad84"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="900" rx="180" fill="url(#bg)"/>
+  <path d="M216 350c10-153 112-243 253-239 138 4 227 106 216 260-11 151-96 304-253 298-158-6-226-174-216-319Z" fill="url(#skin)" stroke="#4d5360" stroke-width="20"/>
+  <path d="M239 286c48-129 170-188 286-156 79 22 138 78 160 154-53-5-105-27-148-67-15 34-38 61-70 81-23-23-41-50-53-81-46 43-105 67-175 69Z" fill="#8a6a42" stroke="#644b30" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M293 400c40-31 82-31 124 1" fill="none" stroke="#66504a" stroke-width="19" stroke-linecap="round"/>
+  <path d="M483 401c42-32 84-32 124-1" fill="none" stroke="#66504a" stroke-width="19" stroke-linecap="round"/>
+  <ellipse cx="356" cy="469" rx="39" ry="48" fill="#fff" stroke="#70514d" stroke-width="13"/>
+  <ellipse cx="544" cy="469" rx="39" ry="48" fill="#fff" stroke="#70514d" stroke-width="13"/>
+  <ellipse cx="362" cy="479" rx="17" ry="23" fill="#3f3435"/>
+  <ellipse cx="538" cy="479" rx="17" ry="23" fill="#3f3435"/>
+  <path d="M374 598c41-42 111-42 152 0-43 24-108 24-152 0Z" fill="#fff" stroke="#70424b" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M186 556c-18-39-12-74 18-105 38 27 52 62 42 105-8 34-27 49-49 40-19-8-23-21-11-40Z" fill="#5eb9e8" stroke="#398aca" stroke-width="10"/>
+  <ellipse cx="304" cy="540" rx="40" ry="18" fill="#df8588" opacity=".38"/>
+  <ellipse cx="596" cy="540" rx="40" ry="18" fill="#df8588" opacity=".38"/>
+  <path d="M709 161l18 38 41 6-30 29 7 41-36-19-37 19 7-41-30-29 42-6 18-38Z" fill="#fff" opacity=".68"/>
+</svg>

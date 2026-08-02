@@ -159,6 +159,14 @@ class SoundService {
     ]);
   }
 
+  playMemoryPair(settings: ToddlerSettings): void {
+    this.playSequence(settings, [
+      { frequency: 392, duration: 0.07, gain: 0.065, type: 'triangle', shimmer: 0.08 },
+      { frequency: 523, duration: 0.08, gain: 0.075, type: 'triangle', shimmer: 0.1 },
+      { frequency: 659, duration: 0.12, gain: 0.08, type: 'triangle', shimmer: 0.15 },
+    ]);
+  }
+
   playRetry(settings: ToddlerSettings): void {
     // Gentle, rounded "let's try again" — softened shimmer so it never reads as a buzzer.
     this.playSequence(settings, [
@@ -206,6 +214,15 @@ class SoundService {
       { frequency: 659, duration: 0.11, gain: 0.11 },
       { frequency: 784, duration: 0.12, gain: 0.12 },
       { frequency: 988, duration: 0.18, gain: 0.13, shimmer: 0.4 },
+    ]);
+  }
+
+  playMemoryComplete(settings: ToddlerSettings): void {
+    this.playSequence(settings, [
+      { frequency: 392, duration: 0.09, gain: 0.075, type: 'triangle', shimmer: 0.1 },
+      { frequency: 523, duration: 0.1, gain: 0.085, type: 'triangle', shimmer: 0.12 },
+      { frequency: 659, duration: 0.11, gain: 0.09, type: 'triangle', shimmer: 0.14 },
+      { frequency: 784, duration: 0.18, gain: 0.095, type: 'triangle', shimmer: 0.2 },
     ]);
   }
 

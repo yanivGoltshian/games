@@ -322,15 +322,64 @@ function TrophySparkCelebrationArt({ className }: CelebrationSceneProps) {
   );
 }
 
+function MemoryFireworksCelebrationArt({ className }: CelebrationSceneProps) {
+  const bursts = [
+    { x: 52, y: 52, color: '#ff7f70', delay: 0 },
+    { x: 120, y: 38, color: '#ffcf4d', delay: 1 },
+    { x: 190, y: 58, color: '#4da0f0', delay: 2 },
+  ] as const;
+  const rays = [-75, -45, -15, 15, 45, 75, 105, 135, 165, 195, 225, 255] as const;
+
+  return (
+    <svg
+      viewBox="0 0 240 180"
+      className={classNames('memory-fireworks', className)}
+      data-celebration-variant="memory-fireworks"
+      {...artA11yProps('celebration-memory-fireworks')}
+    >
+      <path d="M28 158 Q120 132 212 158" fill="#7c4a1f" opacity={0.1} />
+      {bursts.map((burst) => (
+        <g
+          key={`${burst.x}-${burst.y}`}
+          className={`celebration-art__firework celebration-art__firework--${burst.delay + 1}`}
+          transform={`translate(${burst.x} ${burst.y})`}
+        >
+          <circle r="8" fill={burst.color} opacity={0.24} />
+          {rays.map((angle) => (
+            <path
+              key={angle}
+              d="M0 -13 L0 -30"
+              stroke={burst.color}
+              strokeWidth="4"
+              strokeLinecap="round"
+              transform={`rotate(${angle})`}
+            />
+          ))}
+          <Sparkle x={0} y={0} size={8} fill="#fff8d6" />
+        </g>
+      ))}
+      <path d="M26 106l8 18 20 2-15 14 4 20-17-10-18 10 4-20-15-14 20-2 5-18Z" fill="#ff9f5a" />
+      <path d="M211 105l7 15 17 3-12 12 3 17-15-8-15 8 3-17-12-12 17-3 7-15Z" fill="#7cc96d" />
+      <path d="M72 122q12 12 1 25t2 25" fill="none" stroke="#d977d1" strokeWidth="6" strokeLinecap="round" />
+      <path d="M169 119q-12 12-1 25t-2 25" fill="none" stroke="#4da0f0" strokeWidth="6" strokeLinecap="round" />
+      <rect x="103" y="128" width="8" height="21" rx="4" fill="#ff7f70" transform="rotate(-18 107 138)" />
+      <rect x="133" y="130" width="8" height="21" rx="4" fill="#ffcf4d" transform="rotate(20 137 140)" />
+      <circle cx="92" cy="159" r="6" fill="#4da0f0" />
+      <circle cx="151" cy="158" r="6" fill="#d977d1" />
+    </svg>
+  );
+}
+
 const CELEBRATION_ART_COMPONENTS = {
   'puppy-confetti': PuppyConfettiCelebrationArt,
   'cake-candles': CakeCandlesCelebrationArt,
   balloons: BalloonsCelebrationArt,
   'rainbow-hop': RainbowHopCelebrationArt,
   'trophy-spark': TrophySparkCelebrationArt,
+  'memory-fireworks': MemoryFireworksCelebrationArt,
 } satisfies Record<CelebrationVariant, (props: CelebrationSceneProps) => React.JSX.Element>;
 
-export { BalloonsCelebrationArt, CakeCandlesCelebrationArt, PuppyConfettiCelebrationArt, RainbowHopCelebrationArt, TrophySparkCelebrationArt };
+export { BalloonsCelebrationArt, CakeCandlesCelebrationArt, MemoryFireworksCelebrationArt, PuppyConfettiCelebrationArt, RainbowHopCelebrationArt, TrophySparkCelebrationArt };
 
 export function CelebrationArt({ variant, className }: CelebrationArtProps) {
   const Scene = CELEBRATION_ART_COMPONENTS[variant];

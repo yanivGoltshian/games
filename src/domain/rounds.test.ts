@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { REALISTIC_CONCEPT_IDS } from '../art/conceptAssets';
 import { ORIGINAL_PUZZLE_SCENE_IDS, sceneImageHref } from '../art/puzzleScenes';
-import { conceptPuzzleScenes, learningConcepts, originalPuzzleScenes } from '../content/concepts';
+import {
+  conceptPuzzleScenes,
+  emotionConceptIds,
+  learningConcepts,
+  originalPuzzleScenes,
+} from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
 import { createInitialDomainProgress } from './progression';
 import {
@@ -15,6 +20,7 @@ import {
   getCountingRoundSignature,
   getListeningRoundSignature,
   getMemoryRoundSignature,
+  memoryPairCountForLevel,
   getNumberPairsRoundSignature,
   getPuzzleRoundSignature,
 } from './rounds';
@@ -191,6 +197,54 @@ describe('round generation', () => {
     });
 
     expect([...counts.values()]).toEqual(Array(round.pairConceptIds.length).fill(2));
+  });
+
+  it.each([
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [4, 5],
+    [5, 6],
+    [6, 7],
+    [7, 8],
+  ] as const)('uses level %i to create %i memory pairs', (level, pairCount) => {
+    const domain = createInitialDomainProgress();
+    domain.level = level;
+    const round = generateMemoryRound(domain, `memory-pairs-${level}`);
+
+    expect(memoryPairCountForLevel(level)).toBe(pairCount);
+    expect(round.pairConceptIds).toHaveLength(pairCount);
+    expect(round.cards).toHaveLength(pairCount * 2);
+  });
+
+  it('guarantees meaningful emotion representation while retaining existing vocabulary', () => {
+    const emotionIds = new Set<string>(emotionConceptIds);
+
+    for (const level of [1, 2, 3, 4, 5, 6, 7] as const) {
+      const domain = createInitialDomainProgress();
+      domain.level = level;
+      for (let index = 0; index < 40; index += 1) {
+        const round = generateMemoryRound(domain, `memory-emotions-${level}-${index}`);
+        const emotionCount = round.pairConceptIds.filter((id) => emotionIds.has(id)).length;
+        const expectedMinimum = round.pairConceptIds.length >= 4 ? 2 : 1;
+
+        expect(emotionCount).toBeGreaterThanOrEqual(expectedMinimum);
+        expect(round.pairConceptIds.some((id) => !emotionIds.has(id))).toBe(true);
+      }
+    }
+  });
+
+  it('keeps memory shuffles and signatures stable for identical inputs', () => {
+    const domain = createInitialDomainProgress();
+    domain.level = 7;
+    const history = ['emotion-happy|tree'];
+    const first = generateMemoryRound(domain, 'stable-memory-layout', history);
+    const second = generateMemoryRound(domain, 'stable-memory-layout', history);
+
+    expect(second.cards).toEqual(first.cards);
+    expect(second.pairConceptIds).toEqual(first.pairConceptIds);
+    expect(getMemoryRoundSignature(second)).toBe(getMemoryRoundSignature(first));
+    expect(new Set(first.cards.map((card) => card.id)).size).toBe(16);
   });
 
   describe('level 1 early constraints', () => {

@@ -74,7 +74,8 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   });
 
   learningConcepts.forEach((concept) => {
-    addPair(`איפה ${concept.he}?`, `Where is the ${concept.en}?`);
+    const englishArticle = concept.category === 'emotion' ? '' : 'the ';
+    addPair(`איפה ${concept.he}?`, `Where is ${englishArticle}${concept.en}?`);
   });
 
   SUPPORTED_COUNTING_CONCEPT_IDS.forEach((conceptId) => {

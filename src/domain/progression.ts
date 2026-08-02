@@ -15,7 +15,13 @@ import { DOMAIN_KEYS } from './types';
 
 export const STORAGE_SCHEMA_VERSION = 6;
 export const RECENT_RESULT_LIMIT = 5;
-const LEVEL_THRESHOLDS = [0, 0.42, 0.62, 1] as const;
+export const MEMORY_MAX_LEVEL = 7;
+export const STANDARD_MAX_LEVEL = 3;
+const LEVEL_THRESHOLDS = [0, 0.42, 0.62, 0.62, 0.62, 0.62, 0.62, 1] as const;
+
+export function getDomainMaxLevel(domainKey?: DomainKey): DomainProgress['level'] {
+  return domainKey === 'memory' ? MEMORY_MAX_LEVEL : STANDARD_MAX_LEVEL;
+}
 
 export function clamp(value: number, min = 0, max = 1): number {
   return Math.min(max, Math.max(min, value));
@@ -113,7 +119,10 @@ export function recommendLevelAdvance(
   domain: DomainProgress,
   domainKey?: DomainKey,
 ): LevelRecommendation | null {
-  if (domain.level >= 3 || domain.mastery < LEVEL_THRESHOLDS[domain.level]) {
+  if (
+    domain.level >= getDomainMaxLevel(domainKey)
+    || domain.mastery < LEVEL_THRESHOLDS[domain.level]
+  ) {
     return null;
   }
 

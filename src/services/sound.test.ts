@@ -129,4 +129,20 @@ describe('soundService synthesis engine', () => {
     soundService.playBoing({ quietMode: false, soundLevel: 0 } as ToddlerSettings);
     expect(created.oscillators.length).toBe(before);
   });
+
+  it('plays distinct short brass motifs for a memory pair and full board', () => {
+    const before = created.oscillators.length;
+    soundService.playMemoryPair(audible);
+    expect(created.oscillators.length - before).toBe(6);
+    soundService.playMemoryComplete(audible);
+    expect(created.oscillators.length - before).toBe(14);
+  });
+
+  it('keeps both memory celebration motifs silent in quiet mode', () => {
+    const before = created.oscillators.length;
+    const quiet = { quietMode: true, soundLevel: 1 } as ToddlerSettings;
+    soundService.playMemoryPair(quiet);
+    soundService.playMemoryComplete(quiet);
+    expect(created.oscillators.length).toBe(before);
+  });
 });

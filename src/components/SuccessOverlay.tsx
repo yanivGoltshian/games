@@ -42,6 +42,8 @@ export interface SuccessOverlayProps {
   tier: PraiseTier;
   recommendation: LevelRecommendation | null;
   celebrationVariant?: CelebrationVariant;
+  soundVariant?: 'standard' | 'memory';
+  soundTiming?: 'start' | 'after-speech';
   followUpSegments?: SpeechSegment[];
   onAdvance: () => void;
 }
@@ -68,6 +70,8 @@ export function SuccessOverlay({
   tier,
   recommendation,
   celebrationVariant: celebrationVariantOverride,
+  soundVariant = 'standard',
+  soundTiming = 'start',
   followUpSegments,
   onAdvance,
 }: SuccessOverlayProps) {
@@ -114,19 +118,52 @@ export function SuccessOverlay({
   useEffect(() => {
     let cancelled = false;
     let cancelFinishTimer: (() => void) | null = null;
+    let cancelLivenessGuard = (): void => undefined;
+    let feedbackPlayed = false;
+    let finishScheduled = false;
+    let livenessTimedOut = false;
     const startedAt = window.performance.now();
     const minimumDuration = tier === 'milestone' ? MILESTONE_MINIMUM_MS : STANDARD_MINIMUM_MS;
-    if (tier === 'milestone') {
-      soundService.playMilestone(settings);
-      soundService.vibrate(settings, [16, 40, 16]);
-    } else {
-      soundService.playCelebrate(settings);
-      soundService.vibrate(settings, 18);
+    const playFeedback = (): void => {
+      if (feedbackPlayed) {
+        return;
+      }
+      feedbackPlayed = true;
+      if (soundVariant === 'memory') {
+        soundService.playMemoryComplete(settings);
+        soundService.vibrate(settings, [16, 40, 16]);
+      } else if (tier === 'milestone') {
+        soundService.playMilestone(settings);
+        soundService.vibrate(settings, [16, 40, 16]);
+      } else {
+        soundService.playCelebrate(settings);
+        soundService.vibrate(settings, 18);
+      }
+    };
+    const scheduleFinish = (delayMs: number): void => {
+      if (finishScheduled) {
+        return;
+      }
+      finishScheduled = true;
+      cancelFinishTimer = scheduleSuccessAdvance(delayMs, () => advanceOnce());
+    };
+    const interruptSpeech = (): void => {
+      if (coordinatedSpeech) {
+        interactionMediaCoordinator.notifyInteraction(
+          coordinatedSpeech.scope,
+          'round-replacement',
+        );
+      } else {
+        speechService.cancelScope(scope, 'navigation');
+      }
+    };
+    if (soundTiming === 'start') {
+      playFeedback();
     }
 
     const speakAndAdvance = async (): Promise<void> => {
       await beforeSpeech;
-      if (cancelled) {
+      if (cancelled || livenessTimedOut) {
         return;
       }
       const conclusionSegments = recommendation
@@ -157,17 +194,32 @@ export function SuccessOverlay({
           },
         );
       }
-      if (cancelled) {
+      if (cancelled || livenessTimedOut) {
         return;
       }
-      const remaining = Math.max(0, minimumDuration - (window.performance.now() - startedAt));
-      cancelFinishTimer = scheduleSuccessAdvance(remaining, () => advanceOnce());
+      if (soundTiming === 'after-speech') {
+        playFeedback();
+        cancelLivenessGuard();
+      }
+      const remaining = soundTiming === 'after-speech'
+        ? minimumDuration
+        : Math.max(0, minimumDuration - (window.performance.now() - startedAt));
+      scheduleFinish(remaining);
     };
     void speakAndAdvance();
 
-    const cancelLivenessGuard = scheduleSuccessAdvance(
+    cancelLivenessGuard = scheduleSuccessAdvance(
       LIVENESS_GUARD_MS,
-      () => advanceOnce(true),
+      () => {
+        if (soundTiming === 'after-speech') {
+          livenessTimedOut = true;
+          interruptSpeech();
+          playFeedback();
+          scheduleFinish(minimumDuration);
+          return;
+        }
+        advanceOnce(true);
+      },
     );
     return () => {
       cancelled = true;
@@ -185,6 +237,8 @@ export function SuccessOverlay({
     scope,
     seed,
     settings,
+    soundTiming,
+    soundVariant,
     targetSegments,
     tier,
   ]);

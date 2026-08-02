@@ -102,6 +102,45 @@ describe('progression', () => {
     expect(next.domain.lastProgressionChoice).toBe('next');
   });
 
+  it('advances memory through level seven while every other domain stays capped at three', () => {
+    let progress = createInitialProgress(false, 1000);
+    for (const expectedLevel of [2, 3, 4, 5, 6, 7] as const) {
+      const domain = progress.domains.memory;
+      domain.mastery = 1;
+      domain.recentResults = Array.from({ length: 3 }, (_, index) => ({
+        completedAt: 1100 + expectedLevel * 10 + index,
+        level: domain.level,
+        success: true,
+        firstAttempt: true,
+        attempts: 1,
+      }));
+      const update = applyProgressionChoice(
+        progress,
+        'memory',
+        'next',
+        1200 + expectedLevel,
+      );
+      expect(update.accepted).toBe(true);
+      expect(update.domain.level).toBe(expectedLevel);
+      progress = update.progress;
+    }
+
+    expect(recommendLevelAdvance(progress.domains.memory, 'memory')).toBeNull();
+
+    const standard = progress.domains.listening;
+    standard.level = 3;
+    standard.highestLevel = 3;
+    standard.mastery = 1;
+    standard.recentResults = Array.from({ length: 3 }, (_, index) => ({
+      completedAt: 1300 + index,
+      level: 3,
+      success: true,
+      firstAttempt: true,
+      attempts: 1,
+    }));
+    expect(recommendLevelAdvance(standard, 'listening')).toBeNull();
+  });
+
   it('does not recommend advancement after retries or a single success', () => {
     let progress = createInitialProgress(false, 1000);
     progress = applyRoundResult(
