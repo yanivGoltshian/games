@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type TransitionEvent } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
-import { learningConcepts } from '../content/concepts';
+import { getMemoryConcept, MEMORY_GARDEN_ART } from '../content/memoryGarden';
 import { gameMeta } from '../content/games';
 import { generateMemoryRound, getMemoryRoundSignature } from '../domain/rounds';
 import { soundService } from '../services/sound';
@@ -160,7 +160,7 @@ export function MemoryGame({
 
     soundService.playTap(settings);
     const generation = roundGenerationRef.current;
-    const concept = learningConcepts.find((item) => item.id === card.conceptId);
+    const concept = getMemoryConcept(card.conceptId);
     const nextFlipped = [...flippedIds, cardId];
     setFlippedIds(nextFlipped);
 
@@ -186,7 +186,7 @@ export function MemoryGame({
     setAttempts(nextAttempts);
     const [firstId] = nextFlipped;
     const firstCard = round.cards.find((item) => item.id === firstId)!;
-    const firstConcept = learningConcepts.find((item) => item.id === firstCard.conceptId);
+    const firstConcept = getMemoryConcept(firstCard.conceptId);
 
     if (firstCard.pairId === card.pairId) {
       const nextMatched = [...matchedPairIds, card.pairId];
@@ -316,7 +316,7 @@ export function MemoryGame({
         data-card-count={round.cards.length}
       >
         {round.cards.map((card) => {
-          const concept = learningConcepts.find((item) => item.id === card.conceptId)!;
+          const concept = getMemoryConcept(card.conceptId)!;
           const matched = matchedPairIds.includes(card.pairId);
           const flipped = flippedIds.includes(card.id) || matched;
           const celebrated = celebratedPairIds.includes(card.pairId);
@@ -338,7 +338,9 @@ export function MemoryGame({
                   className="memory-face memory-face--front"
                   aria-hidden={flipped ? undefined : true}
                 >
-                  <ConceptArt conceptId={concept.id} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />
+                  {MEMORY_GARDEN_ART[concept.id]
+                    ? <img className="memory-face__art" src={MEMORY_GARDEN_ART[concept.id]} alt={englishOnly ? concept.en : concept.he} data-memory-art={concept.id} draggable={false} />
+                    : <ConceptArt conceptId={concept.id} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />}
                 </span>
                 <span className="memory-face memory-face--back" aria-hidden="true" />
               </span>

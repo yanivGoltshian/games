@@ -1,169 +1,280 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { GameShell } from '../components/GameShell';
 import { gameMeta } from '../content/games';
 import {
-  GARDEN_CHILDREN,
   GARDEN_ASK,
-  GARDEN_CONNECTORS,
-  GARDEN_EFFORT,
+  GARDEN_BANANA_SENTENCE,
+  GARDEN_BANANA_WORDS,
   GARDEN_FRUITS,
   GARDEN_INVITATION,
-  GARDEN_PERSIMMON_IMAGE,
   GARDEN_PERSIMMON_WORD,
+  GARDEN_STAGES,
   createGardenRound,
   gardenPhrase,
-  gardenChildPhrase,
   gardenSegments,
-  type GardenConnector,
-  type GardenChild,
-  type GardenFruit,
   type GardenLine,
-  type GardenStage,
 } from '../content/wordGarden';
 import { subscribeAppLifecycle } from '../platform/useAppLifecycle';
-import {
-  createInteractionMediaUnits,
-  interactionMediaCoordinator,
-  type InteractionMediaOutcomeStatus,
-} from '../services/interactionMediaCoordinator';
+import { createInteractionMediaUnits, interactionMediaCoordinator } from '../services/interactionMediaCoordinator';
 import { soundService } from '../services/sound';
-import { useMicEffort } from './useMicEffort';
 import type { ToddlerGameProps } from './types';
 import { useAdaptiveRound } from './useAdaptiveRound';
 
-const LISTEN_MS = 4_000;
-const NEXT_ROUND_MS = 5_000;
-const FRUIT_TURN_MS = 4_000;
-const GROWTH_TURN_MS = 2_400;
-const RESPONSE_TURN_MS = 1_800;
+const ART = {
+  persimmon: '/assets/garden/persimmon.webp',
+  token: '/assets/garden/token.webp',
+  watering: '/assets/garden/watering-can.webp',
+} as const;
 
-function canContinueAfterTouch(status: InteractionMediaOutcomeStatus): boolean {
-  return status !== 'cancelled' && status !== 'replaced';
-}
+const JOURNEY = [
+  { id: 'ask', image: ART.persimmon, destination: 'child', line: GARDEN_STAGES[1].line, expanded: GARDEN_STAGES[1].expanded },
+  { id: 'exchange', image: ART.token, destination: 'gardener', line: GARDEN_STAGES[3].line, expanded: GARDEN_STAGES[3].expanded },
+  { id: 'seed', image: ART.persimmon, destination: 'soil', line: GARDEN_STAGES[12].line, expanded: GARDEN_STAGES[12].expanded },
+  { id: 'cover', image: 'seed', destination: 'soil', line: GARDEN_STAGES[14].line, expanded: GARDEN_STAGES[14].expanded },
+  { id: 'water', image: ART.watering, destination: 'soil', line: GARDEN_STAGES[15].line, expanded: GARDEN_STAGES[15].expanded },
+  { id: 'sprout', image: 'sprout', destination: 'soil', line: GARDEN_STAGES[17].line, expanded: GARDEN_STAGES[17].expanded },
+  { id: 'tree', image: 'tree', destination: 'soil', line: GARDEN_STAGES[18].line, expanded: GARDEN_STAGES[18].expanded },
+  { id: 'fruit', image: ART.persimmon, destination: 'tree', line: GARDEN_STAGES[20].line, expanded: GARDEN_STAGES[20].expanded },
+] as const;
 
-function GardenerArt() {
+const RESPONSE_PAUSE_MS = 1_100;
+const FALLBACK_MS = 6_000;
+
+function ChildArt() {
   return (
-    <svg className="word-garden-person" viewBox="0 0 220 260" role="presentation" aria-hidden="true">
-      <ellipse cx="110" cy="248" rx="86" ry="10" fill="#6b7751" opacity=".23" />
-      <path d="M66 180 L58 237 Q76 251 91 239 L108 201 L128 239 Q146 249 162 236 L153 177 Z" fill="#455e57" />
-      <path d="M45 142 Q70 118 110 119 Q153 120 175 147 L183 198 H37 Z" fill="#e3b576" />
-      <path d="M53 142 L38 188 Q28 211 47 211 Q58 210 66 192 L78 156" fill="#9d6047" />
-      <path d="M166 145 L190 187 Q202 209 188 214 Q176 214 166 197 L149 159" fill="#9d6047" />
-      <circle cx="186" cy="209" r="13" fill="#ba7d5e" />
-      <path d="M72 151 L82 215 H145 L155 151 Z" fill="#547d63" />
-      <path d="M85 153 L88 126 M144 153 L140 127" fill="none" stroke="#547d63" strokeWidth="13" />
-      <rect x="95" y="174" width="36" height="27" rx="5" fill="#759b76" />
-      <path d="M111 186 Q107 176 98 180 M111 186 Q113 175 123 180 M111 186 V194" fill="none" stroke="#d8e6ab" strokeWidth="3" />
-      <rect x="96" y="107" width="30" height="29" rx="13" fill="#ad6b50" />
-      <ellipse cx="110" cy="72" rx="53" ry="57" fill="#b8795b" />
-      <path d="M60 75 Q50 31 76 25 Q95 8 129 25 Q157 22 161 61 L152 77 Q143 54 122 54 Q106 64 84 54 Q75 65 60 75" fill="#43352f" />
-      <path d="M59 57 Q65 6 115 10 Q157 14 161 57 Q110 78 59 57" fill="#83956a" stroke="#4c644f" strokeWidth="3" />
-      <path d="M57 56 Q115 46 175 61 Q151 72 115 70 Q77 72 57 56" fill="#b3a56e" stroke="#4c644f" strokeWidth="3" />
-      <path d="M76 37 Q93 23 105 27 M128 28 Q140 29 146 37" fill="none" stroke="#d7cc96" strokeWidth="3" strokeLinecap="round" opacity=".8" />
-      <circle cx="92" cy="82" r="4" fill="#282c28" />
-      <circle cx="130" cy="82" r="4" fill="#282c28" />
-      <path d="M94 107 Q110 120 128 106" fill="none" stroke="#653e36" strokeWidth="4" strokeLinecap="round" />
-      <circle cx="78" cy="97" r="9" fill="#e59b79" opacity=".7" />
-      <circle cx="143" cy="97" r="9" fill="#e59b79" opacity=".7" />
-      <path d="M170 165 Q190 159 200 146" stroke="#ad6b50" strokeWidth="12" strokeLinecap="round" fill="none" />
-      <path d="M198 148 L202 131 M198 148 L212 137" stroke="#ad6b50" strokeWidth="6" strokeLinecap="round" fill="none" />
+    <svg viewBox="0 0 170 220" role="presentation" aria-hidden="true">
+      <ellipse cx="88" cy="210" rx="60" ry="8" fill="#627c55" opacity=".22" />
+      <path d="M56 158l-10 48h30l12-38 12 38h30l-11-48" fill="#506a70" />
+      <path d="M46 111q39-27 79 0l11 67H35z" fill="#f3cf86" stroke="#997256" strokeWidth="3" />
+      <path d="M45 124q-22 21-12 40m90-40q23 3 35-12" stroke="#b37c60" strokeWidth="13" fill="none" strokeLinecap="round" />
+      <circle cx="153" cy="109" r="10" fill="#b37c60" />
+      <rect x="76" y="95" width="21" height="23" rx="8" fill="#ae765b" />
+      <circle cx="85" cy="66" r="42" fill="#c28c6b" />
+      <path d="M44 69q-19-24 0-40 0-24 25-21 17-17 33-1 27-9 30 18 18 12 0 31-4-20-18-20-24 15-51 8-7 12-19 25" fill="#47362f" />
+      <circle cx="69" cy="67" r="3" fill="#332b29" /><circle cx="99" cy="67" r="3" fill="#332b29" />
+      <path d="M71 83q13 13 27 0" fill="none" stroke="#704439" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }
 
-function GardenActionArt({ stage, done }: { stage: GardenStage; done: boolean }) {
-  const clipId = useId();
-  const hasFruit = ['ask', 'receive', 'pick', 'put', 'carry', 'wash', 'smell', 'taste', 'share', 'seed', 'fruit'].includes(stage);
-  const cherry = stage === 'pick' || stage === 'wash';
-  const persimmon = stage === 'ask' || stage === 'receive' || stage === 'seed' || stage === 'fruit';
+function GardenerArt() {
   return (
-    <svg viewBox="0 0 220 220" aria-hidden="true">
-      <defs><clipPath id={clipId}><circle cx="110" cy="93" r="44" /></clipPath></defs>
-      <path d="M22 179 Q65 170 110 180 Q156 169 199 180" fill="none" stroke="#79966a" strokeWidth="5" strokeLinecap="round" />
-      {hasFruit ? (
-        <image
-          href={persimmon ? GARDEN_PERSIMMON_IMAGE : cherry ? GARDEN_FRUITS[0].image : GARDEN_FRUITS[1].image}
-          x="66" y="49" width="88" height="88"
-          clipPath={`url(#${clipId})`}
-          transform={done && stage === 'put' ? 'translate(0 42)' : done && stage === 'receive' ? 'translate(36 24)' : undefined}
-        />
-      ) : null}
-      {stage === 'ask' || stage === 'receive' ? (
-        <>
-          <circle cx="185" cy="96" r="25" fill="#c48b68" stroke="#735443" strokeWidth="3" />
-          <path d="M161 92q4-30 27-27 21 3 21 25-18-14-38-4" fill="#453b33" />
-          <path d="M180 104q8 6 14-1 M161 142q19-22 39 0" fill="none" stroke="#694638" strokeWidth="3" strokeLinecap="round" />
-          {stage === 'receive' ? <path d={done ? 'M170 152q-31-5-42-25' : 'M172 156q-20 1-28-14'} fill="none" stroke="#b57f60" strokeWidth="10" strokeLinecap="round" /> : null}
-        </>
-      ) : null}
-      {stage === 'exchange' || stage === 'accept' ? (
-        <>
-          <circle cx="32" cy="90" r="23" fill="#ad755b" />
-          <circle cx="189" cy="90" r="23" fill="#ca926c" />
-          <path d="M16 87q4-26 26-15 M171 85q9-22 33-10" fill="none" stroke="#51413a" strokeWidth="8" strokeLinecap="round" />
-          <g transform={done ? 'translate(-58 0)' : 'translate(37 0)'}>
-            <circle cx="110" cy="117" r="31" fill="#e1ba64" stroke="#947344" strokeWidth="6" />
-            <path d="M109 129v-19q-12-10-19 0 M109 121q13-19 23-5" fill="none" stroke="#748550" strokeWidth="5" strokeLinecap="round" />
-          </g>
-          <path d="M36 164q34-30 55-16 M175 164q-32-30-55-16" fill="none" stroke="#a46d52" strokeWidth="9" strokeLinecap="round" />
-        </>
-      ) : null}
-      {stage === 'arrive' || stage === 'carry' ? (
-        <g transform={done ? 'translate(24 -5)' : 'translate(-18 5)'}>
-          <path d="M35 113h120l-13 52H51z" fill="#bf8153" stroke="#825f42" strokeWidth="5" strokeLinejoin="round" />
-          <path d="M35 113h120 M62 128l9 23 M99 128v25 M133 127l-9 24" fill="none" stroke="#f1ca8c" strokeWidth="5" strokeLinecap="round" />
-          <circle cx="67" cy="171" r="11" fill="#5b5040" />
-          <circle cx="132" cy="171" r="11" fill="#5b5040" />
-          {stage === 'arrive' ? <path d="M22 93q-10-10 2-17 M178 110q9 5 15 0" fill="none" stroke="#73936b" strokeWidth="5" strokeLinecap="round" /> : null}
-        </g>
-      ) : null}
-      {stage === 'pick' ? (
-        <><path d="M31 37q55-22 158 10 M133 40q20-6 28-29" fill="none" stroke="#6b8051" strokeWidth="9" strokeLinecap="round" />
-          {done ? <path d="M46 159h131l-12 36H58z" fill="#c69461" stroke="#835d42" strokeWidth="4" /> : null}</>
-      ) : null}
-      {stage === 'put' || stage === 'carry' ? (
-        <path d="M45 157h131l-13 38H59z" fill={stage === 'carry' ? '#d0a571' : '#c48c5e'} stroke="#835d42" strokeWidth="5" strokeLinejoin="round" />
-      ) : null}
-      {stage === 'wash' ? (
-        <><path d="M28 34h76q13 0 13 14v13" fill="none" stroke="#59858d" strokeWidth="11" strokeLinecap="round" />
-          <path d="M103 61h27" stroke="#59858d" strokeWidth="7" strokeLinecap="round" />
-          <path d={done ? 'M123 70v19 M111 76v18 M136 78v17' : 'M123 71v8'} stroke="#75b9ca" strokeWidth="6" strokeLinecap="round" /></>
-      ) : null}
-      {stage === 'smell' ? (
-        <><circle cx="180" cy="98" r="19" fill="#bd8262" /><path d="M160 111q20 16 32-1 M162 60q-12-20 1-32 M181 65q-12-20 2-32" fill="none" stroke="#708f77" strokeWidth="4" strokeLinecap="round" /></>
-      ) : null}
-      {stage === 'taste' ? (
-        <><circle cx="180" cy="97" r="22" fill="#bd8262" /><path d="M163 110q17 16 33-1" fill="none" stroke="#68483d" strokeWidth="4" strokeLinecap="round" />
-          {done ? <path d="M148 137q20 1 32-18" fill="none" stroke="#a97659" strokeWidth="8" strokeLinecap="round" /> : null}</>
-      ) : null}
-      {stage === 'share' ? (
-        <><circle cx="38" cy="103" r="21" fill="#ba8065" /><circle cx="183" cy="103" r="21" fill="#d4a47b" />
-          <path d="M33 115q7 6 13 0 M176 115q7 6 13 0" fill="none" stroke="#775542" strokeWidth="3" strokeLinecap="round" />
-          {done ? <path d="M124 147q27 15 47 0" fill="none" stroke="#6b8c5f" strokeWidth="6" strokeLinecap="round" /> : null}</>
-      ) : null}
-      {['seed', 'bury', 'cover', 'water', 'sun', 'sprout', 'tree', 'flower', 'fruit'].includes(stage) ? (
-        <><path d="M37 169q74-20 146 0v34H37z" fill="#ad8b65" stroke="#7d674f" strokeWidth="4" />
-          {['seed', 'bury', 'cover', 'water', 'sun', 'sprout'].includes(stage) ? (
-            <ellipse cx="110" cy={stage === 'seed' ? 158 : done ? 178 : 154} rx="10" ry="15" fill="#71462f" transform={stage === 'seed' ? 'rotate(-20 110 158)' : undefined} />
-          ) : null}
-          {stage === 'seed' && done ? <path d="M83 146q-14 3-20 17" stroke="#7b6849" strokeWidth="4" fill="none" strokeLinecap="round" /> : null}
-          {stage === 'cover' ? <path d={done ? 'M79 167q35-32 64 0' : 'M79 174q35-9 64 0'} fill="#b79973" stroke="#79634e" strokeWidth="4" /> : null}
-          {stage === 'water' ? <><path d="M49 60h54l9 46H39z" fill="#84aab1" stroke="#527b84" strokeWidth="5" /><path d="M104 70q39 0 39 22" fill="none" stroke="#527b84" strokeWidth="9" strokeLinecap="round" />
-            {done ? <path d="M144 99v13 M154 111v16 M135 115v17" stroke="#77bdcf" strokeWidth="6" strokeLinecap="round" /> : null}</> : null}
-          {stage === 'sun' ? <><circle cx="110" cy="83" r="30" fill="#f3ce78" /><path d="M110 34V22 M110 131v12 M60 82H47 M161 82h12" stroke="#d39e46" strokeWidth="5" strokeLinecap="round" /></> : null}
-          {stage === 'sprout' ? <><path d={done ? 'M110 160q-4-36 1-78' : 'M110 164q-5-16 0-23'} fill="none" stroke="#51855c" strokeWidth="8" strokeLinecap="round" />
-            {done ? <path d="M108 122q-40-35-43-4 22 17 43 4 M112 107q41-34 45-6-22 19-45 6" fill="#6ba66a" stroke="#4f8555" strokeWidth="3" /> : null}</> : null}
-          {stage === 'tree' || stage === 'flower' || stage === 'fruit' ? (
-            <><path d={done ? 'M110 173q-8-56 4-118 M112 126q-30-28-48-31 M113 104q27-29 47-31' : 'M110 173q-5-40 1-78'} fill="none" stroke="#7e6a51" strokeWidth="11" strokeLinecap="round" />
-              <ellipse cx="88" cy={done ? 76 : 110} rx={done ? 51 : 34} ry={done ? 44 : 26} fill="#90aa6f" />
-              <ellipse cx="140" cy={done ? 71 : 105} rx={done ? 48 : 30} ry={done ? 42 : 25} fill="#73975f" /></>
-          ) : null}
-          {stage === 'flower' && done ? <>{[72, 94, 120, 146].map((x) => <circle key={x} cx={x} cy={63 + x % 20} r="6" fill="#fff3c6" stroke="#c9aa70" strokeWidth="2" />)}</> : null}
-          {stage === 'fruit' && done ? <>{[76, 96, 142].map((x) => <circle key={x} cx={x} cy={70 + x % 17} r="11" fill="#d98c4e" stroke="#b87445" strokeWidth="3" />)}</> : null}
-          {stage === 'fruit' && done ? <image href={GARDEN_PERSIMMON_IMAGE} x="78" y="46" width="64" height="64" clipPath={`url(#${clipId})`} /> : null}
-        </>
-      ) : null}
+    <svg viewBox="0 0 170 220" role="presentation" aria-hidden="true">
+      <ellipse cx="85" cy="210" rx="66" ry="8" fill="#627c55" opacity=".22" />
+      <path d="M49 159l-10 48h34l13-38 14 38h33l-11-48" fill="#435f58" />
+      <path d="M40 107q41-29 91 0l10 68H28z" fill="#e1ae76" stroke="#966b4b" strokeWidth="3" />
+      <path d="M42 117l-23 42m111-43q20 13 27 32" stroke="#ae7252" strokeWidth="13" fill="none" strokeLinecap="round" />
+      <path d="M63 113l5 65h40l7-65" fill="#548364" stroke="#3c654f" strokeWidth="3" />
+      <circle cx="83" cy="67" r="43" fill="#bb815e" />
+      <path d="M42 68q-7-39 40-45 47-3 47 39-12-19-31-16-26 12-56 22" fill="#413730" />
+      <path d="M35 42q11-39 50-37 45 0 53 37-45 23-103 0" fill="#8ca272" stroke="#56694e" strokeWidth="3" />
+      <ellipse cx="87" cy="43" rx="66" ry="10" fill="#b6a771" stroke="#56694e" strokeWidth="3" />
+      <circle cx="67" cy="69" r="3" fill="#302b28" /><circle cx="100" cy="69" r="3" fill="#302b28" />
+      <path d="M68 87q16 13 32 0" fill="none" stroke="#68463a" strokeWidth="3" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function GrowingArt({ kind }: { kind: 'seed' | 'sprout' | 'tree' }) {
+  return (
+    <svg viewBox="0 0 160 170" aria-hidden="true">
+      <path d="M13 140q65-22 135 0v30H13z" fill="#b3936a" />
+      {kind === 'seed' ? <ellipse cx="80" cy="113" rx="17" ry="23" fill="#785037" transform="rotate(-25 80 113)" /> : null}
+      {kind !== 'seed' ? (
+        <>
+          <path d="M80 142q-5-49 6-100" fill="none" stroke="#6b7950" strokeWidth={kind === 'tree' ? 13 : 7} strokeLinecap="round" />
+          <path d="M79 98q-26-29-42-10 20 24 42 10M84 79q33-27 41-4-26 21-41 4" fill="#72a46b" stroke="#4e8255" strokeWidth="3" />
+        </>
+      ) : null}
+      {kind === 'tree' ? <><circle cx="78" cy="49" r="37" fill="#739e67" /><circle cx="50" cy="66" r="24" fill="#84ac71" /><circle cx="113" cy="65" r="25" fill="#68935d" /></> : null}
+    </svg>
+  );
+}
+
+function SeedArt() {
+  return (
+    <svg viewBox="0 0 160 170" aria-hidden="true">
+      <ellipse cx="80" cy="88" rx="38" ry="51" fill="#79533a" stroke="#573c2b" strokeWidth="4" transform="rotate(-25 80 88)" />
+      <path d="M66 70q12-19 27-19" fill="none" stroke="#b48b68" strokeWidth="5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function BananaActionArt() {
+  return (
+    <span className="garden-bonus__action" aria-hidden="true">
+      <ChildArt />
+      <img src="/assets/garden/banana.webp" alt="" />
+    </span>
+  );
+}
+
+function BananaBonus({
+  play,
+  settings,
+  onAgain,
+  onPartChange,
+  cancelCurrent,
+}: {
+  play: (line: GardenLine) => Promise<unknown>;
+  settings: ToddlerGameProps['settings'];
+  onAgain: () => void;
+  onPartChange: (part: number) => void;
+  cancelCurrent: () => void;
+}) {
+  const [part, setPart] = useState(0);
+  const [acted, setActed] = useState(false);
+  const partRef = useRef(0);
+  const actedRef = useRef(false);
+  const foreground = useRef(true);
+  const timer = useRef<number | null>(null);
+  const english = settings.languageMode === 'en';
+  const clear = useCallback(() => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+  const next = useCallback(() => {
+    clear();
+    cancelCurrent();
+    partRef.current += 1;
+    onPartChange(partRef.current);
+    setPart(partRef.current);
+    actedRef.current = false;
+    setActed(false);
+  }, [cancelCurrent, clear, onPartChange]);
+
+  useEffect(() => {
+    if (part < 3 && !settings.quietMode && !acted) void play(GARDEN_BANANA_WORDS[part]!);
+  }, [acted, part, play, settings.quietMode]);
+  useEffect(() => subscribeAppLifecycle((state) => {
+    foreground.current = state !== 'background';
+    if (!foreground.current) clear();
+    else if (actedRef.current) timer.current = window.setTimeout(next, RESPONSE_PAUSE_MS);
+  }), [clear, next]);
+  useEffect(() => clear, [clear]);
+
+  const touch = () => {
+    if (actedRef.current || partRef.current >= 3 || !foreground.current) return;
+    const index = partRef.current;
+    actedRef.current = true;
+    setActed(true);
+    soundService.playTap(settings);
+    clear();
+    cancelCurrent();
+    timer.current = window.setTimeout(() => {
+      if (foreground.current && partRef.current === index) next();
+    }, FALLBACK_MS);
+    const narrate = async () => {
+      await play(GARDEN_BANANA_WORDS[index]!);
+      if (index === 2 && foreground.current && partRef.current === index) {
+        await play(GARDEN_BANANA_SENTENCE);
+      }
+      if (!foreground.current || partRef.current !== index) return;
+      clear();
+      timer.current = window.setTimeout(next, RESPONSE_PAUSE_MS);
+    };
+    void narrate();
+  };
+
+  return (
+    <div className="garden-bonus" data-part={part} data-acted={acted} dir="rtl">
+      <div className="garden-bonus__strip" aria-hidden="true">
+        <span className={part >= 0 ? 'is-lit' : ''}><ChildArt /></span>
+        <span className={part >= 1 ? 'is-lit' : ''}><BananaActionArt /></span>
+        <span className={part >= 2 ? 'is-lit' : ''}><img src="/assets/garden/banana.webp" alt="" /></span>
+      </div>
+      {part < 3 ? (
+        <button type="button" className={`garden-bonus__target garden-bonus__target--${part}`} disabled={acted} onClick={touch} aria-label={english ? GARDEN_BANANA_WORDS[part]!.en : GARDEN_BANANA_WORDS[part]!.he}>
+          {part === 0 ? <ChildArt /> : part === 1 ? <BananaActionArt />
+            : <img src={acted ? '/assets/garden/banana-bitten.webp' : '/assets/garden/banana.webp'} alt="" />}
+        </button>
+      ) : <button type="button" className="garden-bonus__target" onClick={onAgain} aria-label={english ? 'Back to the garden' : 'חזרה לגן'}><img src="/assets/garden/banana-bitten.webp" alt="" /><span aria-hidden="true">↻</span></button>}
+      {part === 3 ? <span className="garden-bonus__leaves" aria-hidden="true">🍃 🍃 🍃</span> : null}
+    </div>
+  );
+}
+
+function ConnectorBonus({
+  play,
+  settings,
+  onAgain,
+  onPartChange,
+  cancelCurrent,
+}: {
+  play: (line: GardenLine) => Promise<unknown>;
+  settings: ToddlerGameProps['settings'];
+  onAgain: () => void;
+  onPartChange: (part: number) => void;
+  cancelCurrent: () => void;
+}) {
+  const [part, setPart] = useState(0);
+  const [acted, setActed] = useState(false);
+  const partRef = useRef(0);
+  const actedRef = useRef(false);
+  const foreground = useRef(true);
+  const timer = useRef<number | null>(null);
+  const english = settings.languageMode === 'en';
+  const first = GARDEN_FRUITS[0]!;
+  const second = GARDEN_FRUITS[1]!;
+  const line = part === 0 ? gardenPhrase(first) : gardenPhrase(first, second);
+  const clear = useCallback(() => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+  const next = useCallback(() => {
+    clear();
+    cancelCurrent();
+    partRef.current += 1;
+    onPartChange(partRef.current);
+    setPart(partRef.current);
+    actedRef.current = false;
+    setActed(false);
+  }, [cancelCurrent, clear, onPartChange]);
+  useEffect(() => {
+    if (!settings.quietMode) void play(GARDEN_INVITATION);
+  }, [play, settings.quietMode]);
+  useEffect(() => subscribeAppLifecycle((state) => {
+    foreground.current = state !== 'background';
+    if (!foreground.current) clear();
+    else if (actedRef.current) timer.current = window.setTimeout(next, RESPONSE_PAUSE_MS);
+  }), [clear, next]);
+  useEffect(() => clear, [clear]);
+
+  const touch = () => {
+    if (actedRef.current || partRef.current >= 2 || !foreground.current) return;
+    const index = partRef.current;
+    actedRef.current = true;
+    setActed(true);
+    soundService.playTap(settings);
+    clear();
+    cancelCurrent();
+    timer.current = window.setTimeout(() => {
+      if (foreground.current && partRef.current === index) next();
+    }, FALLBACK_MS);
+    void play(index === 0 ? gardenPhrase(first) : gardenPhrase(first, second)).then(() => {
+      if (!foreground.current || partRef.current !== index) return;
+      clear();
+      timer.current = window.setTimeout(next, RESPONSE_PAUSE_MS);
+    });
+  };
+
+  return (
+    <div className="garden-bonus garden-bonus--connector" data-part={part} data-acted={acted} dir="rtl">
+      <div className="garden-bonus__strip garden-bonus__strip--fruit" aria-hidden="true">
+        <span className={part >= 1 ? 'is-lit' : ''}><img src={first.image} alt="" /></span>
+        <span className={part >= 2 ? 'is-lit' : ''}>⌁</span>
+        <span className={part >= 2 ? 'is-lit' : ''}><img src="/assets/garden/dates.webp" alt="" /></span>
+      </div>
+      {part < 2 ? (
+        <button type="button" className="garden-bonus__target" disabled={acted} onClick={touch} aria-label={english ? line.en : line.he}>
+          <img src={part === 0 ? first.image : '/assets/garden/dates.webp'} alt="" />
+        </button>
+      ) : (
+        <button type="button" className="garden-bonus__target" onClick={onAgain} aria-label={english ? 'Back to the garden' : 'חזרה לגן'}>
+          <img src="/assets/garden/dates.webp" alt="" /><span aria-hidden="true">↻</span>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -175,349 +286,194 @@ export function WordGardenGame({
   onBack,
   onCompleteRound,
 }: ToddlerGameProps) {
-  const { round, roundKey, startNextRound } = useAdaptiveRound(
-    'wordGarden',
-    domainProgress,
-    createGardenRound,
-  );
+  const { roundKey, startNextRound } = useAdaptiveRound('wordGarden', domainProgress, createGardenRound);
   const sessionId = useId();
-  const [picked, setPicked] = useState<readonly GardenFruit[]>([]);
-  const pickedRef = useRef<readonly GardenFruit[]>([]);
-  const [connector, setConnector] = useState<GardenConnector>('and');
-  const connectorRef = useRef<GardenConnector>('and');
-  const [stageIndex, setStageIndex] = useState(-1);
-  const stageIndexRef = useRef(-1);
-  const [stageDone, setStageDone] = useState(false);
-  const [heardVoice, setHeardVoice] = useState(false);
-  const [listening, setListening] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [acted, setActed] = useState(false);
   const [liveStatus, setLiveStatus] = useState('');
-  const speechSequence = useRef(0);
-  const listenTimer = useRef<number | null>(null);
-  const nextTimer = useRef<number | null>(null);
-  const effortMs = useRef(0);
-  const voiceDetected = useRef(false);
-  const completed = useRef(false);
-  const activeRound = useRef(roundKey);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [bonusActive, setBonusActive] = useState(false);
+  const [connectorActive, setConnectorActive] = useState(false);
+  const stepRef = useRef(0);
+  const actedRef = useRef(false);
   const foreground = useRef(true);
+  const timer = useRef<number | null>(null);
+  const playSerial = useRef(0);
+  const completed = useRef(false);
+  const bonusPart = useRef(0);
+  const connectorPart = useRef(0);
+  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const destination = useRef<HTMLDivElement>(null);
+  const english = settings.languageMode === 'en';
+  const current = JOURNEY[stepIndex];
 
-  const { start: startMic, stop: stopMic, supported: micSupported } = useMicEffort((level, deltaMs) => {
-    if (level !== 1 || voiceDetected.current) return;
-    effortMs.current += Math.min(deltaMs, 100);
-    if (effortMs.current >= 180) {
-      voiceDetected.current = true;
-      setHeardVoice(true);
-      setLiveStatus(settings.languageMode === 'en' ? 'I heard a sound' : 'שמעתי קול');
-    }
-  });
-
-  const stopListening = useCallback(() => {
-    if (listenTimer.current !== null) window.clearTimeout(listenTimer.current);
-    listenTimer.current = null;
-    stopMic();
-    setListening(false);
-  }, [stopMic]);
-
-  const stopNextTimer = useCallback(() => {
-    if (nextTimer.current !== null) window.clearTimeout(nextTimer.current);
-    nextTimer.current = null;
+  const scope = useCallback((stepId: string) => ({
+    activityId: 'word-garden',
+    sessionId,
+    roundId: String(roundKey),
+    stepId,
+  }), [roundKey, sessionId]);
+  const cancelBonusSpeech = useCallback(() => {
+    interactionMediaCoordinator.notifyInteraction(scope('bonus-transition'), 'round-replacement');
+  }, [scope]);
+  const onBonusPartChange = useCallback((part: number) => {
+    bonusPart.current = part;
   }, []);
 
-  const play = useCallback((line: GardenLine) => {
-    speechSequence.current += 1;
-    const scope = {
-      activityId: 'word-garden',
-      sessionId,
-      roundId: String(roundKey),
-      stepId: String(speechSequence.current),
-    };
-    const segments = gardenSegments(line, settings.languageMode, settings.englishVoiceLocale);
-    return interactionMediaCoordinator.play({
-      intentId: `word-garden:${sessionId}:${roundKey}:${scope.stepId}`,
+  const clearTimer = useCallback(() => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+
+  const play = useCallback(async (line: GardenLine) => {
+    const serial = ++playSerial.current;
+    const mediaScope = scope(String(serial));
+    const result = await interactionMediaCoordinator.play({
+      intentId: `word-garden:${sessionId}:${roundKey}:${serial}`,
       source: 'touch',
-      scope,
+      scope: mediaScope,
       audioClass: 'mandatory',
       settings,
-      units: createInteractionMediaUnits(scope, segments),
-    }).then((result) => {
-      if (activeRound.current === roundKey && foreground.current
-        && (result.status === 'errored' || result.status === 'unavailable')) {
-        setLiveStatus(settings.languageMode === 'en'
-          ? 'Sound is unavailable. You can continue by touch.'
-          : 'השמע אינו זמין. אפשר להמשיך בנגיעה.');
-      }
-      return result;
+      units: createInteractionMediaUnits(mediaScope, gardenSegments(line, settings.languageMode, settings.englishVoiceLocale)),
     });
-  }, [roundKey, sessionId, settings]);
+    if (foreground.current && serial === playSerial.current
+      && (result.status === 'errored' || result.status === 'unavailable')) {
+      setLiveStatus(english ? 'Sound is unavailable. Keep playing by touch.' : 'השמע אינו זמין. אפשר להמשיך בנגיעה.');
+    }
+    return result;
+  }, [english, roundKey, scope, sessionId, settings]);
+
+  const advance = useCallback(() => {
+    clearTimer();
+    interactionMediaCoordinator.notifyInteraction(scope('transition'), 'round-replacement');
+    actedRef.current = false;
+    setActed(false);
+    setLiveStatus('');
+    setBonusActive(false);
+    setConnectorActive(false);
+    stepRef.current += 1;
+    setStepIndex(stepRef.current);
+  }, [clearTimer, scope]);
 
   useEffect(() => {
-    activeRound.current = roundKey;
-    foreground.current = true;
-    pickedRef.current = [];
-    setPicked([]);
-    connectorRef.current = 'and';
-    setConnector('and');
-    stageIndexRef.current = -1;
-    setStageIndex(-1);
-    setStageDone(false);
+    stepRef.current = 0;
+    actedRef.current = false;
     completed.current = false;
-    voiceDetected.current = false;
-    effortMs.current = 0;
-    setHeardVoice(false);
+    foreground.current = true;
+    setStepIndex(0);
+    setActed(false);
     setLiveStatus('');
-    stopListening();
-    stopNextTimer();
+    clearTimer();
     return () => {
       foreground.current = false;
-      stopListening();
-      stopNextTimer();
-      interactionMediaCoordinator.notifyInteraction({
-        activityId: 'word-garden',
-        sessionId,
-        roundId: String(roundKey),
-        stepId: 'exit',
-      }, 'exit');
+      clearTimer();
+      interactionMediaCoordinator.notifyInteraction(scope('exit'), 'exit');
     };
-  }, [roundKey, sessionId, stopListening, stopNextTimer]);
+  }, [roundKey, clearTimer, scope]);
 
   useEffect(() => subscribeAppLifecycle((state) => {
-    if (state === 'background') {
-      foreground.current = false;
-      stopListening();
-      stopNextTimer();
-    } else {
-      foreground.current = true;
+    foreground.current = state !== 'background';
+    if (!foreground.current) {
+      clearTimer();
+      interactionMediaCoordinator.notifyInteraction(scope('background'), 'background');
+    } else if (actedRef.current) {
+      timer.current = window.setTimeout(advance, RESPONSE_PAUSE_MS);
+    } else if (mediaReady && !settings.quietMode && stepRef.current < JOURNEY.length) {
+      void play(stepRef.current === 0 ? GARDEN_ASK : JOURNEY[stepRef.current]!.line);
     }
-  }), [stopListening, stopNextTimer]);
+  }), [advance, clearTimer, mediaReady, play, scope, settings.quietMode]);
 
   useEffect(() => {
-    if (settings.quietMode) stopListening();
-  }, [settings.quietMode, stopListening]);
+    if (!mediaReady || settings.quietMode || !foreground.current || actedRef.current || !current) return;
+    void play(stepIndex === 0 ? GARDEN_ASK : current.line);
+  }, [current, mediaReady, play, settings.quietMode, stepIndex]);
 
-  const scheduleNext = useCallback(() => {
-    stopNextTimer();
-    nextTimer.current = window.setTimeout(startNextRound, NEXT_ROUND_MS);
-  }, [startNextRound, stopNextTimer]);
-
-  const acknowledgeEffort = () => {
-    if (!voiceDetected.current) return;
-    void play(GARDEN_EFFORT);
-  };
-
-  const advanceGrowth = useCallback(() => {
-    stopNextTimer();
-    const next = stageIndexRef.current + 1;
-    if (next >= round.stages.length) {
-      if (!completed.current && pickedRef.current.length === 2) {
-        completed.current = true;
-        soundService.playSuccess(settings);
-        onCompleteRound({
-          attempts: 2 + round.stages.length,
-          requiredActions: 2 + round.stages.length,
-          concepts: pickedRef.current.map((item) => item.id),
-        });
-      }
-      scheduleNext();
-      return;
-    }
-    stageIndexRef.current = next;
-    setStageIndex(next);
-    setStageDone(false);
-    setLiveStatus('');
-    if (round.stages[next]?.id === 'ask') {
-      void play(GARDEN_ASK);
-    }
-  }, [onCompleteRound, play, round.stages, scheduleNext, settings, stopNextTimer]);
-
-  const handleFruit = (fruit: GardenFruit) => {
-    if (stageIndexRef.current >= 0) return;
-    stopListening();
-    stopNextTimer();
-    const current = pickedRef.current;
-    if (current.length === 0) {
-      pickedRef.current = [fruit];
-      setPicked([fruit]);
-      setLiveStatus(settings.languageMode === 'en' ? `I want ${fruit.en}` : `אני רוצה ${fruit.he}`);
-      soundService.playTap(settings);
-      void play(gardenPhrase(fruit));
-      return;
-    }
-    if (current.length === 1 && current[0]!.id !== fruit.id) {
-      const pair = [current[0]!, fruit] as const;
-      pickedRef.current = pair;
-      setPicked(pair);
-      const line = gardenPhrase(pair[0], pair[1], connectorRef.current);
-      setLiveStatus(settings.languageMode === 'en' ? line.en : line.he);
-      soundService.playTap(settings);
-      const step = speechSequence.current + 1;
-      void play(line).then((result) => {
-        if (foreground.current && activeRound.current === roundKey
-          && stageIndexRef.current === -1 && speechSequence.current === step
-          && canContinueAfterTouch(result.status)) {
-          nextTimer.current = window.setTimeout(advanceGrowth, FRUIT_TURN_MS);
-        }
-      });
-      return;
-    }
-    const line = current.length === 1
-      ? gardenPhrase(current[0]!)
-      : gardenPhrase(current[0]!, current[1]!, connectorRef.current);
-    const step = speechSequence.current + 1;
-    void play(line).then((result) => {
-      if (foreground.current && activeRound.current === roundKey
-        && current.length === 2 && stageIndexRef.current === -1 && speechSequence.current === step
-        && canContinueAfterTouch(result.status)) {
-        nextTimer.current = window.setTimeout(advanceGrowth, FRUIT_TURN_MS);
-      }
-    });
-  };
-
-  const handleConnector = () => {
-    if (stageIndexRef.current >= 0) return;
-    const current = pickedRef.current;
-    if (current.length < 2) {
-      void play(GARDEN_INVITATION);
-      return;
-    }
-    const index = GARDEN_CONNECTORS.indexOf(connectorRef.current);
-    const next = GARDEN_CONNECTORS[(index + 1) % GARDEN_CONNECTORS.length]!;
-    connectorRef.current = next;
-    setConnector(next);
-    stopNextTimer();
-    const line = gardenPhrase(current[0]!, current[1]!, next);
-    setLiveStatus(settings.languageMode === 'en' ? line.en : line.he);
-    const step = speechSequence.current + 1;
-    void play(line).then((result) => {
-      if (foreground.current && activeRound.current === roundKey
-        && stageIndexRef.current === -1 && speechSequence.current === step
-        && canContinueAfterTouch(result.status)) {
-        nextTimer.current = window.setTimeout(advanceGrowth, FRUIT_TURN_MS);
-      }
-    });
-  };
-
-  const handleChild = (child: GardenChild) => {
-    if (stageIndexRef.current >= 0) return;
-    const current = pickedRef.current;
-    if (!current[0]) {
-      void play(GARDEN_INVITATION);
-      return;
-    }
-    stopNextTimer();
-    const line = gardenChildPhrase(child, current[0], current[1]);
-    setLiveStatus(settings.languageMode === 'en' ? line.en : line.he);
-    const step = speechSequence.current + 1;
-    void play(line).then((result) => {
-      if (current.length === 2 && foreground.current && activeRound.current === roundKey
-        && stageIndexRef.current === -1 && speechSequence.current === step
-        && canContinueAfterTouch(result.status)) {
-        nextTimer.current = window.setTimeout(advanceGrowth, FRUIT_TURN_MS);
-      }
-    });
-  };
-
-  const handleGardener = () => {
-    const current = pickedRef.current;
-    const currentStage = round.stages[stageIndexRef.current];
-    if (currentStage?.id === 'ask' && !stageDone) {
-      void play(GARDEN_ASK);
-      return;
-    }
-    void play((stageDone ? currentStage?.expanded : currentStage?.line) ?? (current.length === 0
-      ? GARDEN_INVITATION
-      : gardenPhrase(current[0]!, current[1], connectorRef.current)));
-  };
-
-  const handleCart = () => {
-    if (stageIndexRef.current >= round.stages.length - 1 && completed.current) {
-      stopNextTimer();
-      startNextRound();
-    } else if (pickedRef.current.length === 2 && stageIndexRef.current === -1) {
-      advanceGrowth();
-    } else if (stageIndexRef.current >= 0 && stageDone) {
-      handleGrowth();
-    } else {
-      handleGardener();
-    }
-  };
-
-  const handleGrowth = () => {
-    const stage = round.stages[stageIndexRef.current];
-    if (!stage) return;
-    stopListening();
-    stopNextTimer();
-    const line = stageDone ? stage.expanded : stage.line;
-    setLiveStatus(settings.languageMode === 'en' ? line.en : line.he);
-    setStageDone(true);
+  const handleTouch = () => {
+    const stage = JOURNEY[stepRef.current];
+    if (!stage || actedRef.current || !foreground.current) return;
+    actedRef.current = true;
+    setActed(true);
     soundService.playTap(settings);
-    const currentStage = stageIndexRef.current;
-    const speakModel = () => {
-      const step = speechSequence.current + 1;
-      void play(line).then((result) => {
-        if (!foreground.current || activeRound.current !== roundKey || stageIndexRef.current !== currentStage
-          || speechSequence.current !== step || !canContinueAfterTouch(result.status)) return;
-        if (!stageDone) {
-          nextTimer.current = window.setTimeout(() => {
-            if (!foreground.current || activeRound.current !== roundKey || stageIndexRef.current !== currentStage
-              || speechSequence.current !== step) return;
-            const expansion = stage.expanded;
-            const expansionStep = speechSequence.current + 1;
-            setLiveStatus(settings.languageMode === 'en' ? expansion.en : expansion.he);
-            void play(expansion).then((expandedResult) => {
-              if (foreground.current && activeRound.current === roundKey && stageIndexRef.current === currentStage
-                && speechSequence.current === expansionStep && canContinueAfterTouch(expandedResult.status)) {
-                nextTimer.current = window.setTimeout(advanceGrowth, GROWTH_TURN_MS);
-              }
-            });
-          }, RESPONSE_TURN_MS);
-        } else {
-          nextTimer.current = window.setTimeout(advanceGrowth, GROWTH_TURN_MS);
-        }
-      });
+    const index = stepRef.current;
+    const phrase = stage.expanded;
+    setLiveStatus(english ? phrase.en : phrase.he);
+    interactionMediaCoordinator.notifyInteraction(scope('touch'), 'round-replacement');
+    clearTimer();
+    const armFallback = () => {
+      timer.current = window.setTimeout(() => {
+        if (foreground.current && stepRef.current === index) advance();
+      }, FALLBACK_MS);
     };
-    if (stage.id === 'ask' && !stageDone) {
-      const wordStep = speechSequence.current + 1;
-      void play(GARDEN_PERSIMMON_WORD).then((result) => {
-        if (foreground.current && activeRound.current === roundKey && stageIndexRef.current === currentStage
-          && speechSequence.current === wordStep && canContinueAfterTouch(result.status)) {
-          speakModel();
-        }
+    armFallback();
+    const narrate = async () => {
+      if (index === 0) {
+        await play(GARDEN_PERSIMMON_WORD);
+        if (!foreground.current || stepRef.current !== index) return;
+        clearTimer();
+        armFallback();
+      }
+      if (!foreground.current || stepRef.current !== index) return;
+      await play(index === 0 ? stage.line : phrase);
+      if (!foreground.current || stepRef.current !== index) return;
+      clearTimer();
+      if (index === 0) {
+        timer.current = window.setTimeout(() => {
+          if (!foreground.current || stepRef.current !== index) return;
+          armFallback();
+          void play(stage.expanded).then(() => {
+            if (!foreground.current || stepRef.current !== index) return;
+            timer.current = window.setTimeout(advance, RESPONSE_PAUSE_MS);
+          });
+        }, RESPONSE_PAUSE_MS);
+      } else {
+        timer.current = window.setTimeout(advance, RESPONSE_PAUSE_MS);
+      }
+    };
+    void narrate();
+    if (index === JOURNEY.length - 1 && !completed.current) {
+      completed.current = true;
+      soundService.playSuccess(settings);
+      onCompleteRound({
+        attempts: JOURNEY.length,
+        requiredActions: JOURNEY.length,
+        concepts: ['persimmon'],
       });
-    } else {
-      speakModel();
     }
   };
 
-  const handleMicrophone = async () => {
-    if (listening) {
-      stopListening();
-      acknowledgeEffort();
-      return;
-    }
-    if (settings.quietMode || pickedRef.current.length === 0) return;
-    effortMs.current = 0;
-    voiceDetected.current = false;
-    setHeardVoice(false);
-    const result = await startMic();
-    if (result.status === 'started' && foreground.current && !settings.quietMode) {
-      setListening(true);
-      listenTimer.current = window.setTimeout(() => {
-        stopListening();
-        acknowledgeEffort();
-      }, LISTEN_MS);
-    } else if (result.status === 'permission-denied' || result.status === 'unsupported' || result.status === 'error') {
-      setLiveStatus(settings.languageMode === 'en'
-        ? 'No microphone. Keep choosing fruit by touch.'
-        : 'אין מיקרופון. ממשיכים לבחור פירות בנגיעה.');
-    }
+  const dragEnabled = current?.id === 'exchange' || current?.id === 'cover';
+  const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!dragEnabled || actedRef.current) return;
+    drag.current = { x: event.clientX, y: event.clientY, moved: false };
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
-
+  const onPointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!drag.current) return;
+    const x = event.clientX - drag.current.x;
+    const y = event.clientY - drag.current.y;
+    if (Math.hypot(x, y) > 12) drag.current.moved = true;
+    if (drag.current.moved) setDragOffset({ x, y });
+  };
+  const onPointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!drag.current) return;
+    if (drag.current.moved && destination.current) {
+      const box = destination.current.getBoundingClientRect();
+      if (event.clientX >= box.left && event.clientX <= box.right
+        && event.clientY >= box.top && event.clientY <= box.bottom) handleTouch();
+    }
+    setDragOffset({ x: 0, y: 0 });
+    // Keep the moved flag until the synthesized click, so a missed drop never becomes a tap.
+    if (!drag.current.moved) drag.current = null;
+  };
+  const onTargetClick = () => {
+    if (drag.current?.moved) { drag.current = null; return; }
+    handleTouch();
+  };
   const leave = () => {
-    stopListening();
-    stopNextTimer();
+    clearTimer();
+    interactionMediaCoordinator.notifyInteraction(scope('exit'), 'exit');
     onBack();
   };
-  const english = settings.languageMode === 'en';
-  const stage = round.stages[stageIndex];
 
   return (
     <GameShell
@@ -527,112 +483,71 @@ export function WordGardenGame({
       reducedMotion={settings.reducedMotion}
       onHome={leave}
       homeLabel={english ? 'Back home' : 'חזרה לבית'}
-      onRepeat={handleGardener}
-      repeatDisabled={!mediaReady || settings.quietMode || !speechStatus.supported}
-      replayLabel={english ? 'Hear the gardener' : 'לשמוע את הגנן'}
+      onRepeat={() => {
+        if (bonusActive) void play(GARDEN_BANANA_WORDS[bonusPart.current] ?? GARDEN_BANANA_SENTENCE);
+        else if (connectorActive) void play(connectorPart.current === 0
+          ? GARDEN_INVITATION : gardenPhrase(GARDEN_FRUITS[0]!, connectorPart.current === 1 ? undefined : GARDEN_FRUITS[1]!));
+        else if (current) void play(stepIndex === 0 && !acted ? GARDEN_ASK : acted ? current.expanded : current.line);
+      }}
+      replayLabel={english ? 'Hear again' : 'לשמוע שוב'}
+      repeatDisabled={!mediaReady || settings.quietMode || !speechStatus.supported || (!current && !bonusActive && !connectorActive)}
       liveStatus={liveStatus}
     >
-      <div className="word-garden-scene" data-picked={picked.length} data-connector={connector} data-stage={stage?.id ?? 'fruit'}>
-        {!stage ? (
-          <div className="word-garden-children" role="group" aria-label={english ? 'Friends in the garden' : 'חברים בגן'}>
-            {GARDEN_CHILDREN.map((child, index) => (
-              <button
-                type="button"
-                key={child.id}
-                className={`word-garden-child word-garden-child--${child.id}`}
-                onClick={() => handleChild(child)}
-                aria-label={english ? `Hear ${child.en}` : `לשמוע את ${child.he}`}
-              >
-                <svg viewBox="0 0 56 56" aria-hidden="true">
-                  <circle cx="28" cy="28" r="26" fill={['#9bba8a', '#f4c67f', '#d2b6cb'][index]} stroke="#fff9e6" strokeWidth="3" />
-                  <path d="M8 52 Q9 40 28 40 Q46 40 48 52" fill={['#477167', '#8e6e63', '#b77685'][index]} />
-                  <circle cx="28" cy="26" r="15" fill={['#bf8163', '#d7a278', '#ab6d56'][index]} />
-                  <path d={['M13 25 Q10 9 28 9 Q44 8 44 24 Q35 16 24 20 Q17 22 13 25', 'M13 27 Q14 8 28 9 Q44 8 44 27 Q37 23 37 19 Q24 25 13 27', 'M12 32 Q8 8 28 8 Q47 8 45 34 L41 33 Q40 19 28 20 Q17 20 16 32'][index]} fill="#423630" />
-                  <path d="M22 28h1 M33 28h1 M24 34q4 4 8 0" fill="none" stroke="#432e2c" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <button className="word-garden-gardener" onClick={handleGardener} type="button" aria-label={english ? 'Hear the gardener' : 'לשמוע את הגנן'}>
-          <GardenerArt />
-          <span className="word-garden-sound" aria-hidden="true">
-            <svg viewBox="0 0 32 32"><path d="M5 12h6l7-6v20l-7-6H5z M22 11q6 5 0 10" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </span>
-        </button>
-        {stage ? (
-          <button
-            type="button"
-            className={`word-garden-growth word-garden-growth--${stage.id} ${stageDone ? 'is-growing' : ''}`}
-            onClick={handleGrowth}
-            aria-label={english ? `Touch to hear: ${(stageDone ? stage.expanded : stage.line).en}` : `נוגעים ושומעים: ${(stageDone ? stage.expanded : stage.line).he}`}
-          >
-            <GardenActionArt stage={stage.id} done={stageDone} />
-          </button>
-        ) : (
-        <button className="word-garden-cart" onClick={handleCart} type="button" aria-label={english ? 'Hear the fruit or begin the story' : 'לשמוע את הפירות או להתחיל בסיפור'}>
-          <span className="word-garden-cart__basket">
-            {picked.map((fruit) => (
-              <img src={fruit.image} alt="" key={fruit.id} draggable={false} />
-            ))}
-          </span>
-          <span className="word-garden-cart__wheels" aria-hidden="true"><i /><i /></span>
-        </button>
-        )}
-        {stage && picked.length === 2 ? (
-          <button className="word-garden-cart word-garden-cart--mini" onClick={handleCart} type="button" aria-label={english ? 'Hear it again or play again' : 'לשמוע שוב או לבחור מחדש'}>
-            <span className="word-garden-cart__basket">{picked.map((fruit) => <img src={fruit.image} alt="" key={fruit.id} draggable={false} />)}</span>
-            <span className="word-garden-cart__wheels" aria-hidden="true"><i /><i /></span>
-          </button>
-        ) : null}
-        {!stage ? (
-        <div className="word-garden-fruits" role="group" aria-label={english ? 'Pick fruit' : 'בוחרים פירות'}>
-          {round.fruits.map((fruit) => (
-            <button
-              type="button"
-              key={fruit.id}
-              onClick={() => handleFruit(fruit)}
-              className={`word-garden-fruit ${picked.some((item) => item.id === fruit.id) ? 'is-picked' : ''}`}
-              aria-label={english ? fruit.en : fruit.he}
-            >
-              <img src={fruit.image} alt="" draggable={false} />
-            </button>
-          ))}
+      <div className="garden-journey" data-stage={current?.id ?? 'complete'} data-acted={acted} dir="rtl">
+        <div className="garden-journey__people" aria-hidden="true">
+          <div className="garden-journey__person garden-journey__person--child"><ChildArt /></div>
+          <div className="garden-journey__person garden-journey__person--gardener"><GardenerArt /></div>
         </div>
+        {stepIndex === 1 ? <img className="garden-journey__held garden-journey__held--fruit" src={ART.persimmon} alt="" aria-hidden="true" /> : null}
+        {stepIndex >= 2 ? <img className="garden-journey__held garden-journey__held--token" src={ART.token} alt="" aria-hidden="true" /> : null}
+        <div className="garden-journey__ground" aria-hidden="true">
+          {stepIndex >= 4 ? <GrowingArt kind={stepIndex >= 7 ? 'tree' : stepIndex >= 6 ? 'sprout' : 'seed'} /> : null}
+        </div>
+        {bonusActive ? <BananaBonus play={play} settings={settings} onAgain={() => startNextRound()} onPartChange={onBonusPartChange} cancelCurrent={cancelBonusSpeech} /> : connectorActive ? (
+          <ConnectorBonus
+            play={play}
+            settings={settings}
+            onAgain={() => startNextRound()}
+            onPartChange={(part) => { connectorPart.current = part; }}
+            cancelCurrent={cancelBonusSpeech}
+          />
+        ) : current ? (
+          <>
+            <div className={`garden-journey__destination garden-journey__destination--${current.destination}`} ref={destination} aria-hidden="true">
+              {current.destination === 'soil' || current.destination === 'tree' ? <span className="garden-journey__soil" /> : <span className="garden-journey__hand">●</span>}
+            </div>
+            <button
+              className={`garden-journey__target garden-journey__target--${current.id}`}
+              type="button"
+              onClick={onTargetClick}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={() => { drag.current = null; setDragOffset({ x: 0, y: 0 }); }}
+              style={{ '--drag-x': `${dragOffset.x}px`, '--drag-y': `${dragOffset.y}px` } as CSSProperties}
+              aria-label={english ? current.line.en : current.line.he}
+              disabled={acted}
+            >
+              {current.image === 'seed' ? <SeedArt /> : current.image === 'sprout' || current.image === 'tree'
+                ? <GrowingArt kind={current.image} />
+                : <img src={current.image} alt="" draggable={false} />}
+              {current.id === 'seed' && acted ? <span className="garden-journey__seed-reveal"><SeedArt /></span> : null}
+            </button>
+            <span className="garden-journey__hint" aria-hidden="true">☝</span>
+          </>
         ) : (
-          <div className="word-garden-trail" aria-hidden="true">
-            {round.stages.map((part, index) => <span className={index <= stageIndex ? 'is-grown' : ''} key={part.id} />)}
+          <div className="garden-journey__finish">
+            <button type="button" className="garden-journey__finish-choice" onClick={() => { bonusPart.current = 0; setBonusActive(true); }} aria-label={english ? 'Play with a banana' : 'משחק הבננה'}>
+              <img src="/assets/garden/banana.webp" alt="" />
+            </button>
+            <button type="button" className="garden-journey__finish-choice" onClick={() => { connectorPart.current = 0; setConnectorActive(true); }} aria-label={english ? 'Join two fruits' : 'מחברים שני פירות'}>
+              <img src="/assets/garden/dates.webp" alt="" />
+            </button>
+            <button type="button" className="garden-journey__finish-choice" onClick={() => startNextRound()} aria-label={english ? 'Play in the garden again' : 'לשחק שוב בגן'}>
+              <GrowingArt kind="tree" /><span aria-hidden="true">↻</span>
+            </button>
           </div>
         )}
-        <div className="word-garden-tools">
-          {!stage ? (
-          <button
-            type="button"
-            className="word-garden-connector"
-            onClick={handleConnector}
-            aria-label={english ? 'Hear another way to connect the fruits' : 'לשמוע דרך נוספת לחבר בין הפירות'}
-          >
-            <span aria-hidden="true" className="word-garden-connector__pictures">
-              <img src={(picked[0] ?? round.fruits[0]!).image} alt="" draggable={false} />
-              <span className="word-garden-connector__join">+</span>
-              <img src={(picked[1] ?? round.fruits[1]!).image} alt="" draggable={false} />
-            </span>
-          </button>
-          ) : null}
-          {micSupported && picked.length > 0 && (!stage || stage.id === 'ask') && !settings.quietMode ? (
-            <button
-              type="button"
-              className={`word-garden-mic ${listening ? 'is-listening' : ''} ${heardVoice ? 'heard-voice' : ''}`}
-              onClick={() => void handleMicrophone()}
-              aria-label={english ? 'Optional: listen for a sound' : 'אפשר להקשיב לקול'}
-            >
-              <svg viewBox="0 0 48 48" aria-hidden="true">
-                <rect x="18" y="6" width="12" height="24" rx="6" fill="currentColor" />
-                <path d="M12 24a12 12 0 0 0 24 0 M24 36v7 M17 43h14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-              </svg>
-            </button>
-          ) : null}
-        </div>
       </div>
     </GameShell>
   );

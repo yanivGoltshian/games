@@ -4,15 +4,10 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress, createInitialSettings } from '../domain/progression';
-import { GARDEN_FRUITS, GARDEN_STAGES, createGardenRound } from '../content/wordGarden';
+import { GARDEN_STAGES } from '../content/wordGarden';
 import { WordGardenGame } from './WordGardenGame';
 
 const media = vi.hoisted(() => ({ play: vi.fn(), notifyInteraction: vi.fn() }));
-const mic = vi.hoisted(() => ({
-  start: vi.fn(),
-  stop: vi.fn(),
-  onSample: null as null | ((level: 0 | 1, duration: number) => void),
-}));
 const sound = vi.hoisted(() => ({ playTap: vi.fn(), playSuccess: vi.fn() }));
 const lifecycle = vi.hoisted(() => ({ handler: null as null | ((state: string) => void) }));
 const rounds = vi.hoisted(() => ({ startNextRound: vi.fn() }));
@@ -27,26 +22,12 @@ vi.mock('../platform/useAppLifecycle', () => ({
     lifecycle.handler = callback;
     return () => { lifecycle.handler = null; };
   },
-  readAppLifecycleState: () => 'foreground',
-}));
-vi.mock('./useMicEffort', () => ({
-  useMicEffort: (onSample: (level: 0 | 1, duration: number) => void) => {
-    mic.onSample = onSample;
-    return { start: mic.start, stop: mic.stop, supported: true };
-  },
 }));
 vi.mock('./useAdaptiveRound', () => ({
-  useAdaptiveRound: () => ({
-    round: {
-      fruits: GARDEN_FRUITS,
-      stages: GARDEN_STAGES,
-    },
-    roundKey: 0,
-    startNextRound: rounds.startNextRound,
-  }),
+  useAdaptiveRound: () => ({ roundKey: 0, startNextRound: rounds.startNextRound }),
 }));
 
-describe('WordGardenGame', () => {
+describe('WordGardenGame touch journey', () => {
   let container: HTMLDivElement;
   let root: Root;
   const actEnvironment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
@@ -54,27 +35,22 @@ describe('WordGardenGame', () => {
 
   beforeAll(() => { actEnvironment.IS_REACT_ACT_ENVIRONMENT = true; });
   afterAll(() => { delete actEnvironment.IS_REACT_ACT_ENVIRONMENT; });
-
   beforeEach(() => {
     vi.useFakeTimers();
     container = document.createElement('div');
     root = createRoot(container);
     media.play.mockReset().mockResolvedValue({ status: 'completed' });
     media.notifyInteraction.mockReset();
-    mic.start.mockReset().mockResolvedValue({ status: 'started' });
-    mic.stop.mockReset();
     sound.playTap.mockReset();
     sound.playSuccess.mockReset();
     rounds.startNextRound.mockReset();
     onCompleteRound.mockReset().mockReturnValue({ starsEarned: 1 });
   });
-
   afterEach(async () => {
     await act(async () => root.unmount());
     vi.clearAllTimers();
     vi.useRealTimers();
   });
-
   const render = async (quietMode = false) => {
     await act(async () => root.render(
       <WordGardenGame
@@ -88,167 +64,158 @@ describe('WordGardenGame', () => {
       />,
     ));
   };
-  const tap = async (label: string) => {
-    const button = [...container.querySelectorAll('button')]
-      .find((item) => item.getAttribute('aria-label') === label);
-    expect(button, label).toBeDefined();
-    await act(async () => { button!.click(); });
-  };
-  const advance = async (milliseconds: number) => {
-    await act(async () => { await vi.advanceTimersByTimeAsync(milliseconds); });
+  const target = () => container.querySelector<HTMLButtonElement>('.garden-journey__target')!;
+  const tap = async () => { await act(async () => target().click()); };
+  const advance = async (time?: number) => {
+    const duration = time ?? (container.querySelector('.garden-journey')?.getAttribute('data-stage') === 'ask' ? 2_200 : 1_100);
+    await act(async () => { await vi.advanceTimersByTimeAsync(duration); });
   };
   const spoken = () => media.play.mock.calls.flatMap(([request]) => (
     request.units.map((unit: { text: string }) => unit.text)
   ));
 
-  it('adds a third fruit after practice and varies independent actions without breaking seed-to-tree order', () => {
-    const beginner = createInitialProgress().domains.wordGarden;
-    const afterPractice = { ...beginner, successes: 1 };
-    const first = createGardenRound(beginner, 'garden-1');
-    const second = createGardenRound(afterPractice, 'garden-2');
-    expect(first.fruits).toHaveLength(2);
-    expect(second.fruits).toHaveLength(3);
-    expect(first.stages.map((stage) => stage.id)).toEqual(GARDEN_STAGES.map((stage) => stage.id));
-    expect(second.stages.map((stage) => stage.id).slice(5, 12))
-      .toEqual(['pick', 'wash', 'put', 'carry', 'smell', 'share', 'taste']);
-    expect(second.stages.map((stage) => stage.id).slice(12))
-      .toEqual(first.stages.map((stage) => stage.id).slice(12));
+  it('asks before the first touch, then says the fruit and delivers it without a second gate', async () => {
+    await render();
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe('ask');
+    expect(target().querySelector('img')?.getAttribute('src')).toBe('/assets/garden/persimmon.webp');
+    expect(spoken()).toContain('מה שון מבקש?');
+    expect(spoken()).not.toContain('אפרסמון');
+    await tap();
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-acted')).toBe('true');
+    expect(spoken().slice(-2)).toEqual(['אפרסמון', 'שון מבקש אפרסמון']);
+    await advance();
+    expect(spoken()).toContain('שון מבקש אפרסמון כתום');
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe('exchange');
   });
 
-  it('models fruit exchange and twenty-one pictured actions in three and four words without microphone', async () => {
+  it('does not cut off the first three spoken clips when their total duration exceeds the fallback', async () => {
+    media.play.mockImplementation(() => new Promise((resolve) => {
+      window.setTimeout(() => resolve({ status: 'completed' }), 3_000);
+    }));
     await render();
-    expect(container.textContent).not.toContain('אני רוצה');
-    await tap('דובדבנים');
-    expect(spoken()).toContain('אני רוצה דובדבנים');
-    expect(mic.start).not.toHaveBeenCalled();
-    await tap('לשמוע את שון');
-    expect(spoken()).toContain('שון בוחר דובדבנים');
-    await tap('תמרים');
-    expect(spoken()).toContain('אני רוצה דובדבנים ותמרים');
-    await tap('לשמוע את נועה');
-    expect(spoken()).toContain('נועה בוחרת גם תמרים');
-    await advance(4_000);
-    for (const stage of GARDEN_STAGES) {
-      expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe(stage.id);
-      await tap(`נוגעים ושומעים: ${stage.line.he}`);
-      if (stage.id === 'ask') {
-        expect(spoken().slice(-3)).toEqual(['מה שון מבקש?', 'אפרסמון', 'שון מבקש אפרסמון']);
-        expect(container.querySelector('.word-garden-growth image')?.getAttribute('href'))
-          .toBe('/assets/vocabulary/persimmons.webp');
-      }
-      if (stage.id === 'seed' || stage.id === 'fruit') {
-        expect(container.querySelector('.word-garden-growth image')?.getAttribute('href'))
-          .toBe('/assets/vocabulary/persimmons.webp');
-      }
-      expect(spoken()).toContain(stage.line.he);
-      expect(spoken()).not.toContain(stage.expanded.he);
-      await advance(1_799);
-      expect(spoken()).not.toContain(stage.expanded.he);
-      await advance(1);
-      expect(spoken()).toContain(stage.expanded.he);
-      if (stage.id !== 'fruit') await advance(2_400);
+    await tap();
+    await advance(7_500);
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe('ask');
+    expect(spoken()).toContain('שון מבקש אפרסמון כתום');
+    await advance(3_800);
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe('exchange');
+  });
+
+  it('models each pictured action in the active turn and never advances on fast double-taps', async () => {
+    await render();
+    const journey = ['ask', 'exchange', 'seed', 'cover', 'water', 'sprout', 'tree', 'fruit'] as const;
+    for (const id of journey) {
+      expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe(id);
+      const before = spoken().length;
+      await tap();
+      await tap();
+      expect(spoken().slice(before)).toContain(
+        (id === 'ask'
+          ? GARDEN_STAGES.find((stage) => stage.id === id)!.line
+          : GARDEN_STAGES.find((stage) => stage.id === id)!.expanded).he,
+      );
+      expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe(id);
+      await advance();
     }
-    await advance(2_400);
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe('complete');
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
-    expect(onCompleteRound.mock.calls[0]?.[0]).toMatchObject({
-      requiredActions: 23,
-      concepts: ['cherries', 'dates'],
+    expect(onCompleteRound.mock.calls[0]?.[0]).toMatchObject({ requiredActions: 8, attempts: 8 });
+    expect(container.querySelectorAll('.garden-journey__finish-choice')).toHaveLength(3);
+  });
+
+  it('lets a missed drag return safely and accepts a token drop or ordinary tap', async () => {
+    await render();
+    await tap();
+    await advance();
+    const token = target();
+    token.setPointerCapture = vi.fn();
+    const dispatch = (name: string, x: number, y: number) => token.dispatchEvent(
+      Object.assign(new Event(name, { bubbles: true }), { clientX: x, clientY: y, pointerId: 1 }),
+    );
+    await act(async () => {
+      dispatch('pointerdown', 100, 100);
+      dispatch('pointermove', 150, 100);
+      dispatch('pointerup', 150, 100);
+      token.click();
     });
-    expect(mic.start).not.toHaveBeenCalled();
-    await advance(5_000);
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-acted')).toBe('false');
+    expect(target().style.getPropertyValue('--drag-x')).toBe('0px');
+    const destination = container.querySelector('.garden-journey__destination')!;
+    vi.spyOn(destination, 'getBoundingClientRect').mockReturnValue({ left: 140, right: 200, top: 70, bottom: 130 } as DOMRect);
+    await act(async () => {
+      dispatch('pointerdown', 100, 100);
+      dispatch('pointermove', 150, 100);
+      dispatch('pointerup', 150, 100);
+      token.click();
+    });
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-acted')).toBe('true');
+    expect(spoken()).toContain('שון נותן אסימון לגנן');
+  });
+
+  it('keeps quiet and audio-failure turns playable and resumes after backgrounding', async () => {
+    media.play.mockResolvedValue({ status: 'errored' });
+    await render(true);
+    expect(spoken()).toEqual([]);
+    await tap();
+    await act(async () => { lifecycle.handler?.('background'); });
+    await advance(7_000);
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe('ask');
+    await act(async () => { lifecycle.handler?.('foreground'); });
+    await advance();
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-stage')).toBe('exchange');
+    await tap();
+    expect(container.querySelector('.garden-journey')?.getAttribute('data-acted')).toBe('true');
+  });
+
+  it('offers an optional three-part banana sentence with one full model and a return to the garden', async () => {
+    await render();
+    for (let index = 0; index < 8; index += 1) { await tap(); await advance(); }
+    const bonus = [...container.querySelectorAll<HTMLButtonElement>('.garden-journey__finish-choice')]
+      .find((button) => button.getAttribute('aria-label') === 'משחק הבננה')!;
+    await act(async () => bonus.click());
+    for (const [part, label] of ['הילד', 'אוכל', 'בננה'].entries()) {
+      expect(container.querySelector('.garden-bonus')?.getAttribute('data-part')).toBe(String(part));
+      if (part === 1) {
+        const replay = [...container.querySelectorAll<HTMLButtonElement>('button')]
+          .find((button) => button.getAttribute('aria-label') === 'לשמוע שוב')!;
+        await act(async () => replay.click());
+        expect(spoken().at(-1)).toBe('אוכל');
+      }
+      const button = container.querySelector<HTMLButtonElement>('.garden-bonus__target')!;
+      expect(button.getAttribute('aria-label')).toBe(label);
+      await act(async () => button.click());
+      await advance();
+    }
+    expect(spoken().filter((text) => text === 'הילד אוכל בננה')).toHaveLength(1);
+    expect(container.querySelector('.garden-bonus')?.getAttribute('data-part')).toBe('3');
+    await act(async () => container.querySelector<HTMLButtonElement>('.garden-bonus__target')!.click());
     expect(rounds.startNextRound).toHaveBeenCalledTimes(1);
   });
 
-  it('speaks another four-word connector and still works in quiet mode', async () => {
-    await render(true);
-    await tap('תמרים');
-    await tap('דובדבנים');
-    await tap('לשמוע דרך נוספת לחבר בין הפירות');
-    expect(spoken()).toContain('גם תמרים וגם דובדבנים');
-    expect(container.querySelector('.word-garden-mic')).toBeNull();
-    expect(mic.start).not.toHaveBeenCalled();
-  });
-
-  it('reports only sound effort and releases listening when backgrounded', async () => {
+  it('joins two pictured fruits into a three-word request and a four-word request with a connector', async () => {
     await render();
-    await tap('דובדבנים');
-    await tap('אפשר להקשיב לקול');
-    expect(mic.start).toHaveBeenCalledTimes(1);
-    await act(async () => { mic.onSample?.(1, 200); mic.onSample?.(1, 200); });
-    expect(container.querySelector('.word-garden-mic')?.className).toContain('heard-voice');
-    expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe('שמעתי קול');
-    await act(async () => { lifecycle.handler?.('background'); });
-    expect(mic.stop).toHaveBeenCalled();
-    await advance(5_000);
-    expect(spoken()).not.toContain('שמעתי קול');
-  });
-
-  it('continues touch-only after a microphone denial or an audio error', async () => {
-    mic.start.mockResolvedValueOnce({ status: 'permission-denied' });
-    await render();
-    await tap('דובדבנים');
-    await tap('אפשר להקשיב לקול');
-    expect(container.querySelector('[aria-live="polite"]')?.textContent).toContain('אין מיקרופון');
-    media.play.mockResolvedValueOnce({ status: 'errored' });
-    await tap('תמרים');
-    expect(container.querySelector('[aria-live="polite"]')?.textContent).toContain('השמע אינו זמין');
-    await advance(4_000);
-    expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe('arrive');
-    await tap('נוגעים ושומעים: הגנן מגיע לגן');
-    expect(container.querySelector('.word-garden-growth')?.className).toContain('is-growing');
-  });
-
-  it('does not silently advance a stage when playback finishes after backgrounding', async () => {
-    await render();
-    await tap('דובדבנים');
-    let finish!: (value: { status: 'completed' }) => void;
-    media.play.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
-    await tap('תמרים');
-    await act(async () => { lifecycle.handler?.('background'); finish({ status: 'completed' }); });
-    await advance(4_000);
-    expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe('fruit');
-    await act(async () => { lifecycle.handler?.('foreground'); });
-    await tap('לשמוע את הפירות או להתחיל בסיפור');
-    expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe('arrive');
-  });
-
-  it('pauses and expands a pictured action after returning from background', async () => {
-    await render();
-    await tap('דובדבנים');
-    await tap('תמרים');
-    await advance(4_000);
-    await tap('נוגעים ושומעים: הגנן מגיע לגן');
-    await act(async () => { lifecycle.handler?.('background'); });
-    await advance(5_000);
-    expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe('arrive');
-    expect(spoken()).not.toContain('הגנן מגיע עם סל');
-    await act(async () => { lifecycle.handler?.('foreground'); });
-    await tap('נוגעים ושומעים: הגנן מגיע עם סל');
-    expect(spoken()).toContain('הגנן מגיע עם סל');
-    await advance(2_400);
-    expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe('ask');
-    expect(spoken()).toContain('מה שון מבקש?');
-  });
-
-  it('keeps sound-effort feedback separate from the persimmon answer until the picture is touched', async () => {
-    await render();
-    await tap('דובדבנים');
-    await tap('תמרים');
-    await advance(4_000);
-    await tap('נוגעים ושומעים: הגנן מגיע לגן');
-    await advance(4_200);
-    expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe('ask');
-    await tap('אפשר להקשיב לקול');
-    await act(async () => { mic.onSample?.(1, 200); mic.onSample?.(1, 200); });
-    expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe('שמעתי קול');
-    await tap('אפשר להקשיב לקול');
-    expect(spoken()).toContain('שמעתי קול');
-    expect(spoken()).not.toContain('אפרסמון');
-    expect(spoken()).not.toContain('שון מבקש אפרסמון');
-    expect(spoken()).not.toContain('שון מבקש אפרסמון כתום');
-    await advance(4_000);
-    expect(container.querySelector('.word-garden-scene')?.getAttribute('data-stage')).toBe('ask');
-    await tap('נוגעים ושומעים: שון מבקש אפרסמון');
-    expect(spoken().slice(-2)).toEqual(['אפרסמון', 'שון מבקש אפרסמון']);
+    for (let index = 0; index < 8; index += 1) { await tap(); await advance(); }
+    const join = [...container.querySelectorAll<HTMLButtonElement>('.garden-journey__finish-choice')]
+      .find((button) => button.getAttribute('aria-label') === 'מחברים שני פירות')!;
+    await act(async () => join.click());
+    expect(container.querySelector('.garden-bonus--connector')?.getAttribute('data-part')).toBe('0');
+    expect(spoken().at(-1)).toBe('בואו נקטוף יחד');
+    const first = container.querySelector<HTMLButtonElement>('.garden-bonus__target')!;
+    expect(first.getAttribute('aria-label')).toBe('אני רוצה דובדבנים');
+    await act(async () => { first.click(); first.click(); });
+    expect(spoken().filter((text) => text === 'אני רוצה דובדבנים')).toHaveLength(1);
+    await advance();
+    const second = container.querySelector<HTMLButtonElement>('.garden-bonus__target')!;
+    expect(second.querySelector('img')?.getAttribute('src')).toBe('/assets/garden/dates.webp');
+    const replay = [...container.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.getAttribute('aria-label') === 'לשמוע שוב')!;
+    await act(async () => replay.click());
+    expect(spoken().at(-1)).toBe('אני רוצה דובדבנים');
+    await act(async () => second.click());
+    expect(spoken().at(-1)).toBe('אני רוצה דובדבנים ותמרים');
+    await advance();
+    expect(container.querySelector('.garden-bonus--connector')?.getAttribute('data-part')).toBe('2');
+    await act(async () => container.querySelector<HTMLButtonElement>('.garden-bonus__target')!.click());
+    expect(rounds.startNextRound).toHaveBeenCalledTimes(1);
   });
 });

@@ -16,19 +16,19 @@ const SPRITE_BOUNDARY_TOLERANCE_SECONDS = 0.02;
 const CONTAINER_DURATION_TOLERANCE_SECONDS = 0.08;
 const EXPECTED_SPRITES = {
   '/speech/he-IL.mp3': {
-    count: 587,
-    bytes: 11_824_556,
-    sha256: 'e531f3d4e56ee1bcb3b0e8c5664a5f974e7b5cbaf66fa36ddab84918e633ba53',
+    count: 593,
+    bytes: 11_920_556,
+    sha256: 'fabe062c1b0a1758f2f58fb5afbda67c1767c2ce7a2021c9fd535e3d52f5ba2e',
   },
   '/speech/en-US.mp3': {
-    count: 587,
-    bytes: 11_585_516,
-    sha256: 'a2e9be07998e261a0ac3c7e01fdfec9215344e6ed5cc41258d91608d192be299',
+    count: 594,
+    bytes: 11_672_684,
+    sha256: 'aca6db089a43bc82c935c6f2d18f05c9ea2002c5402ee788d13f26e2c3779790',
   },
   '/speech/en-GB.mp3': {
-    count: 587,
-    bytes: 10_783_532,
-    sha256: 'bc1570d7cd46a01c17af3d22e416e14bdf86012fdf89330719d18a731392979e',
+    count: 594,
+    bytes: 10_869_356,
+    sha256: '717578daed18b165efdf328c24d66b2ee47257656cf4dfacb6b2e029ee8441c1',
   },
 } as const;
 

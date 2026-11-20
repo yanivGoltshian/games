@@ -19,6 +19,7 @@ const doubles = vi.hoisted(() => ({
   runRetry: vi.fn(),
   speakSegments: vi.fn(),
   startNextRound: vi.fn(),
+  roundOverride: null as null | { cards: { id: string; pairId: string; conceptId: string }[]; pairConceptIds: string[]; promptHe: string; promptEn: string },
   lastCelebration: null as CelebrationInfo | null,
 }));
 
@@ -45,7 +46,7 @@ vi.mock('../services/speech', () => ({
 
 vi.mock('./useAdaptiveRound', () => ({
   useAdaptiveRound: () => ({
-    round: {
+    round: doubles.roundOverride ?? {
       cards: [
         { id: 'happy-a', pairId: 'emotion-happy', conceptId: 'emotion-happy' },
         { id: 'happy-b', pairId: 'emotion-happy', conceptId: 'emotion-happy' },
@@ -130,6 +131,7 @@ describe('MemoryGame celebrations', () => {
     doubles.speakSegments.mockReset();
     doubles.startNextRound.mockReset();
     doubles.lastCelebration = null;
+    doubles.roundOverride = null;
     doubles.speakSegments.mockResolvedValue({ requestId: 1, status: 'completed' });
     container = document.createElement('div');
     document.body.append(container);
@@ -209,6 +211,27 @@ describe('MemoryGame celebrations', () => {
     });
     expect(doubles.lastCelebration?.beforeSpeech).toBeInstanceOf(Promise);
     expect(doubles.playMemoryPair).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows approved banana and persimmon illustrations and speaks their actual labels', async () => {
+    doubles.roundOverride = {
+      cards: [
+        { id: 'banana-a', pairId: 'banana', conceptId: 'banana' },
+        { id: 'banana-b', pairId: 'banana', conceptId: 'banana' },
+        { id: 'persimmon-a', pairId: 'persimmon', conceptId: 'persimmon' },
+        { id: 'persimmon-b', pairId: 'persimmon', conceptId: 'persimmon' },
+      ],
+      pairConceptIds: ['banana', 'persimmon'],
+      promptHe: 'פותחים שני קלפים ומחפשים זוג',
+      promptEn: 'Open two cards and find a pair',
+    };
+    await renderGame();
+    const cards = container.querySelectorAll<HTMLButtonElement>('.memory-card');
+    expect(container.querySelectorAll('img[data-memory-art="banana"]')).toHaveLength(2);
+    expect(container.querySelectorAll('img[data-memory-art="persimmon"]')).toHaveLength(2);
+    expect(container.querySelector('img[data-memory-art="banana"]')?.getAttribute('src')).toBe('/assets/garden/banana.webp');
+    await act(async () => cards[0]!.click());
+    expect(doubles.speakSegments.mock.calls.at(-1)?.[0]).toEqual([{ text: 'בננה', locale: 'he-IL' }]);
   });
 
   it('does not play delayed pair feedback after the game exits', async () => {

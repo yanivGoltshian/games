@@ -49,7 +49,7 @@ describe('recorded speech asset coverage', () => {
   it('pre-caches the manifest and three speech sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
-    expect(serviceWorker).toContain("sean-learning-adventure-v28");
+    expect(serviceWorker).toContain("sean-learning-adventure-v29");
     expect(serviceWorker).toContain("'/speech/manifest.json'");
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");
@@ -66,6 +66,9 @@ describe('recorded speech asset coverage', () => {
     expect(serviceWorker).toContain("'/assets/vocabulary/cherries.webp'");
     expect(serviceWorker).toContain("'/assets/vocabulary/dates.webp'");
     expect(serviceWorker).toContain("'/assets/vocabulary/persimmons.webp'");
+    for (const name of ['persimmon', 'dates', 'token', 'watering-can', 'banana', 'banana-bitten']) {
+      expect(serviceWorker).toContain(`'/assets/garden/${name}.webp'`);
+    }
   });
 });
 
@@ -73,18 +76,18 @@ describe('recorded speech pronunciation layer', () => {
   const catalog = collectRecordedSpeechCatalog();
   const byLocale = (locale: string) => catalog.filter((entry) => entry.locale === locale);
 
-  it('keeps exactly 587 unique phrases per locale', () => {
+  it('keeps the approved garden and memory phrases without duplicate recording keys', () => {
     for (const locale of ['he-IL', 'en-US', 'en-GB']) {
       const entries = byLocale(locale);
-      expect(entries).toHaveLength(587);
+      expect(entries).toHaveLength(locale === 'he-IL' ? 593 : 594);
       const keys = entries.map((entry) => entry.text);
-      expect(new Set(keys).size).toBe(587);
+      expect(new Set(keys).size).toBe(entries.length);
     }
   });
 
   it('gives every Hebrew entry a pointed spokenText that strips back to the source', () => {
     const hebrew = byLocale('he-IL');
-    expect(hebrew).toHaveLength(587);
+    expect(hebrew).toHaveLength(593);
     for (const entry of hebrew) {
       expect(entry.spokenText, `missing spokenText for ${entry.text}`).toBeTruthy();
       const spoken = entry.spokenText as string;
@@ -114,6 +117,23 @@ describe('recorded speech pronunciation layer', () => {
     }
   });
 
+  it('includes accurate names and the whole banana sentence in each voice', () => {
+    const keys = new Set(catalog.map((entry) => `${entry.locale}\u0000${entry.text}`));
+    for (const [he, en] of [
+      ['הילד', 'The child'],
+      ['אוכל', 'eats'],
+      ['בננה', 'a banana'],
+      ['הילד אוכל בננה', 'The child eats a banana'],
+      ['תמרים', 'dates'],
+      ['אסימון', 'token'],
+      ['משפך', 'watering can'],
+    ]) {
+      expect(keys).toContain(`he-IL\u0000${he}`);
+      expect(keys).toContain(`en-US\u0000${en}`);
+      expect(keys).toContain(`en-GB\u0000${en}`);
+    }
+  });
+
   it('covers every emotion label and question in all locales', () => {
     const catalogKeys = new Set(catalog.map((entry) => `${entry.locale}\u0000${entry.text}`));
     const emotions = [
@@ -135,11 +155,11 @@ describe('recorded speech pronunciation layer', () => {
     }
   });
 
-  it('contains exactly 1,761 clips and no retired sprites', () => {
+  it('contains exactly the current 1,781 clips and no retired sprites', () => {
     const manifest = JSON.parse(
       readFileSync(resolve('public/speech/manifest.json'), 'utf8'),
     ) as Manifest;
-    expect(Object.keys(manifest.entries)).toHaveLength(1761);
+    expect(Object.keys(manifest.entries)).toHaveLength(1781);
     expect(JSON.stringify(manifest.entries)).not.toContain('toy-phone');
     expect(JSON.stringify(manifest.entries)).not.toContain('story-that-waits');
   });

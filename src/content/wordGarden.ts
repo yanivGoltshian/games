@@ -67,6 +67,18 @@ export const GARDEN_PERSIMMON_WORD: GardenLine = {
 
 export const GARDEN_PERSIMMON_IMAGE = '/assets/vocabulary/persimmons.webp';
 
+export const GARDEN_BANANA_WORDS: readonly GardenLine[] = [
+  { he: 'הילד', spokenHe: 'הַיֶּלֶד', en: 'The child' },
+  { he: 'אוכל', spokenHe: 'אוֹכֵל', en: 'eats' },
+  { he: 'בננה', spokenHe: 'בָּנָנָה', en: 'a banana' },
+];
+
+export const GARDEN_BANANA_SENTENCE: GardenLine = {
+  he: 'הילד אוכל בננה',
+  spokenHe: 'הַיֶּלֶד אוֹכֵל בָּנָנָה',
+  en: 'The child eats a banana',
+};
+
 export const GARDEN_EFFORT: GardenLine = {
   he: 'שמעתי קול',
   spokenHe: 'שָׁמַעְתִּי קוֹל',

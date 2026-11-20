@@ -8,6 +8,7 @@ import {
   originalPuzzleScenes,
 } from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
+import { getMemoryConcept, MEMORY_GARDEN_CONCEPTS } from '../content/memoryGarden';
 import { createInitialDomainProgress } from './progression';
 import {
   NUMBER_PAIRS_GENERATION_ATTEMPTS,
@@ -65,8 +66,9 @@ describe('round generation', () => {
       const counting = generateCountingRound(domain, `art-counting-${index}`);
       const memory = generateMemoryRound(domain, `art-memory-${index}`);
       const puzzle = generatePuzzleRound(domain, `art-puzzle-${index}`);
-      expect([listening.targetId, ...listening.optionIds, counting.countingConceptId, ...memory.pairConceptIds]
+      expect([listening.targetId, ...listening.optionIds, counting.countingConceptId]
         .every((conceptId) => assetIds.has(conceptId))).toBe(true);
+      expect(memory.pairConceptIds.every((conceptId) => getMemoryConcept(conceptId) !== undefined)).toBe(true);
       expect(sceneImageHref(puzzle.scene)).not.toBe('');
     }
     expect(ORIGINAL_PUZZLE_SCENE_IDS).toEqual([
@@ -197,6 +199,21 @@ describe('round generation', () => {
     });
 
     expect([...counts.values()]).toEqual(Array(round.pairConceptIds.length).fill(2));
+  });
+
+  it('uses the new fruit and garden objects only as single, correctly named memory pairs', () => {
+    const domain = createInitialDomainProgress();
+    domain.level = 3;
+    const observed = new Set<string>();
+    for (let index = 0; index < 600; index += 1) {
+      const round = generateMemoryRound(domain, `garden-art-${index}`);
+      for (const id of round.pairConceptIds) {
+        observed.add(id);
+        expect(round.cards.filter((card) => card.conceptId === id)).toHaveLength(2);
+      }
+      expect(round.pairConceptIds).not.toContain('banana-bitten');
+    }
+    for (const concept of MEMORY_GARDEN_CONCEPTS) expect(observed).toContain(concept.id);
   });
 
   it.each([

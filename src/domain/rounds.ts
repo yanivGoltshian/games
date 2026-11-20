@@ -7,6 +7,7 @@ import {
   sortingItems,
 } from '../content/concepts';
 import { getCountingQuestion } from '../content/countingQuantity';
+import { memoryConcepts } from '../content/memoryGarden';
 import {
   SILLY_ALIEN_PROMPT,
   SILLY_ALIEN_WORDS,
@@ -38,7 +39,7 @@ const learningStages: string[][] = ([1, 2, 3] as const).map((level) => learningC
   .filter((concept) => concept.category !== 'emotion' && concept.introducedAtLevel <= level)
   .map((concept) => concept.id));
 
-const memoryStages: string[][] = ([1, 2, 3] as const).map((level) => learningConcepts
+const memoryStages: string[][] = ([1, 2, 3] as const).map((level) => memoryConcepts
   .filter((concept) => concept.introducedAtLevel <= level)
   .map((concept) => concept.id));
 const emotionConceptIdSet = new Set<string>(emotionConceptIds);

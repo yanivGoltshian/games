@@ -4,6 +4,8 @@ import {
   GARDEN_CONNECTORS,
   GARDEN_CHILDREN,
   GARDEN_ASK,
+  GARDEN_BANANA_SENTENCE,
+  GARDEN_BANANA_WORDS,
   GARDEN_EFFORT,
   GARDEN_FRUITS,
   GARDEN_INVITATION,
@@ -103,5 +105,12 @@ describe('word garden recorded language', () => {
     expect(gardenSegments(line, 'en', 'en-GB')).toEqual([{ text: line.en, locale: 'en-GB' }]);
     expect(gardenSegments(line, 'bilingual', 'en-US').map((item) => item.locale))
       .toEqual(['he-IL', 'en-US']);
+  });
+
+  it('builds a three-part banana turn with a faithful full sentence', () => {
+    expect(GARDEN_BANANA_WORDS.map((part) => part.he)).toEqual(['הילד', 'אוכל', 'בננה']);
+    expect(GARDEN_BANANA_SENTENCE.he).toBe('הילד אוכל בננה');
+    expect(GARDEN_BANANA_SENTENCE.en).toBe('The child eats a banana');
+    expect(stripNiqqud(GARDEN_BANANA_SENTENCE.spokenHe)).toBe(GARDEN_BANANA_SENTENCE.he);
   });
 });
