@@ -5,7 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress } from '../domain/progression';
 import type { ToddlerSettings } from '../domain/types';
-import { GARDEN_RESPONSE_PAUSE_MS, WordGardenGame } from './WordGardenGame';
+import { GARDEN_CLIP_TIMEOUT_MS, GARDEN_RESPONSE_PAUSE_MS, WordGardenGame } from './WordGardenGame';
 
 const mocks = vi.hoisted(() => ({
   cancel: vi.fn(),
@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../services/sound', () => ({ soundService: { playTap: vi.fn() } }));
-vi.mock('../services/speech', () => ({ speechService: { cancelScope: mocks.cancel, speakSegments: mocks.speak } }));
+vi.mock('../services/recordedSpeech', () => ({ recordedSpeechPlayer: { cancel: mocks.cancel, play: mocks.speak } }));
 vi.mock('../services/gardenVoiceStorage', () => ({ readGardenVoice: mocks.read }));
 vi.mock('../services/gardenVoiceMedia', () => ({ playGardenVoice: mocks.play }));
 vi.mock('./useGardenAvatar', () => ({ useGardenAvatar: () => mocks.avatar }));
@@ -25,6 +25,7 @@ describe('Word Garden sentence train', () => {
   let container: HTMLDivElement;
   let root: Root | undefined;
   const onCompleteRound = vi.fn();
+  const onSetupAvatar = vi.fn();
   const env = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   beforeAll(() => { env.IS_REACT_ACT_ENVIRONMENT = true; });
   afterAll(() => { delete env.IS_REACT_ACT_ENVIRONMENT; });
@@ -33,11 +34,12 @@ describe('Word Garden sentence train', () => {
     container = document.createElement('div');
     root = createRoot(container);
     mocks.cancel.mockReset();
-    mocks.speak.mockReset().mockResolvedValue({ status: 'completed' });
+    mocks.speak.mockReset().mockResolvedValue(undefined);
     mocks.read.mockReset().mockResolvedValue(null);
     mocks.play.mockReset().mockResolvedValue(true);
-    mocks.avatar = null;
+    mocks.avatar = 'blob:locally-selected-avatar';
     onCompleteRound.mockReset();
+    onSetupAvatar.mockReset();
   });
   afterEach(async () => {
     await act(async () => root?.unmount());
@@ -54,6 +56,7 @@ describe('Word Garden sentence train', () => {
         mediaReady
         speechStatus={{ supported: true, voiceAvailable: true, speaking: false, activeRequestId: null, activeCue: null }}
         onBack={() => undefined}
+        onSetupAvatar={onSetupAvatar}
         onCompleteRound={onCompleteRound}
       />,
     ));
@@ -63,7 +66,7 @@ describe('Word Garden sentence train', () => {
   const next = () => container.querySelector<HTMLButtonElement>('.sentence-train__next')!;
   const tap = async (button = target()) => { await act(async () => { button.click(); }); };
   const advance = async (ms = GARDEN_RESPONSE_PAUSE_MS) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); };
-  const spoken = () => mocks.speak.mock.calls.flatMap(([segments]) => segments.map((part: { text: string }) => part.text));
+  const spoken = () => mocks.speak.mock.calls.map(([clip]) => clip.text);
 
   it('asks, waits for an optional answer, then models the active word and sentence; one tap opens the next actor', async () => {
     await render();
@@ -71,9 +74,9 @@ describe('Word Garden sentence train', () => {
     expect(target().dataset.gardenPart).toBe('actor');
     expect(spoken()).toEqual(['מי בתמונה?']);
     await advance(GARDEN_RESPONSE_PAUSE_MS - 1);
-    expect(spoken()).not.toContain('הילד');
+    expect(spoken()).not.toContain('שון');
     await advance(1);
-    expect(spoken()).toEqual(['מי בתמונה?', 'הילד']);
+    expect(spoken()).toEqual(['מי בתמונה?', 'שון']);
     await tap();
     expect(target().dataset.gardenPart).toBe('action');
     expect(spoken().at(-1)).toBe('מה הוא עושה?');
@@ -89,7 +92,7 @@ describe('Word Garden sentence train', () => {
     expect(spoken().at(-1)).toBe('אפשר להגיד את כל המשפט?');
     expect(onCompleteRound).toHaveBeenCalledExactlyOnceWith({ attempts: 3, requiredActions: 3, concepts: ['garden-banana'] });
     await advance();
-    expect(spoken().slice(-2)).toEqual(['הילד אוכל בננה', 'עוד משפט']);
+    expect(spoken().slice(-2)).toEqual(['שון אוכל בננה', 'עוד משפט']);
     expect(board().getAttribute('data-departed')).toBe('true');
     expect(container.querySelectorAll('.sentence-train__next')).toHaveLength(1);
     await tap(next());
@@ -119,7 +122,7 @@ describe('Word Garden sentence train', () => {
     await advance();
     expect(spoken()).toHaveLength(afterExit);
     expect(afterExit).toBeGreaterThan(beforeExit);
-    expect(mocks.cancel).toHaveBeenCalledWith('game:word-garden', 'navigation');
+    expect(mocks.cancel).toHaveBeenCalled();
   });
 
   it('uses the opted-in device image in the actor and action and falls back when a saved language clip is unreadable', async () => {
@@ -134,14 +137,12 @@ describe('Word Garden sentence train', () => {
     expect(board().querySelectorAll('img[src="blob:locally-selected-avatar"]')).toHaveLength(2);
     await tap();
     await tap();
-    await advance();
+    await advance(GARDEN_RESPONSE_PAUSE_MS + 2_000);
     expect(mocks.read.mock.calls.map(([key]) => key)).toEqual(['banana:sean:he', 'banana:sean:en']);
     expect(mocks.play).toHaveBeenCalledExactlyOnceWith(voice, 0.7, expect.any(AbortSignal));
     expect(spoken()).not.toContain('שון אוכל בננה');
     expect(spoken()).toContain('Sean eats a banana');
-    expect(mocks.speak).toHaveBeenCalledWith(
-      [{ text: 'Sean eats a banana', locale: 'en-GB' }], expect.anything(), expect.anything(),
-    );
+    expect(mocks.speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'Sean eats a banana', locale: 'en-GB' }));
   });
 
   it('plays the full growth sequence without sound and shows each action payoff', async () => {
@@ -166,7 +167,7 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-sentence')).toBe('banana');
   });
 
-  it('switches both cards and narration back to the generic child if a selected image cannot render', async () => {
+  it('returns to one-time caregiver setup rather than substituting a generic child if the selected image cannot render', async () => {
     mocks.avatar = 'blob:invalid-avatar';
     await render();
     await tap();
@@ -174,9 +175,36 @@ describe('Word Garden sentence train', () => {
     expect(images).toHaveLength(2);
     await act(async () => { images.item(1).dispatchEvent(new Event('error')); });
     expect(board().querySelectorAll('img[src="blob:invalid-avatar"]')).toHaveLength(0);
-    expect(board().querySelector('[data-garden-part="actor"]')?.textContent).toBe('הילד');
-    await tap(); await tap(); await advance();
-    expect(spoken()).toContain('הילד אוכל בננה');
-    expect(mocks.read).toHaveBeenCalledWith('banana:child:he', expect.any(AbortSignal));
+    expect(target()).toBeNull();
+    expect(board().textContent).toContain('האיור של שון');
+    await advance(GARDEN_CLIP_TIMEOUT_MS);
+    expect(onCompleteRound).not.toHaveBeenCalled();
+  });
+
+  it('requires a long adult press when there is no avatar and never starts the child board or narration', async () => {
+    mocks.avatar = null;
+    await render({ languageMode: 'en' });
+    expect(board().textContent).toContain('Sean’s picture');
+    expect(target()).toBeNull();
+    const gear = container.querySelector<HTMLButtonElement>('.floating-gear')!;
+    await tap(gear);
+    expect(onSetupAvatar).not.toHaveBeenCalled();
+    await act(async () => { gear.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true })); });
+    await advance(2_700);
+    expect(onSetupAvatar).toHaveBeenCalledTimes(1);
+    expect(spoken()).toEqual([]);
+  });
+
+  it('still sends the train and opens the next actor when the recording backend never responds', async () => {
+    mocks.speak.mockImplementation(() => new Promise(() => {}));
+    await render();
+    await tap(); await tap(); await tap();
+    expect(board().getAttribute('data-departed')).toBe('false');
+    await advance(3 * GARDEN_CLIP_TIMEOUT_MS + GARDEN_RESPONSE_PAUSE_MS);
+    expect(board().getAttribute('data-departed')).toBe('true');
+    expect(onCompleteRound).toHaveBeenCalledTimes(1);
+    await tap(next());
+    expect(target().textContent).toContain('שון');
+    expect(board().getAttribute('data-sentence')).toBe('dates');
   });
 });

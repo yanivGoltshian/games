@@ -79,14 +79,14 @@ export const GARDEN_SENTENCES = [
 export type GardenSentence = (typeof GARDEN_SENTENCES)[number];
 export type GardenVoiceLanguage = 'he' | 'en';
 
-export function getGardenVoiceKey(sentence: GardenSentence, sean: boolean, language: GardenVoiceLanguage): string {
-  return `${sentence.id}:${sean ? 'sean' : 'child'}:${language}`;
+export function getGardenVoiceKey(sentence: GardenSentence, language: GardenVoiceLanguage): string {
+  return `${sentence.id}:sean:${language}`;
 }
 
-export function getGardenSentenceLines(sentence: GardenSentence, sean: boolean) {
+export function getGardenSentenceLines(sentence: GardenSentence) {
   return {
-    words: [sean ? SEAN : CHILD, sentence.action, sentence.object] as const,
-    model: sean ? sentence.seanModel : sentence.model,
+    words: [SEAN, sentence.action, sentence.object] as const,
+    model: sentence.seanModel,
   };
 }
 

@@ -124,12 +124,12 @@ function VoiceEditor({ voiceKey, sentence, language }: { voiceKey: string; sente
   );
 }
 
-export function GardenVoiceManager({ useSean }: { useSean: boolean }) {
+export function GardenVoiceManager() {
   const [language, setLanguage] = useState<GardenVoiceLanguage>('he');
   const [sentenceId, setSentenceId] = useState<string>(GARDEN_SENTENCES[0].id);
   const sentence = GARDEN_SENTENCES.find((item) => item.id === sentenceId) ?? GARDEN_SENTENCES[0];
-  const model = useSean ? sentence.seanModel : sentence.model;
-  const voiceKey = getGardenVoiceKey(sentence, useSean, language);
+  const model = sentence.seanModel;
+  const voiceKey = getGardenVoiceKey(sentence, language);
   return (
     <section className="caregiver-card garden-voice" aria-labelledby="garden-voice-title">
       <h2 id="garden-voice-title">הקול שלכם בגן המילים</h2>
@@ -143,7 +143,7 @@ export function GardenVoiceManager({ useSean }: { useSean: boolean }) {
         </label>
         <label>משפט להקלטה
           <select value={sentenceId} onChange={(event) => setSentenceId(event.target.value)}>
-            {GARDEN_SENTENCES.map((item) => <option key={item.id} value={item.id}>{(useSean ? item.seanModel : item.model)[language]}</option>)}
+            {GARDEN_SENTENCES.map((item) => <option key={item.id} value={item.id}>{item.seanModel[language]}</option>)}
           </select>
         </label>
       </div>

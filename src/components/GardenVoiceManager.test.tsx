@@ -40,7 +40,7 @@ it('records only after caregiver action, previews a draft, preserves it on faile
     await act(async () => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); });
   };
   try {
-    await act(async () => root.render(<GardenVoiceManager useSean />));
+    await act(async () => root.render(<GardenVoiceManager />));
     const selects = host.querySelectorAll('select');
     const language = selects.item(0);
     const sentence = selects.item(1);
