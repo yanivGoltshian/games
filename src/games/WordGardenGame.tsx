@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameShell } from '../components/GameShell';
-import { CaregiverGate } from '../components/CaregiverGate';
 import { gameMeta } from '../content/games';
 import {
   GARDEN_NEXT_SENTENCE, GARDEN_PART_QUESTIONS, GARDEN_SENTENCE_QUESTION, GARDEN_SENTENCES,
@@ -22,8 +21,20 @@ export const GARDEN_CLIP_TIMEOUT_MS = 5_000;
 const PARTS = ['actor', 'action', 'object'] as const;
 type Part = 0 | 1 | 2 | 3;
 
-function SeanArt({ url, onError }: { url: string; onError: () => void }) {
-  return <img className="sentence-train__avatar" src={url} alt="" draggable={false} onError={onError} />;
+function SeanArt({ url, english, onError }: { url: string | null; english: boolean; onError: () => void }) {
+  if (url) return <img className="sentence-train__avatar" src={url} alt="" draggable={false} onError={onError} />;
+  return (
+    <svg className="sentence-train__badge" viewBox="0 0 120 104" aria-hidden="true">
+      <path d="M12 19h96a5 5 0 0 1 5 5v10a10 10 0 0 0 0 20v10a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5V54a10 10 0 0 0 0-20V24a5 5 0 0 1 5-5Z"
+        fill="#155649" stroke="#203d35" strokeWidth="3" />
+      <path d="M21 25v38m78-38v38" stroke="#f4d296" strokeWidth="2" strokeDasharray="3 4" />
+      <text x="60" y="46" dominantBaseline="central" textAnchor="middle" fill="#fff6d8" fontSize="39" fontWeight="900">
+        {english ? 'S' : 'ש'}
+      </text>
+      <path d="M20 88h80M27 94h66" stroke="#936940" strokeWidth="3" strokeLinecap="round" />
+      {[33, 87].map((x) => <circle key={x} cx={x} cy="77" r="8" fill="#203d35" stroke="#f4d296" strokeWidth="2" />)}
+    </svg>
+  );
 }
 
 function GardenerArt() {
@@ -39,17 +50,17 @@ function GardenerArt() {
   );
 }
 
-function Picture({ sentence, index, avatar, onAvatarError, acted }: {
-  sentence: GardenSentence; index: number; avatar: string; onAvatarError: () => void; acted: boolean;
+function Picture({ sentence, index, avatar, english, onAvatarError, acted }: {
+  sentence: GardenSentence; index: number; avatar: string | null; english: boolean; onAvatarError: () => void; acted: boolean;
 }) {
-  if (index === 0) return <div className="sentence-train__picture"><SeanArt url={avatar} onError={onAvatarError} /></div>;
+  if (index === 0) return <div className="sentence-train__picture"><SeanArt url={avatar} english={english} onError={onAvatarError} /></div>;
   if (index === 2) {
     return <div className="sentence-train__picture"><img src={sentence.image} alt="" draggable={false} /></div>;
   }
   const { motion } = sentence;
   return (
     <div className={`sentence-train__picture sentence-train__action is-${motion}`} data-acted={acted}>
-      <div className="sentence-train__actor"><SeanArt url={avatar} onError={onAvatarError} /></div>
+      <div className="sentence-train__actor"><SeanArt url={avatar} english={english} onError={onAvatarError} /></div>
       {motion === 'handoff' && <div className="sentence-train__recipient"><GardenerArt /></div>}
       {sentence.setting && (motion !== 'grow' || !acted) && <img className="sentence-train__setting" src={sentence.setting} alt="" draggable={false} />}
       {motion === 'bury'
@@ -109,31 +120,19 @@ function playNarrator(segment: SpeechSegment, volume: number, signal: AbortSigna
   });
 }
 
-export function WordGardenGame(props: ToddlerGameProps & { onSetupAvatar: () => void }) {
+export function WordGardenGame(props: ToddlerGameProps) {
   const [unreadableAvatar, setUnreadableAvatar] = useState<string | null>(null);
   const selectedAvatar = useGardenAvatar(props.settings.gardenAvatarPhotoId);
-  if (selectedAvatar && selectedAvatar !== unreadableAvatar) {
-    return <SentenceBoard {...props} avatar={selectedAvatar} onAvatarError={() => setUnreadableAvatar(selectedAvatar)} />;
-  }
-  const { settings, onBack, onSetupAvatar } = props;
-  const english = settings.languageMode === 'en';
-  const title = english ? 'Sean’s picture' : 'האיור של שון';
   return (
-    <GameShell ariaLabel={english ? 'Word Garden' : gameMeta.wordGarden.title}
-      accentClass={gameMeta.wordGarden.accentClass} reducedMotion={settings.reducedMotion}
-      languageMode={settings.languageMode} onHome={onBack} homeLabel={english ? 'Back home' : 'חזרה לבית'}
-      liveStatus={title}>
-      <div className="sentence-train sentence-train--setup">
-        <h1 className="sentence-train__prompt">{title}</h1>
-        <p>{english ? 'Grown-ups: hold the gear to choose Sean’s original picture.' : 'להורים: לחצו לחיצה ארוכה על גלגל השיניים כדי לבחור את האיור המקורי של שון.'}</p>
-        <CaregiverGate onUnlock={onSetupAvatar} inline english={english} />
-      </div>
-    </GameShell>
+    <SentenceBoard {...props}
+      avatar={selectedAvatar === unreadableAvatar ? null : selectedAvatar}
+      onAvatarError={() => setUnreadableAvatar(selectedAvatar)}
+    />
   );
 }
 
 function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, onAvatarError }:
-  ToddlerGameProps & { avatar: string; onAvatarError: () => void }) {
+  ToddlerGameProps & { avatar: string | null; onAvatarError: () => void }) {
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [part, setPart] = useState<Part>(0);
   const [trainReady, setTrainReady] = useState(false);
@@ -286,7 +285,7 @@ function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, 
             const index = i as 0 | 1 | 2;
             if (index > part) return <div key={name} className="sentence-train__card is-empty" aria-hidden="true"><span /></div>;
             const word = localized(words[index]);
-            const picture = <Picture sentence={sentence} index={index} avatar={avatar}
+            const picture = <Picture sentence={sentence} index={index} avatar={avatar} english={english}
               onAvatarError={onAvatarError} acted={part > index} />;
             return index === part ? (
               <button

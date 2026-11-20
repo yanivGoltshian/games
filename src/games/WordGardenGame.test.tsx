@@ -25,7 +25,6 @@ describe('Word Garden sentence train', () => {
   let container: HTMLDivElement;
   let root: Root | undefined;
   const onCompleteRound = vi.fn();
-  const onSetupAvatar = vi.fn();
   const env = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   beforeAll(() => { env.IS_REACT_ACT_ENVIRONMENT = true; });
   afterAll(() => { delete env.IS_REACT_ACT_ENVIRONMENT; });
@@ -39,7 +38,6 @@ describe('Word Garden sentence train', () => {
     mocks.play.mockReset().mockResolvedValue(true);
     mocks.avatar = 'blob:locally-selected-avatar';
     onCompleteRound.mockReset();
-    onSetupAvatar.mockReset();
   });
   afterEach(async () => {
     await act(async () => root?.unmount());
@@ -56,7 +54,6 @@ describe('Word Garden sentence train', () => {
         mediaReady
         speechStatus={{ supported: true, voiceAvailable: true, speaking: false, activeRequestId: null, activeCue: null }}
         onBack={() => undefined}
-        onSetupAvatar={onSetupAvatar}
         onCompleteRound={onCompleteRound}
       />,
     ));
@@ -167,32 +164,53 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-sentence')).toBe('banana');
   });
 
-  it('returns to one-time caregiver setup rather than substituting a generic child if the selected image cannot render', async () => {
+  it('keeps the active round and Sean’s action when the selected illustration cannot render', async () => {
     mocks.avatar = 'blob:invalid-avatar';
-    await render();
+    await render({ quietMode: true });
     await tap();
     const images = board().querySelectorAll('img[src="blob:invalid-avatar"]');
     expect(images).toHaveLength(2);
     await act(async () => { images.item(1).dispatchEvent(new Event('error')); });
     expect(board().querySelectorAll('img[src="blob:invalid-avatar"]')).toHaveLength(0);
-    expect(target()).toBeNull();
-    expect(board().textContent).toContain('האיור של שון');
-    await advance(GARDEN_CLIP_TIMEOUT_MS);
-    expect(onCompleteRound).not.toHaveBeenCalled();
+    expect(target()?.dataset.gardenPart).toBe('action');
+    expect(board().querySelectorAll('.sentence-train__badge')).toHaveLength(2);
+    await tap();
+    expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('src')).toContain('banana-bitten.webp');
+    await tap();
+    expect(board().textContent).toContain('שון אוכל בננה');
+    expect(onCompleteRound).toHaveBeenCalledTimes(1);
   });
 
-  it('requires a long adult press when there is no avatar and never starts the child board or narration', async () => {
+  it('starts fresh profiles directly on Sean’s card and finishes a sentence with no setup', async () => {
     mocks.avatar = null;
     await render({ languageMode: 'en' });
-    expect(board().textContent).toContain('Sean’s picture');
-    expect(target()).toBeNull();
-    const gear = container.querySelector<HTMLButtonElement>('.floating-gear')!;
-    await tap(gear);
-    expect(onSetupAvatar).not.toHaveBeenCalled();
-    await act(async () => { gear.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true })); });
-    await advance(2_700);
-    expect(onSetupAvatar).toHaveBeenCalledTimes(1);
-    expect(spoken()).toEqual([]);
+    expect(target()?.dataset.gardenPart).toBe('actor');
+    expect(target().textContent).toContain('Sean');
+    expect(target().querySelector('.sentence-train__badge')).not.toBeNull();
+    expect(board().querySelectorAll('.sentence-train__card')).toHaveLength(3);
+    expect(container.querySelector('input[type="file"], .floating-gear')).toBeNull();
+    expect(spoken()).toEqual(['Who is in the picture?']);
+    await tap(); await tap(); await tap();
+    await advance();
+    expect(board().textContent).toContain('Sean eats a banana');
+    expect(board().getAttribute('data-departed')).toBe('true');
+    await tap(next());
+    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(target().dataset.gardenPart).toBe('actor');
+  });
+
+  it('replaces the badge with a late-arriving local illustration without restarting the current turn', async () => {
+    mocks.avatar = null;
+    await render();
+    await tap();
+    const active = target();
+    const before = spoken();
+    mocks.avatar = 'blob:locally-selected-avatar';
+    await render();
+    expect(target()).toBe(active);
+    expect(target().dataset.gardenPart).toBe('action');
+    expect(board().querySelectorAll('img[src="blob:locally-selected-avatar"]')).toHaveLength(2);
+    expect(spoken()).toEqual(before);
   });
 
   it('still sends the train and opens the next actor when the recording backend never responds', async () => {

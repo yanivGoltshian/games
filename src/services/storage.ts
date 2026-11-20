@@ -30,12 +30,10 @@ function restorePairStages(progress: AppProgress, stored: unknown): void {
   }
 }
 
-export function loadProgress(prefersReducedMotion = false, storage: Storage | null = typeof window !== 'undefined' ? window.localStorage : null): AppProgress {
-  if (!storage) {
-    return migrateStoredProgress(null, { prefersReducedMotion });
-  }
-
+export function loadProgress(prefersReducedMotion = false, storage?: Storage | null): AppProgress {
   try {
+    if (storage === undefined && typeof window !== 'undefined') storage = window.localStorage;
+    if (!storage) return migrateStoredProgress(null, { prefersReducedMotion });
     const raw = storage.getItem(STORAGE_KEY);
     const progress = migrateStoredProgress(raw ? JSON.parse(raw) : null, { prefersReducedMotion });
     try {

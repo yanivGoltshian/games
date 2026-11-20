@@ -36,7 +36,6 @@ export default function App() {
   ));
   const [mediaReady, setMediaReady] = useState(false);
   const [caregiverUnlocked, setCaregiverUnlocked] = useState(false);
-  const [gardenSetup, setGardenSetup] = useState(false);
   const [speechStatus, setSpeechStatus] = useState(() => speechService.getStatus());
   const route = useMemo(() => parseHash(requestedHash), [requestedHash]);
 
@@ -56,7 +55,12 @@ export default function App() {
   }, [requestedHash, route.kind]);
 
   useEffect(() => {
-    saveProgress(progress);
+    try {
+      saveProgress(progress);
+    } catch (error) {
+      if (!(error instanceof DOMException) || !['SecurityError', 'QuotaExceededError'].includes(error.name)) throw error;
+      console.warn('Progress could not be saved in this browser.');
+    }
   }, [progress]);
 
   useEffect(() => speechService.subscribe(setSpeechStatus), []);
@@ -120,7 +124,6 @@ export default function App() {
         onReset={resetAll}
         onUpdateSettings={updateSettings}
         progress={progress}
-        {...(gardenSetup ? { onOpenGarden: () => navigate('/games/wordGarden') } : {})}
       />
     ) : (
       <main className="page lock-page">
@@ -150,11 +153,7 @@ export default function App() {
       memory: <MemoryGame {...gameProps} />,
       numberPairs: <NumberPairsGame {...gameProps} />,
       sillyAlien: <SillyAlienGame {...gameProps} />,
-      wordGarden: <WordGardenGame {...gameProps} onSetupAvatar={() => {
-        setGardenSetup(true);
-        setCaregiverUnlocked(true);
-        navigate('/caregiver');
-      }} />,
+      wordGarden: <WordGardenGame {...gameProps} />,
     }[route.domain];
   } else {
     content = (
@@ -181,7 +180,6 @@ export default function App() {
         {content}
       </ErrorBoundary>
       {route.kind === 'home' ? <CaregiverGate onUnlock={() => {
-        setGardenSetup(false);
         setCaregiverUnlocked(true);
         navigate('/caregiver');
       }} /> : null}

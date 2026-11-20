@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { applyProgressionChoice, applyRoundResult, createInitialProgress, RECENT_RESULT_LIMIT } from '../domain/progression';
 import { clearProgress, loadProgress, saveProgress, STORAGE_KEY } from './storage';
 
@@ -31,6 +31,20 @@ class MemoryStorage implements Storage {
 }
 
 describe('progress storage', () => {
+  it('lets the app start with default progress when browser policy blocks access to local storage', () => {
+    vi.stubGlobal('window', {
+      get localStorage() { throw new DOMException('Denied by browser policy', 'SecurityError'); },
+    });
+    try {
+      expect(loadProgress(true)).toMatchObject({
+        settings: { reducedMotion: true },
+        domains: { wordGarden: { completedRounds: 0 } },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('retains the extended stages through a v29 read-and-save without restoring reset progress', () => {
     const storage = new MemoryStorage();
     const win = { attempts: 8, requiredActions: 3, concepts: ['test'] };
