@@ -51,4 +51,10 @@ export const gameMeta: Record<DomainKey, GameMeta> = {
     accentClass: 'accent-silly-alien',
     colorToken: 'alien',
   },
+  wordGarden: {
+    title: 'גן המילים',
+    subtitle: 'בוחרים פירות אמיתיים ושומעים משפט גדל',
+    accentClass: 'accent-word-garden',
+    colorToken: 'leaf',
+  },
 };

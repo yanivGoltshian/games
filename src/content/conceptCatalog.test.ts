@@ -11,6 +11,7 @@ import {
   hasNiqqud,
   stripNiqqud,
 } from './hebrewPronunciation';
+import { GARDEN_FRUITS, GARDEN_PERSIMMON_IMAGE } from './wordGarden';
 
 const NEW_CONCEPT_IDS = [
   'duck',
@@ -92,7 +93,16 @@ describe('authoritative learning concept catalog', () => {
     const actualFiles = readdirSync(resolve('public/assets/vocabulary'))
       .filter((name) => name.endsWith('.webp') || name.endsWith('.svg'))
       .sort();
-    expect(actualFiles).toEqual(expectedFiles);
+    const gardenPhotos = [...GARDEN_FRUITS.map((fruit) => fruit.image), GARDEN_PERSIMMON_IMAGE]
+      .filter((image) => image !== '/assets/vocabulary/strawberry.webp');
+    expect(actualFiles).toEqual([...expectedFiles, ...gardenPhotos.map((image) => basename(image))].sort());
+
+    for (const image of gardenPhotos) {
+      const buffer = readFileSync(resolve('public', image.slice(1)));
+      const dimensions = webpDimensions(buffer);
+      expect(dimensions.width, image).toBeGreaterThanOrEqual(500);
+      expect(dimensions.height, image).toBeGreaterThanOrEqual(450);
+    }
 
     for (const concept of learningConcepts) {
       const path = resolve('public', concept.image.slice(1));

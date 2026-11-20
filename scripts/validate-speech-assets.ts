@@ -16,19 +16,19 @@ const SPRITE_BOUNDARY_TOLERANCE_SECONDS = 0.02;
 const CONTAINER_DURATION_TOLERANCE_SECONDS = 0.08;
 const EXPECTED_SPRITES = {
   '/speech/he-IL.mp3': {
-    count: 502,
-    bytes: 10_208_877,
-    sha256: '0cc722bee13f49bb14dd69377de22d4676c72de209a12590ffd1518c1813eabc',
+    count: 587,
+    bytes: 11_824_556,
+    sha256: 'e531f3d4e56ee1bcb3b0e8c5664a5f974e7b5cbaf66fa36ddab84918e633ba53',
   },
   '/speech/en-US.mp3': {
-    count: 502,
-    bytes: 9_916_269,
-    sha256: 'a435ef8db9da3be8487eef549343cac7173cc16c406e5f6dd9206a7cdbdda149',
+    count: 587,
+    bytes: 11_585_516,
+    sha256: 'a2e9be07998e261a0ac3c7e01fdfec9215344e6ed5cc41258d91608d192be299',
   },
   '/speech/en-GB.mp3': {
-    count: 502,
-    bytes: 9_231_789,
-    sha256: 'd65615e6070dd9a555c00cfe36c293593ae62e4709ade94110578794145ae2bd',
+    count: 587,
+    bytes: 10_783_532,
+    sha256: 'bc1570d7cd46a01c17af3d22e416e14bdf86012fdf89330719d18a731392979e',
   },
 } as const;
 
@@ -93,10 +93,10 @@ function decodeSprite(path: string): Buffer {
     '-',
   ], {
     encoding: null,
-    maxBuffer: 64 * 1024 * 1024,
+    maxBuffer: 128 * 1024 * 1024,
   });
   if (result.status !== 0) {
-    throw new Error(`ffmpeg failed to decode ${path}: ${result.stderr.toString('utf8')}`);
+    throw new Error(`ffmpeg failed to decode ${path}: ${result.error?.message ?? result.stderr.toString('utf8')}`);
   }
   return result.stdout;
 }

@@ -10,7 +10,7 @@ import {
 import { DOMAIN_KEYS } from './types';
 
 describe('progression', () => {
-  it('keeps silly alien as the seventh and final direct game domain', () => {
+  it('keeps the existing domains in order and adds the garden afterward', () => {
     expect(DOMAIN_KEYS).toEqual([
       'listening',
       'counting',
@@ -19,6 +19,7 @@ describe('progression', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
+      'wordGarden',
     ]);
   });
 
@@ -187,7 +188,7 @@ describe('progression', () => {
     expect(history.at(-1)?.completedAt).toBe(1009);
   });
 
-  it('automatically applies adaptive behavior for all eight domains', () => {
+  it('automatically applies adaptive behavior for all current domains', () => {
     for (const domain of DOMAIN_KEYS) {
       let progress = createInitialProgress(false, 1000);
       const roundsToAdvance = domain === 'puzzle' ? 2 : 3;

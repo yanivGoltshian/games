@@ -267,3 +267,24 @@ export function SillyAlienPortalArt({ label, className }: ArtProps) {
     </svg>
   );
 }
+
+export function WordGardenPortalArt({ label, className }: ArtProps) {
+  const ids = useArtIds('garden');
+  return (
+    <svg viewBox="0 0 320 320" className={className} {...artA11yProps('portal-word-garden', label)}>
+      <BackgroundBlob id={ids.garden} from="#f4efc6" to="#8ecba3" />
+      <path d="M75 199 H248 L228 250 H95 Z" fill="#c47d48" stroke="#794e39" strokeWidth="5" />
+      <circle cx="112" cy="254" r="18" fill="#503e39" />
+      <circle cx="211" cy="254" r="18" fill="#503e39" />
+      <image href="/assets/vocabulary/cherries.webp" x="85" y="126" width="70" height="70" preserveAspectRatio="xMidYMid slice" />
+      <image href="/assets/vocabulary/dates.webp" x="162" y="126" width="70" height="70" preserveAspectRatio="xMidYMid slice" />
+      <circle cx="248" cy="102" r="30" fill="#ae684b" />
+      <path d="M223 105 Q225 60 261 73 Q273 82 275 99" fill="#37382e" />
+      <circle cx="237" cy="105" r="3" fill="#302a25" />
+      <circle cx="257" cy="105" r="3" fill="#302a25" />
+      <path d="M239 117 Q249 125 259 117" stroke="#593c32" fill="none" strokeWidth="3" />
+      <path d="M224 136 Q248 126 271 138 L278 202 H219 Z" fill="#547d63" />
+      <path d="M234 159 H264 V202 H234 Z" fill="#dfad68" />
+    </svg>
+  );
+}

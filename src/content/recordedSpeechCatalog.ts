@@ -35,6 +35,7 @@ import {
 } from '../domain/rounds';
 import { getHebrewPronunciation } from './hebrewPronunciation';
 import type { SpeechLocale } from '../domain/types';
+import { GARDEN_ASK, GARDEN_CHILDREN, GARDEN_CONNECTORS, GARDEN_EFFORT, GARDEN_FRUITS, GARDEN_INVITATION, GARDEN_PERSIMMON_WORD, GARDEN_STAGES, gardenChildPhrase, gardenPhrase } from './wordGarden';
 
 export interface RecordedSpeechCatalogEntry {
   locale: SpeechLocale;
@@ -53,10 +54,10 @@ export interface RecordedSpeechCatalogEntry {
 
 export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   const entries = new Map<string, RecordedSpeechCatalogEntry>();
-  const add = (locale: SpeechLocale, text: string): void => {
+  const add = (locale: SpeechLocale, text: string, spokenText?: string): void => {
     const entry: RecordedSpeechCatalogEntry = { locale, text };
     if (locale === 'he-IL') {
-      entry.spokenText = getHebrewPronunciation(text);
+      entry.spokenText = spokenText ?? getHebrewPronunciation(text);
     }
     entries.set(`${locale}\u0000${text}`, entry);
   };
@@ -118,6 +119,28 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   addPair('לחץ על הזוגות', 'Press the pairs');
   LEVEL_UP_SPEECH.forEach((line) => addPair(line.he, line.en));
   addPair(MORE_NUMBERS_SPEECH.he, MORE_NUMBERS_SPEECH.en);
+
+  const addGardenLine = (line: { he: string; spokenHe: string; en: string }): void => {
+    add('he-IL', line.he, line.spokenHe);
+    add('en-US', line.en);
+    add('en-GB', line.en);
+  };
+  addGardenLine(GARDEN_INVITATION);
+  addGardenLine(GARDEN_EFFORT);
+  addGardenLine(GARDEN_ASK);
+  addGardenLine(GARDEN_PERSIMMON_WORD);
+  GARDEN_STAGES.forEach((stage) => {
+    addGardenLine(stage.line);
+    addGardenLine(stage.expanded);
+  });
+  GARDEN_FRUITS.forEach((first) => {
+    addGardenLine(gardenPhrase(first));
+    GARDEN_CHILDREN.forEach((child) => addGardenLine(gardenChildPhrase(child, first)));
+    GARDEN_FRUITS.filter((second) => second.id !== first.id).forEach((second) => {
+      GARDEN_CONNECTORS.forEach((connector) => addGardenLine(gardenPhrase(first, second, connector)));
+      GARDEN_CHILDREN.forEach((child) => addGardenLine(gardenChildPhrase(child, first, second)));
+    });
+  });
 
   [
     ...PRAISE_HE,

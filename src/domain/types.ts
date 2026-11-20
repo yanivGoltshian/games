@@ -1,4 +1,4 @@
-export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien'] as const;
+export const DOMAIN_KEYS = ['listening', 'counting', 'sorting', 'puzzle', 'memory', 'numberPairs', 'sillyAlien', 'wordGarden'] as const;
 
 export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';

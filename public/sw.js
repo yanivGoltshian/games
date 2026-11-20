@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v26';
+const CACHE_NAME = 'sean-learning-adventure-v28';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -13,10 +13,12 @@ const APP_SHELL = [
   '/assets/vocabulary/bus.webp',
   '/assets/vocabulary/car.webp',
   '/assets/vocabulary/carrot.webp',
+  '/assets/vocabulary/cherries.webp',
   '/assets/vocabulary/cat.webp',
   '/assets/vocabulary/chair.webp',
   '/assets/vocabulary/cup.webp',
   '/assets/vocabulary/dog.webp',
+  '/assets/vocabulary/dates.webp',
   '/assets/vocabulary/duck.webp',
   '/assets/vocabulary/elephant.webp',
   '/assets/vocabulary/emotion-angry.svg',
@@ -27,6 +29,7 @@ const APP_SHELL = [
   '/assets/vocabulary/emotion-surprised.svg',
   '/assets/vocabulary/flower.webp',
   '/assets/vocabulary/orange.webp',
+  '/assets/vocabulary/persimmons.webp',
   '/assets/vocabulary/rabbit.webp',
   '/assets/vocabulary/shoe.webp',
   '/assets/vocabulary/spoon.webp',

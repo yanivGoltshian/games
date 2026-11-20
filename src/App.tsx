@@ -17,6 +17,7 @@ import { NumberPairsGame } from './games/NumberPairsGame';
 import { PuzzleGame } from './games/PuzzleGame';
 import { SillyAlienGame } from './games/SillyAlienGame';
 import { SortingGame } from './games/SortingGame';
+import { WordGardenGame } from './games/WordGardenGame';
 
 function navigate(path: string) {
   speechService.cancelAll('navigation');
@@ -147,6 +148,7 @@ export default function App() {
       memory: <MemoryGame {...gameProps} />,
       numberPairs: <NumberPairsGame {...gameProps} />,
       sillyAlien: <SillyAlienGame {...gameProps} />,
+      wordGarden: <WordGardenGame {...gameProps} />,
     }[route.domain];
   } else {
     content = (
