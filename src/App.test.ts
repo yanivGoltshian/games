@@ -15,7 +15,7 @@ const RETIRED_ROUTES = [
 ] as const;
 
 describe('child navigation', () => {
-  it('exposes exactly seven direct game destinations with art and metadata', () => {
+  it('exposes eight direct game destinations with art and metadata', () => {
     expect(DOMAIN_KEYS).toEqual([
       'listening',
       'counting',
@@ -24,6 +24,7 @@ describe('child navigation', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
+      'wordGarden',
     ]);
     expect(Object.keys(gameMeta)).toEqual(DOMAIN_KEYS);
     for (const domain of DOMAIN_KEYS) {

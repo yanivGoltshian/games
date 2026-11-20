@@ -85,7 +85,7 @@ describe('retired activity routes', () => {
       });
 
       expect(window.location.hash).toBe('#/');
-      expect(container.querySelectorAll('.portal-grid__item')).toHaveLength(7);
+      expect(container.querySelectorAll('.portal-grid__item')).toHaveLength(8);
       expect(container.querySelector('.game-shell')).toBeNull();
       expect(speechUnlock).not.toHaveBeenCalled();
       expect(speechPlayback).not.toHaveBeenCalled();

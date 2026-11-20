@@ -36,7 +36,7 @@ describe('HomeScreen', () => {
     expect(html).toMatch(/portal-card__sparkles[^>]*aria-hidden="true"/);
   });
 
-  it('renders exactly the seven current game tiles without a shelf', () => {
+  it('renders all eight current game tiles without a shelf', () => {
     const document = new DOMParser().parseFromString(renderHome(), 'text/html');
     const domains = [...document.querySelectorAll<HTMLElement>('.portal-grid__item')]
       .map((item) => item.dataset.domain);
@@ -49,6 +49,7 @@ describe('HomeScreen', () => {
       'memory',
       'numberPairs',
       'sillyAlien',
+      'wordGarden',
     ]);
     expect(document.body.textContent).not.toContain('מדף התקשורת');
     expect(document.body.textContent).not.toContain('רכבת המילים');
