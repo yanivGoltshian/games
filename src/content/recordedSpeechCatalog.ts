@@ -35,6 +35,7 @@ import {
 } from '../domain/rounds';
 import { getHebrewPronunciation } from './hebrewPronunciation';
 import { MEMORY_GARDEN_CONCEPTS } from './memoryGarden';
+import { GARDEN_SENTENCE_SPEECH_LINES } from './gardenSentences';
 import type { SpeechLocale } from '../domain/types';
 import { GARDEN_ASK, GARDEN_BANANA_SENTENCE, GARDEN_BANANA_WORDS, GARDEN_CHILDREN, GARDEN_CONNECTORS, GARDEN_EFFORT, GARDEN_FRUITS, GARDEN_INVITATION, GARDEN_PERSIMMON_WORD, GARDEN_STAGES, gardenChildPhrase, gardenPhrase } from './wordGarden';
 
@@ -131,6 +132,7 @@ export function collectRecordedSpeechCatalog(): RecordedSpeechCatalogEntry[] {
   addGardenLine(GARDEN_ASK);
   addGardenLine(GARDEN_PERSIMMON_WORD);
   GARDEN_BANANA_WORDS.forEach(addGardenLine);
+  GARDEN_SENTENCE_SPEECH_LINES.forEach(addGardenLine);
   addGardenLine(GARDEN_BANANA_SENTENCE);
   MEMORY_GARDEN_CONCEPTS.forEach((concept) => addGardenLine(concept));
   GARDEN_STAGES.forEach((stage) => {

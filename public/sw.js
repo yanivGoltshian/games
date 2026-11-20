@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v29';
+const CACHE_NAME = 'sean-learning-adventure-v30';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -39,6 +39,10 @@ const APP_SHELL = [
   '/assets/garden/banana.webp',
   '/assets/garden/banana-bitten.webp',
   '/assets/garden/dates.webp',
+  '/assets/garden/date-pit-germinating.webp',
+  '/assets/garden/date-pit-planted.webp',
+  '/assets/garden/date-palm-seedling.webp',
+  '/assets/garden/date-palm-tree.webp',
   '/assets/garden/persimmon.webp',
   '/assets/garden/token.webp',
   '/assets/garden/watering-can.webp',

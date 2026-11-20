@@ -7,6 +7,8 @@ export const MEMORY_GARDEN_CONCEPTS = [
   { id: 'watering-can', he: 'משפך', spokenHe: 'מַשְׁפֵּךְ', en: 'watering can', image: '/assets/garden/watering-can.webp', introducedAtLevel: 2, category: 'object' },
 ] as const;
 
+export const EARLY_MEMORY_GARDEN_WORDS = ['persimmon', 'dates', 'watering-can'] as const;
+
 export const MEMORY_GARDEN_ART: Readonly<Record<string, string>> = {
   banana: '/assets/garden/banana.webp',
   ...Object.fromEntries(MEMORY_GARDEN_CONCEPTS.map((concept) => [concept.id, concept.image])),

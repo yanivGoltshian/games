@@ -7,6 +7,8 @@ import { CHILD_NAME_MAX_LENGTH, normalizeChildName, personalizeChildName } from 
 import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import { InstallHint } from './InstallHint';
 import { FamilyPhotoManager } from './FamilyPhotoManager';
+import { GardenVoiceManager } from './GardenVoiceManager';
+import { useGardenAvatar } from '../games/useGardenAvatar';
 import { ProgressStars } from './ProgressStars';
 
 interface CaregiverPanelProps {
@@ -29,6 +31,7 @@ export function CaregiverPanel({
 }: CaregiverPanelProps) {
   const [confirmReset, setConfirmReset] = useState(false);
   const [childNameDraft, setChildNameDraft] = useState(progress.settings.childName);
+  const gardenAvatar = useGardenAvatar(progress.settings.gardenAvatarPhotoId);
 
   useEffect(() => {
     setChildNameDraft(progress.settings.childName);
@@ -143,7 +146,11 @@ export function CaregiverPanel({
         </div>
       </section>
 
-      <FamilyPhotoManager />
+      <FamilyPhotoManager
+        gardenAvatarPhotoId={progress.settings.gardenAvatarPhotoId ?? null}
+        onChooseGardenAvatar={(gardenAvatarPhotoId) => onUpdateSettings({ gardenAvatarPhotoId })}
+      />
+      <GardenVoiceManager useSean={Boolean(gardenAvatar)} />
 
       <section className="caregiver-card">
         <h2>התקדמות לפי תחום</h2>

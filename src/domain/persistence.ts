@@ -2,6 +2,7 @@ import {
   createInitialProgress,
   createInitialSettings,
   getDomainMaxLevel,
+  getMemoryStageWins,
   RECENT_RESULT_LIMIT,
   STORAGE_SCHEMA_VERSION,
 } from './progression';
@@ -84,6 +85,8 @@ function sanitizeSettings(input: unknown, prefersReducedMotion: boolean): Toddle
     soundLevel,
     reducedMotion,
     quietMode,
+    ...(typeof input.gardenAvatarPhotoId === 'string' && input.gardenAvatarPhotoId.length > 0 && input.gardenAvatarPhotoId.length <= 120
+      ? { gardenAvatarPhotoId: input.gardenAvatarPhotoId } : {}),
   };
 }
 
@@ -124,6 +127,7 @@ function sanitizeDomain(
   const level = clampLevel(value.level, maxLevel);
   const recentSource = Array.isArray(value.recentResults) ? value.recentResults : [];
   const recentResults = recentSource
+    .filter((result) => domainKey !== 'memory' || (isRecord(result) && result.level === clampLevel(result.level, maxLevel)))
     .map((result) => sanitizeRecentResult(result, maxLevel))
     .filter((result): result is RecentRoundResult => result !== null)
     .slice(-RECENT_RESULT_LIMIT);
@@ -155,6 +159,15 @@ function sanitizeDomain(
       ? value.lastProgressionChoice
       : null,
     recentResults,
+    ...(domainKey === 'memory' ? {
+      memoryStageWins: getMemoryStageWins({
+        level,
+        recentResults,
+        ...(value.memoryStageWins === 0 || value.memoryStageWins === 1
+          ? { memoryStageWins: value.memoryStageWins }
+          : {}),
+      }),
+    } : {}),
     concepts,
   };
 }

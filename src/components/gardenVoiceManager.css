@@ -1,0 +1,9 @@
+.garden-voice p { margin-block: 0.6em; }
+.garden-voice__editor {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}
+.garden-voice__sentence { font-size: 1.25rem; font-weight: 750; }
+.garden-voice__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.garden-voice audio { width: min(100%, 360px); }

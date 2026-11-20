@@ -85,7 +85,7 @@ describe('progression', () => {
 
   it('retains explicit next-level choice compatibility for eligible stored progress', () => {
     const progress = createInitialProgress(false, 1000);
-    const domain = progress.domains.memory;
+    const domain = progress.domains.listening;
     domain.mastery = 0.9;
     domain.recentResults = Array.from({ length: 3 }, (_, index) => ({
       completedAt: 1001 + index,
@@ -95,7 +95,7 @@ describe('progression', () => {
       attempts: 1,
     }));
 
-    const next = applyProgressionChoice(progress, 'memory', 'next', 1010);
+    const next = applyProgressionChoice(progress, 'listening', 'next', 1010);
 
     expect(next.accepted).toBe(true);
     expect(next.domain.level).toBe(2);
@@ -103,31 +103,43 @@ describe('progression', () => {
     expect(next.domain.lastProgressionChoice).toBe('next');
   });
 
-  it('advances memory through level seven while every other domain stays capped at three', () => {
+  it('advances memory after exactly two wins per stage even with mistakes, up to eight pairs', () => {
     let progress = createInitialProgress(false, 1000);
-    for (const expectedLevel of [2, 3, 4, 5, 6, 7] as const) {
-      const domain = progress.domains.memory;
-      domain.mastery = 1;
-      domain.recentResults = Array.from({ length: 3 }, (_, index) => ({
-        completedAt: 1100 + expectedLevel * 10 + index,
-        level: domain.level,
-        success: true,
-        firstAttempt: true,
-        attempts: 1,
-      }));
-      const update = applyProgressionChoice(
-        progress,
-        'memory',
-        'next',
-        1200 + expectedLevel,
-      );
-      expect(update.accepted).toBe(true);
-      expect(update.domain.level).toBe(expectedLevel);
+    const imperfectWin = { attempts: 12, requiredActions: 2, concepts: ['dog', 'cat'] };
+    for (let win = 1; win <= 15; win += 1) {
+      const update = applyRoundResult(progress, 'memory', imperfectWin, 1000 + win);
       progress = update.progress;
+      const domain = progress.domains.memory;
+      const expectedLevel = Math.min(7, 1 + Math.floor(win / 2));
+      expect(domain.level, `after Memory win ${win}`).toBe(expectedLevel);
+      expect(domain.highestLevel).toBe(expectedLevel);
+      expect(update.summary.leveledUp).toBe(win % 2 === 0 && win <= 12);
+      expect(update.summary.firstAttempt).toBe(false);
     }
-
     expect(recommendLevelAdvance(progress.domains.memory, 'memory')).toBeNull();
+  });
 
+  it('advances Number Pairs exactly once per board won, including imperfect wins, but never on failure or past ten pairs', () => {
+    let progress = createInitialProgress(false, 1000);
+    for (let win = 1; win <= 9; win += 1) {
+      const failed = applyRoundResult(progress, 'numberPairs', {
+        attempts: 2, requiredActions: 3, concepts: ['number-1'], success: false,
+      }, 1000 + 2 * win);
+      expect(failed.summary.level).toBe(Math.min(8, win));
+      expect(failed.summary.leveledUp).toBe(false);
+      const won = applyRoundResult(failed.progress, 'numberPairs', {
+        attempts: 12, requiredActions: 3, concepts: ['number-1'],
+      }, 1001 + 2 * win);
+      expect(won.summary.level).toBe(Math.min(8, win + 1));
+      expect(won.summary.leveledUp).toBe(win <= 7);
+      expect(won.summary.firstAttempt).toBe(false);
+      expect(won.progress.domains.numberPairs.completedRounds).toBe(win);
+      progress = won.progress;
+    }
+  });
+
+  it('keeps mastery-based domains capped at level three', () => {
+    const progress = createInitialProgress(false, 1000);
     const standard = progress.domains.listening;
     standard.level = 3;
     standard.highestLevel = 3;
@@ -191,7 +203,7 @@ describe('progression', () => {
   it('automatically applies adaptive behavior for all current domains', () => {
     for (const domain of DOMAIN_KEYS) {
       let progress = createInitialProgress(false, 1000);
-      const roundsToAdvance = domain === 'puzzle' ? 2 : 3;
+      const roundsToAdvance = domain === 'numberPairs' ? 1 : domain === 'puzzle' || domain === 'memory' ? 2 : 3;
       let lastUpdate: ReturnType<typeof applyRoundResult> | undefined;
       for (let index = 0; index < roundsToAdvance; index += 1) {
         lastUpdate = applyRoundResult(

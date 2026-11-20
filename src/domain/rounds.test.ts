@@ -9,7 +9,7 @@ import {
 } from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
 import { getMemoryConcept, MEMORY_GARDEN_CONCEPTS } from '../content/memoryGarden';
-import { createInitialDomainProgress } from './progression';
+import { applyRoundResult, createInitialDomainProgress, createInitialProgress } from './progression';
 import {
   NUMBER_PAIRS_GENERATION_ATTEMPTS,
   generateCountingRound,
@@ -216,6 +216,24 @@ describe('round generation', () => {
     for (const concept of MEMORY_GARDEN_CONCEPTS) expect(observed).toContain(concept.id);
   });
 
+  it('features persimmon, dates and watering can in the first four wins while keeping decks varied', () => {
+    let progress = createInitialProgress(false, 0);
+    const history: string[] = [];
+    for (let win = 0; win < 4; win += 1) {
+      const domain = progress.domains.memory;
+      const round = generateMemoryRound(domain, `memory-${domain.attempts}-${domain.successes}-${domain.level}-${win}`, history);
+      history.push(getMemoryRoundSignature(round));
+      progress = applyRoundResult(progress, 'memory', {
+        attempts: round.pairConceptIds.length + 2,
+        requiredActions: round.pairConceptIds.length,
+        concepts: round.pairConceptIds,
+      }).progress;
+    }
+    expect(history[0]?.split(',')).toContain('persimmon');
+    expect(history.slice(2).flatMap((signature) => signature.split(','))).toEqual(expect.arrayContaining(['dates', 'watering-can']));
+    expect(new Set(history).size).toBe(4);
+  });
+
   it.each([
     [1, 2],
     [2, 3],
@@ -420,6 +438,11 @@ describe('round generation', () => {
       [3, 3, 1],
       [4, 6, 2],
       [5, 10, 3],
+      [6, 10, 4],
+      [7, 10, 5],
+      [8, 10, 6],
+      [9, 10, 7],
+      [10, 10, 8],
     ] as const)('uses exactly %i values within 1..%i at level %i', (count, max, level) => {
       const domain = createInitialDomainProgress();
       domain.level = level;

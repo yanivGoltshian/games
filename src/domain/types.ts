@@ -4,7 +4,7 @@ export type DomainKey = (typeof DOMAIN_KEYS)[number];
 export type LanguageMode = 'he' | 'en' | 'bilingual';
 export type EnglishVoiceLocale = 'en-US' | 'en-GB';
 export type SpeechLocale = 'he-IL' | EnglishVoiceLocale;
-export type DomainLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type DomainLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type ColorId = 'red' | 'blue' | 'green' | 'yellow';
 export type ShapeId = 'circle' | 'square' | 'triangle' | 'star';
 export type SortingRule = 'color' | 'shape';
@@ -28,6 +28,7 @@ export interface ToddlerSettings {
   soundLevel: number;
   reducedMotion: boolean;
   quietMode: boolean;
+  gardenAvatarPhotoId?: string | null;
 }
 
 export interface ConceptStat {
@@ -61,6 +62,7 @@ export interface DomainProgress {
   lastPracticedAt: number;
   lastProgressionChoice: ProgressionChoice | null;
   recentResults: RecentRoundResult[];
+  memoryStageWins?: 0 | 1;
   concepts: Record<string, ConceptStat>;
 }
 

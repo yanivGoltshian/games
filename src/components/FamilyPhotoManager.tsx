@@ -15,6 +15,8 @@ import { useFamilyPhotoPreviews } from './useFamilyPhotoPreviews';
 
 interface FamilyPhotoManagerProps {
   onLibraryCountChange?: (count: number) => void;
+  gardenAvatarPhotoId?: string | null;
+  onChooseGardenAvatar?: (photoId: string | null) => void;
 }
 
 function photoErrorMessage(error: unknown): string {
@@ -46,7 +48,7 @@ function photoErrorMessage(error: unknown): string {
   return 'הפעולה לא הושלמה. שום תמונת מקור לא נשמרה.';
 }
 
-export function FamilyPhotoManager({ onLibraryCountChange }: FamilyPhotoManagerProps) {
+export function FamilyPhotoManager({ onLibraryCountChange, gardenAvatarPhotoId, onChooseGardenAvatar }: FamilyPhotoManagerProps) {
   const { previews, loading, error: loadError, reload } = useFamilyPhotoPreviews();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -234,6 +236,9 @@ export function FamilyPhotoManager({ onLibraryCountChange }: FamilyPhotoManagerP
         <p className="family-photo-manager__empty">עדיין אין תמונות מקומיות. הפאזלים המובנים נשארים זמינים תמיד.</p>
       ) : null}
 
+      {onChooseGardenAvatar && (
+        <p>כדי להשתמש באיור האישי של שון בגן המילים, הוסיפו אותו כאן ובחרו אותו כדמות בגן. האיור נשאר במכשיר הזה.</p>
+      )}
       {previews.length > 0 ? (
         <div className="family-photo-manager__grid">
           {previews.map((preview, index) => (
@@ -242,6 +247,18 @@ export function FamilyPhotoManager({ onLibraryCountChange }: FamilyPhotoManagerP
                 alt={preview.label ?? `תמונה משפחתית מקומית ${index + 1}`}
                 src={preview.objectUrl}
               />
+              {onChooseGardenAvatar && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  aria-pressed={gardenAvatarPhotoId === preview.id}
+                  aria-label={gardenAvatarPhotoId === preview.id ? `הסרת תמונה ${index + 1} כדמות בגן` : `בחירת תמונה ${index + 1} כדמות בגן`}
+                  disabled={busy}
+                  onClick={() => onChooseGardenAvatar(gardenAvatarPhotoId === preview.id ? null : preview.id)}
+                >
+                  {gardenAvatarPhotoId === preview.id ? 'הדמות בגן · הסרה' : 'בחירה כדמות בגן'}
+                </button>
+              )}
               {confirmDeleteId === preview.id ? (
                 <div className="family-photo-manager__confirm">
                   <button
