@@ -14,6 +14,13 @@ npm run build
 npm run preview
 ```
 
+לבדיקת הפריסה של שני משחקי הזוגות, מריצים את גרסת הבנייה על כתובת מקומית בלבד. הבדיקה משתמשת בהתקנה נפרדת של כלי האוטומציה, פותחת את דפדפן כרום של גוגל בפרופיל מבודד, ושומרת מדידות וצילומי מסך עם התקדמות מדומה.
+
+```bash
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs \
+  node scripts/check-pair-layout.mjs http://127.0.0.1:4173 /tmp/pair-layout
+```
+
 ## התקנה על אייפד (הערה למבוגרים בלבד)
 
 ### Safari

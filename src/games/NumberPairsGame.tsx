@@ -258,58 +258,60 @@ export function NumberPairsGame({
         ) : undefined
       }
     >
-      <div className="number-pairs-surface" role="group" aria-label={prompt}>
-        <div
-          className="number-pairs-row number-pairs-row--top"
-          data-count={round.topRow.length}
-          style={rowStyle}
-          role="group"
-          aria-label={englishOnly ? 'Top numbers' : 'מספרים למעלה'}
-        >
-          {round.topRow.map((value, index) => {
-            const selected = state.selectedTopIndex === index;
-            const matched = state.matchedTopIndices.includes(index);
-            const wrong = state.wrongTopIndex === index;
-            return (
-              <button
-                key={`top-${index}-${value}`}
-                className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
-                disabled={retryBusy || matched}
-                onClick={() => handleTop(index)}
-                type="button"
-                aria-label={englishOnly ? NUMBER_WORDS_EN[value] : NUMBER_WORDS_HE[value]}
-                aria-pressed={selected || matched}
-              >
-                <span aria-hidden="true">{value}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div
-          className="number-pairs-row number-pairs-row--bottom"
-          data-count={round.bottomRow.length}
-          style={rowStyle}
-          role="group"
-          aria-label={englishOnly ? 'Bottom numbers' : 'מספרים למטה'}
-        >
-          {round.bottomRow.map((value, index) => {
-            const selected = state.selectedBottomIndex === index;
-            const matched = state.matchedBottomIndices.includes(index);
-            const wrong = state.wrongBottomIndex === index;
-            return (
-              <button
-                key={`bottom-${index}-${value}`}
-                className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
-                disabled={retryBusy || matched}
-                onClick={() => handleBottom(index)}
-                type="button"
-                aria-label={englishOnly ? NUMBER_WORDS_EN[value] : NUMBER_WORDS_HE[value]}
-                aria-pressed={selected || matched}
-              >
-                <span aria-hidden="true">{value}</span>
-              </button>
-            );
-          })}
+      <div className="pair-playfield">
+        <div className="number-pairs-surface" role="group" aria-label={prompt}>
+          <div
+            className="number-pairs-row number-pairs-row--top"
+            data-count={round.topRow.length}
+            style={rowStyle}
+            role="group"
+            aria-label={englishOnly ? 'Top numbers' : 'מספרים למעלה'}
+          >
+            {round.topRow.map((value, index) => {
+              const selected = state.selectedTopIndex === index;
+              const matched = state.matchedTopIndices.includes(index);
+              const wrong = state.wrongTopIndex === index;
+              return (
+                <button
+                  key={`top-${index}-${value}`}
+                  className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
+                  disabled={retryBusy || matched}
+                  onClick={() => handleTop(index)}
+                  type="button"
+                  aria-label={englishOnly ? NUMBER_WORDS_EN[value] : NUMBER_WORDS_HE[value]}
+                  aria-pressed={selected || matched}
+                >
+                  <span className={value === 10 ? 'number-pair-tile__two-digits' : undefined} aria-hidden="true">{value}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div
+            className="number-pairs-row number-pairs-row--bottom"
+            data-count={round.bottomRow.length}
+            style={rowStyle}
+            role="group"
+            aria-label={englishOnly ? 'Bottom numbers' : 'מספרים למטה'}
+          >
+            {round.bottomRow.map((value, index) => {
+              const selected = state.selectedBottomIndex === index;
+              const matched = state.matchedBottomIndices.includes(index);
+              const wrong = state.wrongBottomIndex === index;
+              return (
+                <button
+                  key={`bottom-${index}-${value}`}
+                  className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
+                  disabled={retryBusy || matched}
+                  onClick={() => handleBottom(index)}
+                  type="button"
+                  aria-label={englishOnly ? NUMBER_WORDS_EN[value] : NUMBER_WORDS_HE[value]}
+                  aria-pressed={selected || matched}
+                >
+                  <span className={value === 10 ? 'number-pair-tile__two-digits' : undefined} aria-hidden="true">{value}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </GameShell>
