@@ -91,7 +91,7 @@ export function NumberPairsGame({
   };
 
   const handleTop = (index: number): void => {
-    if (celebration || retryBusy) {
+    if (state.completed || celebration || retryBusy) {
       return;
     }
     const chosenValue = round.topRow[index]!;
@@ -161,7 +161,7 @@ export function NumberPairsGame({
   };
 
   const handleBottom = (index: number): void => {
-    if (celebration || retryBusy) {
+    if (state.completed || celebration || retryBusy) {
       return;
     }
     const chosenValue = round.bottomRow[index]!;
@@ -263,6 +263,8 @@ export function NumberPairsGame({
           className="number-pairs-row number-pairs-row--top"
           data-count={round.topRow.length}
           style={rowStyle}
+          role="group"
+          aria-label={englishOnly ? 'Top numbers' : 'מספרים למעלה'}
         >
           {round.topRow.map((value, index) => {
             const selected = state.selectedTopIndex === index;
@@ -287,6 +289,8 @@ export function NumberPairsGame({
           className="number-pairs-row number-pairs-row--bottom"
           data-count={round.bottomRow.length}
           style={rowStyle}
+          role="group"
+          aria-label={englishOnly ? 'Bottom numbers' : 'מספרים למטה'}
         >
           {round.bottomRow.map((value, index) => {
             const selected = state.selectedBottomIndex === index;

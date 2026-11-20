@@ -7,6 +7,7 @@ import { CHILD_NAME_MAX_LENGTH, normalizeChildName, personalizeChildName } from 
 import { NARRATION_VOICE_PROFILES } from '../domain/narrationVoice';
 import { InstallHint } from './InstallHint';
 import { FamilyPhotoManager } from './FamilyPhotoManager';
+import { GardenVoiceManager } from './GardenVoiceManager';
 import { ProgressStars } from './ProgressStars';
 
 interface CaregiverPanelProps {
@@ -14,6 +15,7 @@ interface CaregiverPanelProps {
   onBack: () => void;
   onUpdateSettings: (patch: Partial<ToddlerSettings>) => void;
   onReset: () => void;
+  onOpenGarden?: () => void;
 }
 
 /**
@@ -26,9 +28,16 @@ export function CaregiverPanel({
   onBack,
   onUpdateSettings,
   onReset,
+  onOpenGarden,
 }: CaregiverPanelProps) {
   const [confirmReset, setConfirmReset] = useState(false);
   const [childNameDraft, setChildNameDraft] = useState(progress.settings.childName);
+  const photoManager = (
+    <FamilyPhotoManager
+      gardenAvatarPhotoId={progress.settings.gardenAvatarPhotoId ?? null}
+      onChooseGardenAvatar={(gardenAvatarPhotoId) => onUpdateSettings({ gardenAvatarPhotoId })}
+    />
+  );
 
   useEffect(() => {
     setChildNameDraft(progress.settings.childName);
@@ -60,6 +69,16 @@ export function CaregiverPanel({
         </div>
       </header>
 
+      {onOpenGarden && (
+        <section className="caregiver-card">
+          <h2>האיור של שון בגן המילים</h2>
+          <p>ייבאו את האיור המקורי או בחרו אותו מהתמונות שכבר שמורות במכשיר. הוא יופיע בקלף של שון ובקלף הפעולה.</p>
+          <button className="primary-button" type="button" onClick={onOpenGarden} disabled={!progress.settings.gardenAvatarPhotoId}>
+            פתיחת גן המילים
+          </button>
+        </section>
+      )}
+      {onOpenGarden && photoManager}
       <section className="caregiver-card">
         <h2>מצב השמעה</h2>
         <div className="settings-grid">
@@ -143,7 +162,8 @@ export function CaregiverPanel({
         </div>
       </section>
 
-      <FamilyPhotoManager />
+      {!onOpenGarden && photoManager}
+      <GardenVoiceManager />
 
       <section className="caregiver-card">
         <h2>התקדמות לפי תחום</h2>

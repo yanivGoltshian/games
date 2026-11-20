@@ -5,9 +5,11 @@ const HOLD_MS = 2700;
 
 interface CaregiverGateProps {
   onUnlock: () => void;
+  inline?: boolean;
+  english?: boolean;
 }
 
-export function CaregiverGate({ onUnlock }: CaregiverGateProps) {
+export function CaregiverGate({ onUnlock, inline = false, english = false }: CaregiverGateProps) {
   const timeoutRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
   const [progress, setProgress] = useState(0);
@@ -48,11 +50,11 @@ export function CaregiverGate({ onUnlock }: CaregiverGateProps) {
   }, []);
 
   return (
-    <div className="caregiver-gate">
+    <div className={inline ? 'caregiver-gate caregiver-gate--inline' : 'caregiver-gate'}>
       <button
         className="floating-gear"
         type="button"
-        aria-label="אזור למבוגרים בלבד. לחיצה ארוכה לפתיחה"
+        aria-label={english ? 'Grown-ups only. Press and hold to open' : 'אזור למבוגרים בלבד. לחיצה ארוכה לפתיחה'}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
           startHold();
@@ -76,7 +78,7 @@ export function CaregiverGate({ onUnlock }: CaregiverGateProps) {
         <span className="gear-ring" style={{ '--gate-progress': `${progress}` } as CSSProperties} />
         <GearIconArt className="floating-gear__icon" />
       </button>
-      {showHint ? <p className="gate-hint">לחיצה ארוכה של בערך 3 שניות פותחת את אזור המבוגרים.</p> : null}
+      {showHint ? <p className="gate-hint">{english ? 'Press and hold for about 3 seconds.' : 'לחיצה ארוכה של בערך 3 שניות פותחת את אזור המבוגרים.'}</p> : null}
     </div>
   );
 }

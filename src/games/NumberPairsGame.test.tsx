@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInitialProgress, createInitialSettings } from '../domain/progression';
+import { applyRoundResult, createInitialProgress, createInitialSettings } from '../domain/progression';
 import { NumberPairsGame } from './NumberPairsGame';
+import type * as AdaptiveRoundModule from './useAdaptiveRound';
 
 const doubles = vi.hoisted(() => ({
   cancelScope: vi.fn(),
@@ -12,6 +13,7 @@ const doubles = vi.hoisted(() => ({
   speakSegments: vi.fn(),
   speakSuccessSequence: vi.fn(),
   startNextRound: vi.fn(),
+  useActualRound: false,
 }));
 
 vi.mock('../services/sound', () => ({
@@ -71,20 +73,26 @@ vi.mock('../services/speech', () => ({
   },
 }));
 
-vi.mock('./useAdaptiveRound', () => ({
-  useAdaptiveRound: () => ({
-    round: {
-      selectedValues: [1],
-      topRow: [1],
-      bottomRow: [1],
-      promptHe: 'לחץ על הזוגות',
-      promptEn: 'Press the pairs',
-      signature: '1|1|1',
+vi.mock('./useAdaptiveRound', async (importOriginal) => {
+  const { useAdaptiveRound } = await importOriginal<typeof AdaptiveRoundModule>();
+  return {
+    useAdaptiveRound: (...args: Parameters<typeof useAdaptiveRound>) => {
+      const actual = useAdaptiveRound(...args);
+      return doubles.useActualRound ? actual : {
+        round: {
+          selectedValues: [1],
+          topRow: [1],
+          bottomRow: [1],
+          promptHe: 'לחץ על הזוגות',
+          promptEn: 'Press the pairs',
+          signature: '1|1|1',
+        },
+        roundKey: 0,
+        startNextRound: doubles.startNextRound,
+      };
     },
-    roundKey: 'round-1',
-    startNextRound: doubles.startNextRound,
-  }),
-}));
+  };
+});
 
 vi.mock('./useRetryFeedback', () => ({
   useRetryFeedback: () => ({
@@ -115,6 +123,8 @@ describe('NumberPairsGame speech progression', () => {
     doubles.speakSegments.mockReset();
     doubles.speakSuccessSequence.mockReset();
     doubles.startNextRound.mockReset();
+    doubles.useActualRound = false;
+    doubles.runRetry.mockResolvedValue(undefined);
     doubles.speakSegments.mockImplementation(() => new Promise(() => undefined));
     doubles.speakSuccessSequence.mockResolvedValue({
       requestId: 100,
@@ -190,5 +200,55 @@ describe('NumberPairsGame speech progression', () => {
       await vi.advanceTimersByTimeAsync(1_400);
     });
     expect(doubles.startNextRound).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds one number to both rendered rows only after a full board win, not on restart or a mismatch', async () => {
+    doubles.useActualRound = true;
+    const record = vi.fn(applyRoundResult);
+    function GameHarness() {
+      const [progress, setProgress] = useState(() => createInitialProgress(true, 0));
+      return (
+        <NumberPairsGame
+          domainProgress={progress.domains.numberPairs}
+          settings={progress.settings}
+          overallStars={progress.totalStars}
+          mediaReady={false}
+          speechStatus={{ supported: true, voiceAvailable: true, speaking: false, activeRequestId: null, activeCue: null }}
+          onBack={() => undefined}
+          onCompleteRound={(round) => {
+            const result = record(progress, 'numberPairs', round);
+            setProgress(result.progress);
+            return result.summary;
+          }}
+        />
+      );
+    }
+
+    await act(async () => root.render(<GameHarness />));
+    const top = () => [...container.querySelectorAll<HTMLButtonElement>('.number-pairs-row--top button')];
+    const bottom = () => [...container.querySelectorAll<HTMLButtonElement>('.number-pairs-row--bottom button')];
+    const click = async (button: HTMLButtonElement) => { await act(async () => { button.click(); }); };
+    const restart = container.querySelector<HTMLButtonElement>('.rail-button--restart')!;
+    await click(top()[0]!);
+    await click(restart);
+    expect(top()).toHaveLength(3);
+    expect(top().every((tile) => tile.getAttribute('aria-pressed') === 'false')).toBe(true);
+
+    await click(top()[0]!);
+    await click(bottom().find((tile) => tile.textContent !== top()[0]!.textContent)!);
+    expect(doubles.runRetry).toHaveBeenCalledTimes(1);
+    expect(record).not.toHaveBeenCalled();
+
+    for (const [index, topTile] of top().entries()) {
+      await click(topTile);
+      await click(bottom().find((tile) => tile.textContent === topTile.textContent)!);
+      expect(record).toHaveBeenCalledTimes(index === 2 ? 1 : 0);
+    }
+    expect(record).toHaveBeenCalledWith(expect.anything(), 'numberPairs', expect.objectContaining({ attempts: 4, requiredActions: 3 }));
+    expect(container.querySelector('.success-overlay')).not.toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_800); });
+    expect(top()).toHaveLength(4);
+    expect(bottom()).toHaveLength(4);
+    expect(new Set(top().map((tile) => tile.textContent)).size).toBe(4);
   });
 });

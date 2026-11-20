@@ -36,6 +36,7 @@ export default function App() {
   ));
   const [mediaReady, setMediaReady] = useState(false);
   const [caregiverUnlocked, setCaregiverUnlocked] = useState(false);
+  const [gardenSetup, setGardenSetup] = useState(false);
   const [speechStatus, setSpeechStatus] = useState(() => speechService.getStatus());
   const route = useMemo(() => parseHash(requestedHash), [requestedHash]);
 
@@ -119,6 +120,7 @@ export default function App() {
         onReset={resetAll}
         onUpdateSettings={updateSettings}
         progress={progress}
+        {...(gardenSetup ? { onOpenGarden: () => navigate('/games/wordGarden') } : {})}
       />
     ) : (
       <main className="page lock-page">
@@ -148,7 +150,11 @@ export default function App() {
       memory: <MemoryGame {...gameProps} />,
       numberPairs: <NumberPairsGame {...gameProps} />,
       sillyAlien: <SillyAlienGame {...gameProps} />,
-      wordGarden: <WordGardenGame {...gameProps} />,
+      wordGarden: <WordGardenGame {...gameProps} onSetupAvatar={() => {
+        setGardenSetup(true);
+        setCaregiverUnlocked(true);
+        navigate('/caregiver');
+      }} />,
     }[route.domain];
   } else {
     content = (
@@ -174,7 +180,11 @@ export default function App() {
       <ErrorBoundary resetKey={routeKey} onReset={() => navigate('/')}>
         {content}
       </ErrorBoundary>
-      {route.kind === 'home' ? <CaregiverGate onUnlock={() => { setCaregiverUnlocked(true); navigate('/caregiver'); }} /> : null}
+      {route.kind === 'home' ? <CaregiverGate onUnlock={() => {
+        setGardenSetup(false);
+        setCaregiverUnlocked(true);
+        navigate('/caregiver');
+      }} /> : null}
     </div>
   );
 }

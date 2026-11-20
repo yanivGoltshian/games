@@ -52,17 +52,20 @@ describe('persistence migration', () => {
     expect(JSON.parse(raw).updatedAt).toBe(88);
   });
 
-  it('preserves memory level seven but clamps standard domains to level three', () => {
+  it('preserves Memory and Number Pairs extended stages but rejects out-of-range standard stages', () => {
     const progress = migrateStoredProgress({
       version: 6,
       domains: {
         memory: { level: 7, highestLevel: 7 },
+        numberPairs: { level: 8, highestLevel: 8 },
         listening: { level: 7, highestLevel: 7 },
       },
     }, { now: 90 });
 
     expect(progress.domains.memory.level).toBe(7);
     expect(progress.domains.memory.highestLevel).toBe(7);
+    expect(progress.domains.numberPairs.level).toBe(8);
+    expect(progress.domains.numberPairs.highestLevel).toBe(8);
     expect(progress.domains.listening.level).toBe(1);
     expect(progress.domains.listening.highestLevel).toBe(1);
   });
@@ -228,7 +231,9 @@ describe('persistence migration', () => {
       quietMode: true,
     });
     for (const [domain, stored] of Object.entries(existingDomains)) {
-      expect(progress.domains[domain as keyof typeof progress.domains]).toEqual(stored);
+      expect(progress.domains[domain as keyof typeof progress.domains]).toEqual(
+        domain === 'memory' ? { ...stored, memoryStageWins: 1 } : stored,
+      );
     }
     expect(progress.domains.numberPairs).toEqual({
       attempts: 0,
@@ -286,12 +291,43 @@ describe('persistence migration', () => {
       attempts: 3,
       successes: 3,
       completedRounds: 3,
-      level: 2,
-      highestLevel: 2,
+      level: 4,
+      highestLevel: 4,
       stars: 3,
       lastProgressionChoice: 'next',
     });
     expect(reloaded.domains.numberPairs.recentResults).toHaveLength(3);
+  });
+
+  it('keeps a legacy Memory stage and carries its first win across reload and an entire failure window', () => {
+    let progress = migrateStoredProgress({
+      version: 6,
+      domains: {
+        memory: {
+          level: 3, highestLevel: 3, attempts: 3, successes: 2,
+          recentResults: [
+            { completedAt: 1, level: 2, success: true, firstAttempt: true, attempts: 3 },
+            { completedAt: 2, level: 3, success: true, firstAttempt: false, attempts: 7 },
+            { completedAt: 3, level: 3, success: false, firstAttempt: false, attempts: 3 },
+          ],
+        },
+        numberPairs: { level: 3, highestLevel: 3, attempts: 40, successes: 38 },
+      },
+    });
+    expect(progress.domains.memory.level).toBe(3);
+    expect(progress.domains.numberPairs.level).toBe(3);
+    for (let index = 0; index <= RECENT_RESULT_LIMIT; index += 1) {
+      const failed = applyRoundResult(progress, 'memory', { attempts: 7, requiredActions: 4, concepts: ['cat'], success: false });
+      expect(failed.summary.level).toBe(3);
+      progress = migrateStoredProgress(JSON.parse(serializeProgress(failed.progress)));
+    }
+    expect(progress.domains.memory.recentResults.every((result) => !result.success)).toBe(true);
+
+    const secondWin = applyRoundResult(progress, 'memory', { attempts: 8, requiredActions: 4, concepts: ['cat'] });
+    expect(secondWin.summary.level).toBe(4);
+    const reloaded = migrateStoredProgress(JSON.parse(serializeProgress(secondWin.progress)));
+    const firstAtNewStage = applyRoundResult(reloaded, 'memory', { attempts: 7, requiredActions: 5, concepts: ['dog'] });
+    expect(firstAtNewStage.summary.level).toBe(4);
   });
 
   it('normalizes and preserves a Unicode child name in current settings', () => {

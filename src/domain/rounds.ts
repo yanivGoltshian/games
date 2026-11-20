@@ -7,13 +7,13 @@ import {
   sortingItems,
 } from '../content/concepts';
 import { getCountingQuestion } from '../content/countingQuantity';
-import { memoryConcepts } from '../content/memoryGarden';
+import { EARLY_MEMORY_GARDEN_WORDS, memoryConcepts } from '../content/memoryGarden';
 import {
   SILLY_ALIEN_PROMPT,
   SILLY_ALIEN_WORDS,
   requireSillyAlienWord,
 } from '../content/sillyAlien';
-import { buildPracticeWeights, createInitialConceptStat } from './progression';
+import { buildPracticeWeights, createInitialConceptStat, MEMORY_MAX_LEVEL, NUMBER_PAIRS_MAX_VALUE, NUMBER_PAIRS_START_COUNT } from './progression';
 import { createSeededRandom, pickWeightedUnique } from './rng';
 import type {
   ColorId,
@@ -44,7 +44,7 @@ const memoryStages: string[][] = ([1, 2, 3] as const).map((level) => memoryConce
   .map((concept) => concept.id));
 const emotionConceptIdSet = new Set<string>(emotionConceptIds);
 
-export const MEMORY_MAX_PAIR_COUNT = 8;
+export const MEMORY_MAX_PAIR_COUNT = MEMORY_MAX_LEVEL + 1;
 
 export function memoryPairCountForLevel(level: DomainProgress['level']): number {
   return Math.min(MEMORY_MAX_PAIR_COUNT, level + 1);
@@ -317,14 +317,17 @@ export function generatePuzzleRound(
   });
 }
 
-function createMemoryCandidate(domain: DomainProgress, seed: string | number): MemoryRound {
+function createMemoryCandidate(
+  domain: DomainProgress,
+  seed: string | number,
+  available: readonly string[],
+  featuredWord: string | undefined,
+): MemoryRound {
   const random = createSeededRandom(seed);
-  const stageIndex = Math.min(memoryStages.length - 1, Math.max(0, domain.level - 1));
   const pairCount = memoryPairCountForLevel(domain.level);
-  const available = [...memoryStages[stageIndex]!];
   const weights = buildPracticeWeights(domain, available);
   const availableEmotionIds = available.filter((conceptId) => emotionConceptIdSet.has(conceptId));
-  const availableWordIds = available.filter((conceptId) => !emotionConceptIdSet.has(conceptId));
+  const availableWordIds = available.filter((conceptId) => !emotionConceptIdSet.has(conceptId) && conceptId !== featuredWord);
   const emotionPairCount = Math.min(
     minimumMemoryEmotionPairs(pairCount),
     availableEmotionIds.length,
@@ -338,10 +341,10 @@ function createMemoryCandidate(domain: DomainProgress, seed: string | number): M
   const selectedWords = pickWeightedUnique(
     availableWordIds,
     weights,
-    pairCount - selectedEmotions.length,
+    pairCount - selectedEmotions.length - (featuredWord ? 1 : 0),
     random,
   );
-  const pairConceptIds = random.shuffle([...selectedEmotions, ...selectedWords]);
+  const pairConceptIds = random.shuffle([...selectedEmotions, ...selectedWords, ...(featuredWord ? [featuredWord] : [])]);
   const cards = random.shuffle(
     pairConceptIds.flatMap((conceptId, index) => [
       { id: `a-${index}-${conceptId}`, pairId: conceptId, conceptId },
@@ -366,11 +369,17 @@ export function generateMemoryRound(
   seed: string | number,
   recentSignatures: readonly string[] = [],
 ): MemoryRound {
+  const stageIndex = Math.min(memoryStages.length - 1, Math.max(0, domain.level - 1));
+  const available = memoryStages[stageIndex]!;
+  const recentlySeen = new Set(recentSignatures.flatMap((signature) => signature.split(',')));
+  const featuredWord = EARLY_MEMORY_GARDEN_WORDS.find((id) => (
+    available.includes(id) && !domain.concepts[id]?.successes && !recentlySeen.has(id)
+  ));
   return createRepeatSafeRound({
     seed,
     scope: 'memory',
     recentSignatures,
-    create: (candidateSeed) => createMemoryCandidate(domain, candidateSeed),
+    create: (candidateSeed) => createMemoryCandidate(domain, candidateSeed, available, featuredWord),
     getSignature: getMemoryRoundSignature,
     getTokens: (round) => round.pairConceptIds,
     getSignatureTokens: (signature) => signature.split(','),
@@ -386,8 +395,8 @@ export function getNumberPairsRoundSignature(
 
 function createNumberPairsCandidate(domain: DomainProgress, seed: string): NumberPairsRound {
   const random = createSeededRandom(seed);
-  const rangeMax = domain.level === 1 ? 3 : domain.level === 2 ? 6 : 10;
-  const valueCount = domain.level === 1 ? 3 : domain.level === 2 ? 4 : 5;
+  const rangeMax = domain.level === 1 ? NUMBER_PAIRS_START_COUNT : domain.level === 2 ? 6 : NUMBER_PAIRS_MAX_VALUE;
+  const valueCount = Math.min(NUMBER_PAIRS_MAX_VALUE, NUMBER_PAIRS_START_COUNT + domain.level - 1);
   const availableValues = Array.from({ length: rangeMax }, (_, index) => index + 1);
   const selectedValues = domain.level === 1
     ? availableValues

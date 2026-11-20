@@ -213,25 +213,28 @@ describe('MemoryGame celebrations', () => {
     expect(doubles.playMemoryPair).toHaveBeenCalledTimes(1);
   });
 
-  it('shows approved banana and persimmon illustrations and speaks their actual labels', async () => {
+  it.each([
+    ['banana', 'בננה'],
+    ['persimmon', 'אפרסמון'],
+    ['dates', 'תמרים'],
+    ['watering-can', 'משפך'],
+  ])('shows both %s cards with their existing art and speaks %s', async (id, label) => {
     doubles.roundOverride = {
       cards: [
-        { id: 'banana-a', pairId: 'banana', conceptId: 'banana' },
-        { id: 'banana-b', pairId: 'banana', conceptId: 'banana' },
-        { id: 'persimmon-a', pairId: 'persimmon', conceptId: 'persimmon' },
-        { id: 'persimmon-b', pairId: 'persimmon', conceptId: 'persimmon' },
+        { id: `${id}-a`, pairId: id, conceptId: id },
+        { id: `${id}-b`, pairId: id, conceptId: id },
       ],
-      pairConceptIds: ['banana', 'persimmon'],
+      pairConceptIds: [id],
       promptHe: 'פותחים שני קלפים ומחפשים זוג',
       promptEn: 'Open two cards and find a pair',
     };
     await renderGame();
     const cards = container.querySelectorAll<HTMLButtonElement>('.memory-card');
-    expect(container.querySelectorAll('img[data-memory-art="banana"]')).toHaveLength(2);
-    expect(container.querySelectorAll('img[data-memory-art="persimmon"]')).toHaveLength(2);
-    expect(container.querySelector('img[data-memory-art="banana"]')?.getAttribute('src')).toBe('/assets/garden/banana.webp');
+    const images = container.querySelectorAll(`img[data-memory-art="${id}"]`);
+    expect(images).toHaveLength(2);
+    expect([...images].map((image) => image.getAttribute('src'))).toEqual(Array(2).fill(`/assets/garden/${id}.webp`));
     await act(async () => cards[0]!.click());
-    expect(doubles.speakSegments.mock.calls.at(-1)?.[0]).toEqual([{ text: 'בננה', locale: 'he-IL' }]);
+    expect(doubles.speakSegments.mock.calls.at(-1)?.[0]).toEqual([{ text: label, locale: 'he-IL' }]);
   });
 
   it('does not play delayed pair feedback after the game exits', async () => {

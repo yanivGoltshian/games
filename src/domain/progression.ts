@@ -17,10 +17,23 @@ export const STORAGE_SCHEMA_VERSION = 6;
 export const RECENT_RESULT_LIMIT = 5;
 export const MEMORY_MAX_LEVEL = 7;
 export const STANDARD_MAX_LEVEL = 3;
-const LEVEL_THRESHOLDS = [0, 0.42, 0.62, 0.62, 0.62, 0.62, 0.62, 1] as const;
+export const NUMBER_PAIRS_START_COUNT = 3;
+export const NUMBER_PAIRS_MAX_VALUE = 10;
+const NUMBER_PAIRS_MAX_LEVEL = NUMBER_PAIRS_MAX_VALUE - NUMBER_PAIRS_START_COUNT + 1;
+const LEVEL_THRESHOLDS: readonly number[] = [0, 0.42, 0.62];
 
 export function getDomainMaxLevel(domainKey?: DomainKey): DomainProgress['level'] {
-  return domainKey === 'memory' ? MEMORY_MAX_LEVEL : STANDARD_MAX_LEVEL;
+  if (domainKey === 'memory') return MEMORY_MAX_LEVEL;
+  if (domainKey === 'numberPairs') return NUMBER_PAIRS_MAX_LEVEL as DomainProgress['level'];
+  return STANDARD_MAX_LEVEL;
+}
+
+export function getMemoryStageWins(domain: Pick<DomainProgress, 'level' | 'recentResults' | 'memoryStageWins'>): 0 | 1 {
+  if (domain.level >= MEMORY_MAX_LEVEL) return 0;
+  // An older save has only recent results. Keep its saved level and carry forward up to one win.
+  return domain.memoryStageWins ?? (domain.recentResults.some((result) => (
+    result.level === domain.level && result.success
+  )) ? 1 : 0);
 }
 
 export function clamp(value: number, min = 0, max = 1): number {
@@ -120,8 +133,10 @@ export function recommendLevelAdvance(
   domainKey?: DomainKey,
 ): LevelRecommendation | null {
   if (
-    domain.level >= getDomainMaxLevel(domainKey)
-    || domain.mastery < LEVEL_THRESHOLDS[domain.level]
+    domainKey === 'memory'
+    || domainKey === 'numberPairs'
+    || domain.level >= getDomainMaxLevel(domainKey)
+    || domain.mastery < LEVEL_THRESHOLDS[domain.level]!
   ) {
     return null;
   }
@@ -222,7 +237,14 @@ export function applyRoundResult(
     stars: domain.stars + (success ? 1 : 0),
     lastPracticedAt: now,
   };
-  const recommendation = success ? recommendLevelAdvance(nextDomain, domainKey) : null;
+  const memoryStageWins = domainKey === 'memory' ? getMemoryStageWins(domain) : 0;
+  const isPairGame = domainKey === 'memory' || domainKey === 'numberPairs';
+  const wonEnoughPairBoards = domainKey === 'numberPairs' || memoryStageWins === 1;
+  const recommendation = !success ? null : isPairGame
+    ? (domain.level < getDomainMaxLevel(domainKey) && wonEnoughPairBoards
+      ? { currentLevel: domain.level, nextLevel: (domain.level + 1) as DomainProgress['level'] }
+      : null)
+    : recommendLevelAdvance(nextDomain, domainKey);
   const leveledUp = recommendation !== null;
   const updatedDomain: DomainProgress = leveledUp
     ? {
@@ -232,6 +254,11 @@ export function applyRoundResult(
         lastProgressionChoice: 'next',
       }
     : nextDomain;
+  if (domainKey === 'memory') {
+    updatedDomain.memoryStageWins = leveledUp || domain.level >= MEMORY_MAX_LEVEL
+      ? 0
+      : success ? 1 : memoryStageWins;
+  }
   const starsEarned = success ? 1 : 0;
   const milestone = success && (recommendation !== null || streak % 4 === 0);
 
