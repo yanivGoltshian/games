@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameShell } from '../components/GameShell';
 import { gameMeta } from '../content/games';
 import {
-  GARDEN_NEXT_SENTENCE, GARDEN_PART_QUESTIONS, GARDEN_SENTENCE_QUESTION, GARDEN_SENTENCES,
+  GARDEN_DEFAULT_AVATAR, GARDEN_NEXT_SENTENCE, GARDEN_PART_QUESTIONS, GARDEN_SENTENCE_QUESTION, GARDEN_SENTENCES,
   getGardenSentenceLines, getGardenVoiceKey, type GardenSentence,
 } from '../content/gardenSentences';
 import { gardenSegments, type GardenLine } from '../content/wordGarden';
@@ -21,8 +21,16 @@ export const GARDEN_CLIP_TIMEOUT_MS = 5_000;
 const PARTS = ['actor', 'action', 'object'] as const;
 type Part = 0 | 1 | 2 | 3;
 
-function SeanArt({ url, english, onError }: { url: string | null; english: boolean; onError: () => void }) {
-  if (url) return <img className="sentence-train__avatar" src={url} alt="" draggable={false} onError={onError} />;
+type SeanArtProps = {
+  url: string | null;
+  english: boolean;
+  onLoad: (url: string) => void;
+  onError: (url: string) => void;
+};
+
+function SeanArt({ url, english, onLoad, onError }: SeanArtProps) {
+  if (url) return <img key={url} className="sentence-train__avatar" src={url} alt="" draggable={false}
+    onLoad={() => onLoad(url)} onError={() => onError(url)} />;
   return (
     <svg className="sentence-train__badge" viewBox="0 0 120 104" aria-hidden="true">
       <path d="M12 19h96a5 5 0 0 1 5 5v10a10 10 0 0 0 0 20v10a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5V54a10 10 0 0 0 0-20V24a5 5 0 0 1 5-5Z"
@@ -50,17 +58,17 @@ function GardenerArt() {
   );
 }
 
-function Picture({ sentence, index, avatar, english, onAvatarError, acted }: {
-  sentence: GardenSentence; index: number; avatar: string | null; english: boolean; onAvatarError: () => void; acted: boolean;
+function Picture({ sentence, index, art, acted }: {
+  sentence: GardenSentence; index: number; art: SeanArtProps; acted: boolean;
 }) {
-  if (index === 0) return <div className="sentence-train__picture"><SeanArt url={avatar} english={english} onError={onAvatarError} /></div>;
+  if (index === 0) return <div className="sentence-train__picture"><SeanArt {...art} /></div>;
   if (index === 2) {
     return <div className="sentence-train__picture"><img src={sentence.image} alt="" draggable={false} /></div>;
   }
   const { motion } = sentence;
   return (
     <div className={`sentence-train__picture sentence-train__action is-${motion}`} data-acted={acted}>
-      <div className="sentence-train__actor"><SeanArt url={avatar} english={english} onError={onAvatarError} /></div>
+      <div className="sentence-train__actor"><SeanArt {...art} /></div>
       {motion === 'handoff' && <div className="sentence-train__recipient"><GardenerArt /></div>}
       {sentence.setting && (motion !== 'grow' || !acted) && <img className="sentence-train__setting" src={sentence.setting} alt="" draggable={false} />}
       {motion === 'bury'
@@ -120,30 +128,33 @@ function playNarrator(segment: SpeechSegment, volume: number, signal: AbortSigna
   });
 }
 
-export function WordGardenGame(props: ToddlerGameProps) {
-  const [unreadableAvatar, setUnreadableAvatar] = useState<string | null>(null);
-  const selectedAvatar = useGardenAvatar(props.settings.gardenAvatarPhotoId);
-  return (
-    <SentenceBoard {...props}
-      avatar={selectedAvatar === unreadableAvatar ? null : selectedAvatar}
-      onAvatarError={() => setUnreadableAvatar(selectedAvatar)}
-    />
-  );
-}
-
-function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, onAvatarError }:
-  ToddlerGameProps & { avatar: string | null; onAvatarError: () => void }) {
+export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }: ToddlerGameProps) {
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [part, setPart] = useState<Part>(0);
   const [trainReady, setTrainReady] = useState(false);
   const [phase, setPhase] = useState<'question' | 'your-turn' | 'model'>('question');
   const english = settings.languageMode === 'en';
+  const selectedAvatar = useGardenAvatar(settings.gardenAvatarPhotoId);
+  const [unreadableOverride, setUnreadableOverride] = useState<string | null>(null);
+  const [defaultStatus, setDefaultStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const override = selectedAvatar === unreadableOverride ? null : selectedAvatar;
+  const avatar = override ?? (defaultStatus === 'failed' ? null : GARDEN_DEFAULT_AVATAR);
+  const actorCue = override || defaultStatus === 'ready' ? 'picture' : defaultStatus === 'failed' ? 'card' : 'loading';
+  const art: SeanArtProps = {
+    url: avatar,
+    english,
+    onLoad: (url) => { if (url === GARDEN_DEFAULT_AVATAR) setDefaultStatus('ready'); },
+    onError: (url) => {
+      if (url === GARDEN_DEFAULT_AVATAR) setDefaultStatus('failed');
+      else setUnreadableOverride(url);
+    },
+  };
   const voiceEnabled = mediaReady && !settings.quietMode && settings.soundLevel > 0;
   const sentence = GARDEN_SENTENCES[sentenceIndex]!;
   const { words, model } = getGardenSentenceLines(sentence);
   const localized = (line: GardenLine) => english ? line.en : line.he;
   const prompts = [
-    english ? 'Tap Sean' : 'געו בשון',
+    avatar ? localized(GARDEN_PART_QUESTIONS[0]) : english ? 'Tap Sean’s card' : 'נוגעים בקלף של שון',
     localized(GARDEN_PART_QUESTIONS[1]),
     localized(sentence.objectQuestion),
   ];
@@ -166,6 +177,7 @@ function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, 
       if (index === 3) setTrainReady(true);
       return;
     }
+    if (index === 0 && actorCue === 'loading') return;
     const controller = new AbortController();
     run.current = controller;
     const { signal } = controller;
@@ -195,7 +207,7 @@ function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, 
     void (async () => {
       if (previousWord !== null) await speak(currentWords[previousWord], 'word');
       if (signal.aborted) return;
-      if (!(replay && index === 3 && trainReady)) {
+      if (!(index === 0 && actorCue === 'card') && !(replay && index === 3 && trainReady)) {
         await speak(question, 'question');
         if (signal.aborted) return;
         setPhase('your-turn');
@@ -214,7 +226,7 @@ function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, 
         if (!signal.aborted) modeled.current = index;
       }
     })();
-  }, [cancel, sentence, settings, trainReady, voiceEnabled]);
+  }, [actorCue, cancel, sentence, settings, trainReady, voiceEnabled]);
 
   const latestTurn = useRef(speakTurn);
   latestTurn.current = speakTurn;
@@ -227,13 +239,14 @@ function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, 
     });
     return () => { unsubscribe(); cancel(); };
   }, [cancel]);
+  const activeActorCue = part === 0 ? actorCue : null;
   useEffect(() => {
     latestTurn.current(part);
     if (focusOnChange.current && part < 3) {
       activeCard.current?.focus();
       focusOnChange.current = false;
     }
-  }, [part, sentenceIndex, voiceEnabled]);
+  }, [part, sentenceIndex, voiceEnabled, activeActorCue]);
   useEffect(() => {
     if (trainReady && focusOnChange.current) {
       nextButton.current?.focus();
@@ -285,11 +298,11 @@ function SentenceBoard({ settings, mediaReady, onBack, onCompleteRound, avatar, 
             const index = i as 0 | 1 | 2;
             if (index > part) return <div key={name} className="sentence-train__card is-empty" aria-hidden="true"><span /></div>;
             const word = localized(words[index]);
-            const picture = <Picture sentence={sentence} index={index} avatar={avatar} english={english}
-              onAvatarError={onAvatarError} acted={part > index} />;
+            const picture = <Picture sentence={sentence} index={index} art={art} acted={part > index} />;
             return index === part ? (
               <button
                 key={name} type="button" className="sentence-train__card is-target" data-garden-part={name}
+                aria-label={index === 0 ? (english ? 'Sean’s card' : 'הקלף של שון') : undefined}
                 ref={activeCard} onClick={(event) => tap(index, event.detail === 0)}
               >
                 {picture}<span className="sentence-train__word">{word}</span>

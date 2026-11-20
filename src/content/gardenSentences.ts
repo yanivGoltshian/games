@@ -4,6 +4,7 @@ const line = (he: string, spokenHe: string, en: string): GardenLine => ({ he, sp
 
 const CHILD = GARDEN_BANANA_WORDS[0]!;
 const SEAN = line('שון', 'שׁוֹן', 'Sean');
+export const GARDEN_DEFAULT_AVATAR = '/assets/garden/sean-avatar.webp';
 export const GARDEN_PART_QUESTIONS = [
   line('מי בתמונה?', 'מִי בַּתְּמוּנָה?', 'Who is in the picture?'),
   line('מה הוא עושה?', 'מָה הוּא עוֹשֶׂה?', 'What is he doing?'),

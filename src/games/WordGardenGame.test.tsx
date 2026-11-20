@@ -59,7 +59,12 @@ describe('Word Garden sentence train', () => {
     ));
   };
   const board = () => container.querySelector('.sentence-train')!;
+  const heading = () => container.querySelector('h1')?.textContent;
   const target = () => container.querySelector<HTMLButtonElement>('.sentence-train__card.is-target')!;
+  const defaultPortrait = () => target().querySelector('img[src="/assets/garden/sean-avatar.webp"]')!;
+  const imageEvent = async (image: Element, event: 'load' | 'error') => {
+    await act(async () => { image.dispatchEvent(new Event(event)); });
+  };
   const next = () => container.querySelector<HTMLButtonElement>('.sentence-train__next')!;
   const tap = async (button = target()) => { await act(async () => { button.click(); }); };
   const advance = async (ms = GARDEN_RESPONSE_PAUSE_MS) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); };
@@ -69,6 +74,8 @@ describe('Word Garden sentence train', () => {
     await render();
     expect(container.querySelector('main')?.dir).toBe('rtl');
     expect(target().dataset.gardenPart).toBe('actor');
+    expect(heading()).toBe('מי בתמונה?');
+    expect(target().getAttribute('aria-label')).toBe('הקלף של שון');
     expect(spoken()).toEqual(['מי בתמונה?']);
     await advance(GARDEN_RESPONSE_PAUSE_MS - 1);
     expect(spoken()).not.toContain('שון');
@@ -173,7 +180,8 @@ describe('Word Garden sentence train', () => {
     await act(async () => { images.item(1).dispatchEvent(new Event('error')); });
     expect(board().querySelectorAll('img[src="blob:invalid-avatar"]')).toHaveLength(0);
     expect(target()?.dataset.gardenPart).toBe('action');
-    expect(board().querySelectorAll('.sentence-train__badge')).toHaveLength(2);
+    expect(board().querySelectorAll('img[src="/assets/garden/sean-avatar.webp"]')).toHaveLength(2);
+    expect(board().querySelector('.sentence-train__badge')).toBeNull();
     await tap();
     expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('src')).toContain('banana-bitten.webp');
     await tap();
@@ -181,16 +189,22 @@ describe('Word Garden sentence train', () => {
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
   });
 
-  it('starts fresh profiles directly on Sean’s card and finishes a sentence with no setup', async () => {
+  it('shows the bundled Sean on a fresh profile and finishes a sentence with no setup', async () => {
     mocks.avatar = null;
     await render({ languageMode: 'en' });
     expect(target()?.dataset.gardenPart).toBe('actor');
     expect(target().textContent).toContain('Sean');
-    expect(target().querySelector('.sentence-train__badge')).not.toBeNull();
+    expect(heading()).toBe('Who is in the picture?');
+    expect(target().getAttribute('aria-label')).toBe('Sean’s card');
+    expect(defaultPortrait()).not.toBeNull();
     expect(board().querySelectorAll('.sentence-train__card')).toHaveLength(3);
     expect(container.querySelector('input[type="file"], .floating-gear')).toBeNull();
+    expect(spoken()).toEqual([]);
+    await imageEvent(defaultPortrait(), 'load');
     expect(spoken()).toEqual(['Who is in the picture?']);
-    await tap(); await tap(); await tap();
+    await tap();
+    expect(board().querySelectorAll('img[src="/assets/garden/sean-avatar.webp"]')).toHaveLength(2);
+    await tap(); await tap();
     await advance();
     expect(board().textContent).toContain('Sean eats a banana');
     expect(board().getAttribute('data-departed')).toBe('true');
@@ -199,9 +213,37 @@ describe('Word Garden sentence train', () => {
     expect(target().dataset.gardenPart).toBe('actor');
   });
 
-  it('replaces the badge with a late-arriving local illustration without restarting the current turn', async () => {
+  it('keeps the first card playable before the art loads and carries Sean’s name into the action turn', async () => {
     mocks.avatar = null;
     await render();
+    const actor = target();
+    expect(heading()).toBe('מי בתמונה?');
+    expect(actor.disabled).toBe(false);
+    expect(spoken()).toEqual([]);
+    await tap();
+    expect(target().dataset.gardenPart).toBe('action');
+    expect(spoken()).toEqual(['שון', 'מה הוא עושה?']);
+  });
+
+  it.each([
+    ['he', 'נוגעים בקלף של שון', 'שון'],
+    ['en', 'Tap Sean’s card', 'Sean'],
+  ] as const)('uses the %s card prompt and exact name only when the bundled art fails', async (languageMode, cue, name) => {
+    mocks.avatar = null;
+    await render({ languageMode });
+    await imageEvent(defaultPortrait(), 'error');
+    expect(heading()).toBe(cue);
+    expect(target().querySelector('.sentence-train__badge')).not.toBeNull();
+    const replay = container.querySelector<HTMLButtonElement>('.rail-button--replay')!;
+    await tap(replay);
+    await advance();
+    expect(spoken()).toEqual([name, name]);
+  });
+
+  it('replaces the bundled original with a late local override without restarting the current turn', async () => {
+    mocks.avatar = null;
+    await render();
+    await imageEvent(defaultPortrait(), 'load');
     await tap();
     const active = target();
     const before = spoken();
@@ -211,6 +253,19 @@ describe('Word Garden sentence train', () => {
     expect(target().dataset.gardenPart).toBe('action');
     expect(board().querySelectorAll('img[src="blob:locally-selected-avatar"]')).toHaveLength(2);
     expect(spoken()).toEqual(before);
+  });
+
+  it('does not repeat the picture question when an override replaces the loaded default on the actor step', async () => {
+    mocks.avatar = null;
+    await render();
+    await imageEvent(defaultPortrait(), 'load');
+    const actor = target();
+    mocks.avatar = 'blob:locally-selected-avatar';
+    await render();
+    expect(target()).toBe(actor);
+    expect(actor.querySelector('img')?.src).toBe('blob:locally-selected-avatar');
+    await advance();
+    expect(spoken()).toEqual(['מי בתמונה?', 'שון']);
   });
 
   it('still sends the train and opens the next actor when the recording backend never responds', async () => {

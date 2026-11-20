@@ -44,6 +44,7 @@ const APP_SHELL = [
   '/assets/garden/date-palm-seedling.webp',
   '/assets/garden/date-palm-tree.webp',
   '/assets/garden/persimmon.webp',
+  '/assets/garden/sean-avatar.webp',
   '/assets/garden/token.webp',
   '/assets/garden/watering-can.webp',
   '/speech/manifest.json',

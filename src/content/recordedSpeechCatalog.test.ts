@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { collectRecordedSpeechCatalog } from './recordedSpeechCatalog';
-import { GARDEN_SENTENCES, GARDEN_SENTENCE_SPEECH_LINES } from './gardenSentences';
+import { GARDEN_DEFAULT_AVATAR, GARDEN_SENTENCES, GARDEN_SENTENCE_SPEECH_LINES } from './gardenSentences';
 import { learningConcepts } from './concepts';
 import { RECORDED_NARRATION_VOICE_NAMES } from '../domain/narrationVoice';
 import {
@@ -58,6 +58,10 @@ describe('recorded speech asset coverage', () => {
     const appShell = serviceWorker.match(/const APP_SHELL = \[(.*?)\];/s)?.[1] ?? '';
     expect(appShell).not.toContain('toy-phone');
     expect(appShell).not.toContain('story-that-waits');
+    expect(appShell).toContain(`'${GARDEN_DEFAULT_AVATAR}'`);
+    const avatar = readFileSync(resolve(`public${GARDEN_DEFAULT_AVATAR}`));
+    expect(avatar.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(avatar.toString('ascii', 8, 16)).toBe('WEBPVP8L');
     expect(serviceWorker).toContain('RETIRED_ASSET_PATHS');
     expect(serviceWorker).toContain('cache.delete(path)');
     expect(serviceWorker).toContain("status: 404");

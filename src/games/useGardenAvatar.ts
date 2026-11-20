@@ -9,23 +9,32 @@ export function useGardenAvatar(photoId: string | null | undefined): string | nu
     let active = true;
     let deleted = false;
     let objectUrl: string | undefined;
+    const releaseUrl = () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = undefined;
+    };
     const unsubscribe = subscribeFamilyPhotoLibraryChanges((change) => {
       if (change.kind === 'cleared' || (change.kind === 'deleted' && change.id === photoId)) {
         deleted = true;
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
-        objectUrl = undefined;
+        releaseUrl();
         setAvatar(null);
       }
     });
-    void getFamilyPhoto(photoId).then((photo) => {
+    void getFamilyPhoto(photoId).then(async (photo) => {
       if (!active || deleted || !photo) return;
-      objectUrl = URL.createObjectURL(photo.blob);
-      setAvatar({ id: photoId, url: objectUrl });
-    }).catch(() => { if (active) setAvatar(null); });
+      const url = URL.createObjectURL(photo.blob);
+      objectUrl = url;
+      const picture = new Image();
+      picture.src = url;
+      await picture.decode();
+      if (active && !deleted) setAvatar({ id: photoId, url });
+    }).catch(() => {
+      releaseUrl();
+    });
     return () => {
       active = false;
       unsubscribe();
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      releaseUrl();
     };
   }, [photoId]);
   return photoId && avatar?.id === photoId ? avatar.url : null;
