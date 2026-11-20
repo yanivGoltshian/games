@@ -237,7 +237,7 @@ export function FamilyPhotoManager({ onLibraryCountChange, gardenAvatarPhotoId, 
       ) : null}
 
       {onChooseGardenAvatar && (
-        <p>כדי להשתמש באיור האישי של שון בגן המילים, הוסיפו אותו כאן ובחרו אותו כדמות בגן. האיור נשאר במכשיר הזה.</p>
+        <p>בגן המילים מופיע האיור המובנה של שון. אפשר לבחור כאן תמונה אחרת במקום האיור. התמונה שתבחרו נשארת באחסון המקומי של האפליקציה.</p>
       )}
       {previews.length > 0 ? (
         <div className="family-photo-manager__grid">

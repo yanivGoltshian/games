@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState, type TransitionEvent } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type TransitionEvent } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
 import { getMemoryConcept, MEMORY_GARDEN_ART } from '../content/memoryGarden';
@@ -309,49 +309,52 @@ export function MemoryGame({
         ) : undefined
       }
     >
-      <div
-        className="memory-grid"
-        role="group"
-        aria-label={prompt}
-        data-card-count={round.cards.length}
-      >
-        {round.cards.map((card) => {
-          const concept = getMemoryConcept(card.conceptId)!;
-          const matched = matchedPairIds.includes(card.pairId);
-          const flipped = flippedIds.includes(card.id) || matched;
-          const celebrated = celebratedPairIds.includes(card.pairId);
-          return (
-            <button
-              key={card.id}
-              className={`memory-card ${flipped ? 'memory-card--flipped' : ''} ${celebrated ? 'memory-card--celebrated' : ''}`}
-              disabled={mismatch !== null || retryBusy || narrationBusy || matched}
-              onClick={() => handleCardClick(card.id)}
-              type="button"
-              aria-label={flipped ? (englishOnly ? concept.en : concept.he) : (englishOnly ? 'Hidden card' : 'קלף סגור')}
-              aria-pressed={flipped}
-            >
-              <span
-                className="memory-card__inner"
-                onTransitionEnd={(event) => handleFlipTransitionEnd(card.id, event)}
+      <div className="pair-playfield">
+        <div
+          className="memory-grid"
+          role="group"
+          aria-label={prompt}
+          data-card-count={round.cards.length}
+          style={{ '--memory-count': round.cards.length } as CSSProperties}
+        >
+          {round.cards.map((card) => {
+            const concept = getMemoryConcept(card.conceptId)!;
+            const matched = matchedPairIds.includes(card.pairId);
+            const flipped = flippedIds.includes(card.id) || matched;
+            const celebrated = celebratedPairIds.includes(card.pairId);
+            return (
+              <button
+                key={card.id}
+                className={`memory-card ${flipped ? 'memory-card--flipped' : ''} ${celebrated ? 'memory-card--celebrated' : ''}`}
+                disabled={mismatch !== null || retryBusy || narrationBusy || matched}
+                onClick={() => handleCardClick(card.id)}
+                type="button"
+                aria-label={flipped ? (englishOnly ? concept.en : concept.he) : (englishOnly ? 'Hidden card' : 'קלף סגור')}
+                aria-pressed={flipped}
               >
                 <span
-                  className="memory-face memory-face--front"
-                  aria-hidden={flipped ? undefined : true}
+                  className="memory-card__inner"
+                  onTransitionEnd={(event) => handleFlipTransitionEnd(card.id, event)}
                 >
-                  {MEMORY_GARDEN_ART[concept.id]
-                    ? <img className="memory-face__art" src={MEMORY_GARDEN_ART[concept.id]} alt={englishOnly ? concept.en : concept.he} data-memory-art={concept.id} draggable={false} />
-                    : <ConceptArt conceptId={concept.id} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />}
+                  <span
+                    className="memory-face memory-face--front"
+                    aria-hidden={flipped ? undefined : true}
+                  >
+                    {MEMORY_GARDEN_ART[concept.id]
+                      ? <img className="memory-face__art" src={MEMORY_GARDEN_ART[concept.id]} alt={englishOnly ? concept.en : concept.he} data-memory-art={concept.id} draggable={false} />
+                      : <ConceptArt conceptId={concept.id} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />}
+                  </span>
+                  <span className="memory-face memory-face--back" aria-hidden="true" />
                 </span>
-                <span className="memory-face memory-face--back" aria-hidden="true" />
-              </span>
-              {celebrated ? (
-                <span className="memory-card__sparkles" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </span>
-              ) : null}
-            </button>
-          );
-        })}
+                {celebrated ? (
+                  <span className="memory-card__sparkles" aria-hidden="true">
+                    <i /><i /><i /><i /><i />
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </GameShell>
   );
