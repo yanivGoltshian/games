@@ -3,12 +3,11 @@ import { REALISTIC_CONCEPT_IDS } from '../art/conceptAssets';
 import { ORIGINAL_PUZZLE_SCENE_IDS, sceneImageHref } from '../art/puzzleScenes';
 import {
   conceptPuzzleScenes,
-  emotionConceptIds,
   learningConcepts,
   originalPuzzleScenes,
 } from '../content/concepts';
 import { getCountingQuestion, type CountingConceptId } from '../content/countingQuantity';
-import { getMemoryConcept, MEMORY_GARDEN_CONCEPTS } from '../content/memoryGarden';
+import { getMemoryConcept } from '../content/memoryGarden';
 import { applyRoundResult, createInitialDomainProgress, createInitialProgress } from './progression';
 import {
   NUMBER_PAIRS_GENERATION_ATTEMPTS,
@@ -201,27 +200,25 @@ describe('round generation', () => {
     expect([...counts.values()]).toEqual(Array(round.pairConceptIds.length).fill(2));
   });
 
-  it('uses the new fruit and garden objects only as single, correctly named memory pairs', () => {
-    const domain = createInitialDomainProgress();
-    domain.level = 3;
-    const observed = new Set<string>();
-    for (let index = 0; index < 600; index += 1) {
-      const round = generateMemoryRound(domain, `garden-art-${index}`);
-      for (const id of round.pairConceptIds) {
-        observed.add(id);
-        expect(round.cards.filter((card) => card.conceptId === id)).toHaveLength(2);
-      }
-      expect(round.pairConceptIds).not.toContain('banana-bitten');
-    }
-    for (const concept of MEMORY_GARDEN_CONCEPTS) expect(observed).toContain(concept.id);
-  });
-
-  it('features persimmon, dates and watering can in the first four wins while keeping decks varied', () => {
+  it('rotates complete single-topic boards from two pairs through repeated wins at eight', () => {
     let progress = createInitialProgress(false, 0);
     const history: string[] = [];
-    for (const level of [1, 2, 3, 4] as const) {
+    const garden = ['flower', 'tree', 'watering-can', 'carrot', 'strawberry', 'apple', 'orange', 'persimmon', 'dates'];
+    for (const [level, topic] of [
+      [1, 'emotion'], [2, 'fruit'], [3, 'transport'], [4, 'animal'], [5, 'emotion'],
+      [6, 'garden'], [7, 'shape'], [7, 'garden'], [7, 'shape'], [7, 'garden'],
+    ] as const) {
       const domain = { ...progress.domains.memory, level };
-      const round = generateMemoryRound(domain, `memory-${domain.attempts}-${domain.successes}-${level}-${level - 1}`, history);
+      const round = generateMemoryRound(domain, `visit-${history.length}`, history.slice(-8));
+      expect(new Set(round.pairConceptIds).size).toBe(level + 1);
+      expect(round.cards).toHaveLength(2 * (level + 1));
+      for (const id of round.pairConceptIds) {
+        const concept = getMemoryConcept(id)!;
+        expect(concept.introducedAtLevel).toBeLessThanOrEqual(level);
+        if (topic === 'garden') expect(garden).toContain(id);
+        else expect(concept.category).toBe(topic);
+        expect(round.cards.filter((card) => card.conceptId === id && card.pairId === id)).toHaveLength(2);
+      }
       history.push(getMemoryRoundSignature(round));
       progress = applyRoundResult(progress, 'memory', {
         attempts: round.pairConceptIds.length + 2,
@@ -229,9 +226,6 @@ describe('round generation', () => {
         concepts: round.pairConceptIds,
       }).progress;
     }
-    expect(history[0]?.split(',')).toContain('persimmon');
-    expect(history.slice(1).flatMap((signature) => signature.split(','))).toEqual(expect.arrayContaining(['dates', 'watering-can']));
-    expect(new Set(history).size).toBe(4);
   });
 
   it.each([
@@ -252,27 +246,21 @@ describe('round generation', () => {
     expect(round.cards).toHaveLength(pairCount * 2);
   });
 
-  it('guarantees meaningful emotion representation while retaining existing vocabulary', () => {
-    const emotionIds = new Set<string>(emotionConceptIds);
-
+  it('restarts every size with a different, stage-appropriate topic without growing the board', () => {
     for (const level of [1, 2, 3, 4, 5, 6, 7] as const) {
-      const domain = createInitialDomainProgress();
-      domain.level = level;
-      for (let index = 0; index < 40; index += 1) {
-        const round = generateMemoryRound(domain, `memory-emotions-${level}-${index}`);
-        const emotionCount = round.pairConceptIds.filter((id) => emotionIds.has(id)).length;
-        const expectedMinimum = round.pairConceptIds.length >= 4 ? 2 : 1;
-
-        expect(emotionCount).toBeGreaterThanOrEqual(expectedMinimum);
-        expect(round.pairConceptIds.some((id) => !emotionIds.has(id))).toBe(true);
-      }
+      const domain = { ...createInitialDomainProgress(), level };
+      const first = generateMemoryRound(domain, 'restart');
+      const second = generateMemoryRound(domain, 'restart', [getMemoryRoundSignature(first)]);
+      expect(new Set(second.pairConceptIds).size).toBe(level + 1);
+      expect(second.pairConceptIds.every((id) => !first.pairConceptIds.includes(id)
+        && getMemoryConcept(id)!.introducedAtLevel <= level)).toBe(true);
     }
   });
 
   it('keeps memory shuffles and signatures stable for identical inputs', () => {
     const domain = createInitialDomainProgress();
     domain.level = 7;
-    const history = ['emotion-happy|tree'];
+    const history = ['emotion-happy,emotion-sad'];
     const first = generateMemoryRound(domain, 'stable-memory-layout', history);
     const second = generateMemoryRound(domain, 'stable-memory-layout', history);
 
@@ -343,23 +331,20 @@ describe('round generation', () => {
   });
 
   describe('expanded concept coverage and anti-repetition', () => {
-    it('covers all 14 approved concepts in listening, memory, and counting', () => {
+    it('covers all 14 approved concepts in listening, counting, and concept puzzles', () => {
       const domain = createInitialDomainProgress();
       domain.level = 3;
       const listening = new Set<string>();
-      const memory = new Set<string>();
       const counting = new Set<string>();
 
       for (let index = 0; index < 1_200; index += 1) {
         const listeningRound = generateListeningRound(domain, `coverage-listening-${index}`);
         listening.add(listeningRound.targetId);
-        generateMemoryRound(domain, `coverage-memory-${index}`).pairConceptIds.forEach((id) => memory.add(id));
         counting.add(generateCountingRound(domain, `coverage-counting-${index}`).countingConceptId);
       }
 
       for (const conceptId of NEW_CONCEPT_IDS) {
         expect(listening).toContain(conceptId);
-        expect(memory).toContain(conceptId);
         expect(counting).toContain(conceptId);
       }
       expect(conceptPuzzleScenes).toHaveLength(NEW_CONCEPT_IDS.length);

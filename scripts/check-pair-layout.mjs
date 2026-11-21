@@ -56,7 +56,7 @@ async function measure(page, game) {
         return result;
       }, []);
       const ten = cards.find((tile) => tile.textContent.trim() === '10')?.firstElementChild;
-      const art = cards[0].querySelector('img');
+      const art = cards[0].querySelector('.memory-face__art');
       const artStyle = art && getComputedStyle(art);
       return {
         area,
@@ -95,6 +95,13 @@ async function measure(page, game) {
   }, game);
 }
 
+async function memoryPictures(cards) {
+  return cards.evaluateAll((items) => items.map((item) => {
+    const art = item.querySelector('.memory-face__art');
+    return art.getAttribute('data-content-id') ?? art.getAttribute('data-memory-art') ?? art.dataset.artId;
+  }));
+}
+
 async function playPair(page, game, label) {
   const cards = page.locator(game.card);
   const lastControl = page.locator('.rail-button--restart');
@@ -104,7 +111,7 @@ async function playPair(page, game, label) {
     document.activeElement === el && getComputedStyle(el).outlineStyle !== 'none'),
   label, 'Tab from restart reaches the first card with a visible focus ring');
   if (game.route === 'memory') {
-    const pictures = await cards.evaluateAll((items) => items.map((item) => item.querySelector('img').src));
+    const pictures = await memoryPictures(cards);
     const mate = pictures.indexOf(pictures[0], 1);
     assert(mate > 0, 'synthetic Memory seed must contain a pair');
     await page.keyboard.press('Enter');
@@ -128,7 +135,8 @@ async function playPair(page, game, label) {
 async function finishBoard(page, game, press, miss) {
   const cards = page.locator(game.card);
   if (game.route === 'memory') {
-    const pictures = await cards.evaluateAll((items) => items.map((item) => item.querySelector('img').src));
+    const pictures = await memoryPictures(cards);
+    assert(pictures.every(Boolean) && new Set(pictures).size * 2 === pictures.length);
     if (miss) {
       await press(cards.first());
       await page.locator('.memory-card--flipped').first().waitFor();
@@ -182,7 +190,7 @@ try {
     const playViewport = isZoom ? { width: 1280, height: 900 } : { width, height };
     const context = await browser.newContext({
       viewport: playViewport, hasTouch: touch, isMobile: touch,
-      deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block',
+      deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: device === 'phone' ? 'allow' : 'block',
     });
     const high = device !== 'phone';
     if (high) await context.addInitScript(({ progressKey, en }) => {
@@ -203,6 +211,11 @@ try {
       await page.goto(`${url.origin}/#/`);
       for (const game of games) {
         const isMemory = game.route === 'memory';
+        if (device === 'phone' && isMemory) {
+          await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+          await context.setOffline(true);
+          await page.reload();
+        }
         const portal = page.locator(isMemory ? '.portal-card.accent-memory' : '.portal-card.accent-number-pairs');
         await press(portal);
         const cards = page.locator(game.card);
@@ -213,6 +226,14 @@ try {
         const counts = [];
         for (const [index, count] of game.levels.entries()) {
           const label = `${device}/${game.route}/${count}`;
+          if (isMemory) {
+            const ids = await memoryPictures(cards);
+            if (count === 4 || count === 12) assert(ids.every((id) => id.startsWith('emotion-')), label);
+            if (count === 6) assert(ids.every((id) => ['banana', 'apple', 'strawberry', 'orange', 'persimmon', 'dates'].includes(id)), label);
+            if (count === 8) assert.deepEqual([...new Set(ids)].sort(), ['airplane', 'bus', 'car', 'train'], label);
+            if (count === 16) assert(ids.every((id) => id.startsWith('shape-')), label);
+            await cards.locator('img').evaluateAll((images) => Promise.all(images.map((image) => image.decode())));
+          }
           if (index === 1) {
             await press(cards.first());
             const selected = page.locator(`${game.card}[aria-pressed="true"]`).first();
@@ -292,6 +313,7 @@ try {
         }
         const cap = game.levels.at(-1);
         assert.equal(await cards.count(), isMemory ? cap : 2 * cap, 'same size after a win at the cap');
+        if (isMemory) assert.equal(await cards.locator('img').count(), 16, 'garden follows colored shapes at the cap');
         const beforeExit = await readSave(page);
         await press(page.locator('.rail-button--home'));
         await press(portal);
@@ -303,6 +325,7 @@ try {
         assert.equal(await cards.count(), 4);
         assert.deepEqual(await readSave(page), beforeExit, 'new visits and reload never reset lifetime data');
         await press(page.locator('.rail-button--home'));
+        if (device === 'phone' && isMemory) await context.setOffline(false);
         visits.push({ device, profile: high ? 'experienced' : 'fresh', route: game.route, counts, afterCap: cap, reentryCards: easyCount });
         console.log(`${device}/${game.route}: ${counts.join(',')} -> ${cap} at cap; Home -> 2 pairs`);
       }
