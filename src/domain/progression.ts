@@ -17,14 +17,14 @@ export const STORAGE_SCHEMA_VERSION = 6;
 export const RECENT_RESULT_LIMIT = 5;
 export const MEMORY_MAX_LEVEL = 7;
 export const STANDARD_MAX_LEVEL = 3;
-export const NUMBER_PAIRS_START_COUNT = 3;
 export const NUMBER_PAIRS_MAX_VALUE = 10;
-const NUMBER_PAIRS_MAX_LEVEL = NUMBER_PAIRS_MAX_VALUE - NUMBER_PAIRS_START_COUNT + 1;
+// The persisted lifetime checkpoint is independent of the per-visit board size.
+const NUMBER_PAIRS_MAX_LEVEL = 8;
 const LEVEL_THRESHOLDS: readonly number[] = [0, 0.42, 0.62];
 
 export function getDomainMaxLevel(domainKey?: DomainKey): DomainProgress['level'] {
   if (domainKey === 'memory') return MEMORY_MAX_LEVEL;
-  if (domainKey === 'numberPairs') return NUMBER_PAIRS_MAX_LEVEL as DomainProgress['level'];
+  if (domainKey === 'numberPairs') return NUMBER_PAIRS_MAX_LEVEL;
   return STANDARD_MAX_LEVEL;
 }
 

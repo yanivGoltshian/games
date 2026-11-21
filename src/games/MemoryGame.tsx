@@ -4,7 +4,9 @@ import { GameShell } from '../components/GameShell';
 import { cardPressFeedback } from '../components/cardPressFeedback';
 import { getMemoryConcept, MEMORY_GARDEN_ART } from '../content/memoryGarden';
 import { gameMeta } from '../content/games';
+import { MEMORY_MAX_LEVEL } from '../domain/progression';
 import { generateMemoryRound, getMemoryRoundSignature } from '../domain/rounds';
+import type { DomainLevel } from '../domain/types';
 import { soundService } from '../services/sound';
 import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
@@ -42,9 +44,11 @@ export function MemoryGame({
   const mismatchTokenRef = useRef(0);
   const interactionRef = useRef(0);
 
+  // Keep the lifetime concept history, but size each visit's boards independently.
+  const [visitLevel, setVisitLevel] = useState<DomainLevel>(1);
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'memory',
-    domainProgress,
+    { ...domainProgress, level: visitLevel },
     generateMemoryRound,
     { getSignature: getMemoryRoundSignature, limit: 8 },
   );
@@ -174,6 +178,7 @@ export function MemoryGame({
         )
         : null;
       if (nextMatched.length === round.pairConceptIds.length) {
+        setVisitLevel(Math.min(MEMORY_MAX_LEVEL, visitLevel + 1) as DomainLevel);
         const summary = onCompleteRound({
           attempts: nextAttempts,
           requiredActions: round.pairConceptIds.length,

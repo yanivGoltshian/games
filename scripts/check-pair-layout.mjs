@@ -23,10 +23,11 @@ const viewports = [
 ];
 const games = [
   { route: 'memory', card: '.memory-card', bands: '.memory-grid', levels: [4, 6, 8, 10, 12, 14, 16] },
-  { route: 'numberPairs', card: '.number-pair-tile', bands: '.number-pairs-row', levels: [3, 4, 5, 6, 7, 8, 9, 10] },
+  { route: 'numberPairs', card: '.number-pair-tile', bands: '.number-pairs-row', levels: [2, 3, 4, 5, 6, 7, 8, 9, 10] },
 ];
 const progressKey = 'sean-learning-adventure-progress';
 const measures = [];
+const visits = [];
 const failures = [];
 const verify = (valid, label, description) => {
   if (!valid) failures.push(`${label}: ${description}`);
@@ -124,48 +125,110 @@ async function playPair(page, game, label) {
   }
 }
 
+async function finishBoard(page, game, press, miss) {
+  const cards = page.locator(game.card);
+  if (game.route === 'memory') {
+    const pictures = await cards.evaluateAll((items) => items.map((item) => item.querySelector('img').src));
+    if (miss) {
+      await press(cards.first());
+      await page.locator('.memory-card--flipped').first().waitFor();
+      assert.equal(await cards.first().getAttribute('aria-pressed'), 'true');
+      await press(cards.nth(pictures.findIndex((pic) => pic !== pictures[0])));
+      await page.locator('.memory-card--flipped:disabled').first().waitFor();
+      assert.equal(await page.locator('.memory-card--flipped:disabled').count(), 2);
+      await page.locator('.memory-card--flipped').first().waitFor({ state: 'hidden' });
+    }
+    for (const pic of new Set(pictures)) {
+      for (const [index, value] of pictures.entries()) {
+        if (value === pic && await cards.nth(index).isEnabled()) await press(cards.nth(index));
+      }
+    }
+  } else {
+    const top = page.locator('.number-pairs-row--top button');
+    const bottom = page.locator('.number-pairs-row--bottom button');
+    const values = await top.allTextContents();
+    const bottomValues = await bottom.allTextContents();
+    assert.deepEqual([...values].sort(), [...bottomValues].sort());
+    if (miss) {
+      assert.deepEqual([...values].sort(), ['1', '2']);
+      await press(top.first());
+      await press(bottom.nth(bottomValues.findIndex((value) => value !== values[0])));
+      await page.locator('.number-pair-tile.is-wrong').waitFor();
+      assert.equal(await top.first().getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('.number-pair-tile.is-wrong').count(), 1);
+    }
+    for (const [index, value] of values.entries()) {
+      if (await top.nth(index).isDisabled()) continue;
+      if (await top.nth(index).getAttribute('aria-pressed') !== 'true') await press(top.nth(index));
+      await press(bottom.nth(bottomValues.indexOf(value)));
+    }
+  }
+  await press(page.locator('.success-overlay__continue'));
+  await page.locator('.success-overlay').waitFor({ state: 'hidden' });
+  await page.locator(`${game.card}:disabled`).first().waitFor({ state: 'hidden' });
+}
+
+const readSave = (page) => page.evaluate((key) => ({
+  base: JSON.parse(localStorage.getItem(key)),
+  stages: JSON.parse(localStorage.getItem(`${key}:pair-stages:v1`)),
+}), progressKey);
+
 try {
   await mkdir(output, { recursive: true });
   let chromeIdentity;
   for (const [device, width, height, touch] of viewports) {
     const isZoom = device === 'zoom-reflow';
     const en = device === 'desktop';
+    const playViewport = isZoom ? { width: 1280, height: 900 } : { width, height };
     const context = await browser.newContext({
-      viewport: { width, height }, hasTouch: touch, isMobile: touch,
+      viewport: playViewport, hasTouch: touch, isMobile: touch,
       deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block',
     });
-    await context.addInitScript(({ progressKey, en }) => {
-      const [route, fixture] = (location.hash.split('?')[1] || '').split(':');
-      if (!fixture) return;
-      const level = Number(fixture);
+    const high = device !== 'phone';
+    if (high) await context.addInitScript(({ progressKey, en }) => {
+      if (localStorage.getItem(progressKey)) return;
+      const veteran = { attempts: 42, completedRounds: 40, successes: 40, totalAttempts: 200, stars: 40,
+        recentResults: [{ completedAt: 100, level: 3, success: true, firstAttempt: false, attempts: 6 }] };
       localStorage.setItem(progressKey, JSON.stringify({
-        version: 6,
+        version: 6, totalStars: 80,
         settings: { childName: 'Demo', languageMode: en ? 'en' : 'he', quietMode: true, reducedMotion: true },
-        domains: { [route]: { level, highestLevel: level, attempts: 11 } },
+        domains: { memory: { ...veteran, level: 7, highestLevel: 7 }, numberPairs: { ...veteran, level: 3, highestLevel: 3 } },
       }));
-      localStorage.removeItem(`${progressKey}:pair-stages:v1`);
+      localStorage.setItem(`${progressKey}:pair-stages:v1`, JSON.stringify({ numberPairs: { level: 8, attempts: 42 } }));
     }, { progressKey, en });
     try {
       const page = await context.newPage();
       page.setDefaultTimeout(4000);
+      const press = (button) => touch ? button.tap() : button.click();
+      await page.goto(`${url.origin}/#/`);
       for (const game of games) {
         const isMemory = game.route === 'memory';
+        const portal = page.locator(isMemory ? '.portal-card.accent-memory' : '.portal-card.accent-number-pairs');
+        await press(portal);
+        const cards = page.locator(game.card);
+        await cards.first().waitFor();
+        const start = await readSave(page);
+        assert.equal(start.stages[game.route].level, high ? (isMemory ? 7 : 8) : 1);
+        assert.equal(start.base.domains[game.route].attempts, high ? 42 : 0);
+        const counts = [];
         for (const [index, count] of game.levels.entries()) {
-          if (isZoom && count !== game.levels.at(-1)) continue;
           const label = `${device}/${game.route}/${count}`;
-          const openThroughPortal = device === 'phone' && count === (isMemory ? 10 : 7);
-          await page.goto(`${url.origin}/#${openThroughPortal ? '/' : `/games/${game.route}`}?${game.route}:${index + 1}`);
-          await page.reload(); // Apply the fixture even for same-document hash navigation.
-          if (openThroughPortal) {
-            await page.locator(isMemory ? '.portal-card.accent-memory' : '.portal-card.accent-number-pairs').tap();
-            await page.waitForURL(`**/#/games/${game.route}`);
+          if (index === 1) {
+            await press(cards.first());
+            const selected = page.locator(`${game.card}[aria-pressed="true"]`).first();
+            await selected.waitFor();
+            await press(page.locator('.rail-button--restart'));
+            await selected.waitFor({ state: 'hidden' });
+            assert.equal(await cards.first().getAttribute('aria-pressed'), 'false', `${label} restart clears selection`);
           }
-          await page.locator(game.card).first().waitFor();
           if (!chromeIdentity) {
             chromeIdentity = await page.evaluate(() => navigator.userAgentData.brands);
             assert(chromeIdentity.some(({ brand }) => brand === 'Google Chrome'), 'expected branded Google Chrome');
           }
+          // Test the board's zoom reflow, not the unrelated Home portal's pointer layout.
+          if (isZoom) await page.setViewportSize({ width, height });
           const result = await measure(page, game);
+          counts.push(result.groups[0].count);
           measures.push({ device, width, height, route: game.route, count, ...result });
           verify(result.viewport[0] === width && result.viewport[1] === height, label, 'effective viewport matches fixture');
           verify(result.controls.length === 2 && result.controls[0].includes('--home') &&
@@ -205,19 +268,49 @@ try {
             await page.screenshot({ path: join(output, `${device}-${game.route}-${count}.png`), animations: 'disabled' });
             if (play && !isMemory) await playPair(page, game, label);
           }
-          if (isZoom) {
+          if (isZoom && count === game.levels.at(-1)) {
             const last = page.locator(game.card).last();
             await last.focus();
             const box = await last.boundingBox();
             verify(box.y >= 0 && box.y + box.height <= height, label, 'last card is reachable through vertical reflow');
           }
+          if (isZoom) await page.setViewportSize(playViewport);
+          const before = (await readSave(page)).base;
+          assert.equal(before.domains[game.route].completedRounds, start.base.domains[game.route].completedRounds + index);
+          const miss = index === 0;
+          await finishBoard(page, game, press, miss);
+          const { base } = await readSave(page);
+          const scored = base.domains[game.route];
+          const attempts = (isMemory ? count / 2 : count) + Number(miss);
+          assert.equal(scored.attempts, before.domains[game.route].attempts + 1, label);
+          assert.equal(scored.totalAttempts, before.domains[game.route].totalAttempts + attempts, label);
+          assert.equal(scored.recentResults.at(-1).attempts, attempts, label);
+          assert.equal(scored.recentResults.at(-1).firstAttempt, !miss, label);
+          assert.equal(base.totalStars, before.totalStars + 1, label);
+          assert.deepEqual(base.settings, start.base.settings, label);
+          if (high && miss) assert.deepEqual(scored.recentResults[0], start.base.domains[game.route].recentResults[0], label);
         }
+        const cap = game.levels.at(-1);
+        assert.equal(await cards.count(), isMemory ? cap : 2 * cap, 'same size after a win at the cap');
+        const beforeExit = await readSave(page);
+        await press(page.locator('.rail-button--home'));
+        await press(portal);
+        await cards.first().waitFor();
+        const easyCount = await cards.count();
+        assert.equal(easyCount, 4, 'return from Home starts a new two-pair visit');
+        await page.reload();
+        await cards.first().waitFor();
+        assert.equal(await cards.count(), 4);
+        assert.deepEqual(await readSave(page), beforeExit, 'new visits and reload never reset lifetime data');
+        await press(page.locator('.rail-button--home'));
+        visits.push({ device, profile: high ? 'experienced' : 'fresh', route: game.route, counts, afterCap: cap, reentryCards: easyCount });
+        console.log(`${device}/${game.route}: ${counts.join(',')} -> ${cap} at cap; Home -> 2 pairs`);
       }
     } finally {
       await context.close();
     }
   }
-  await writeFile(join(output, 'metrics.json'), JSON.stringify({ chromeIdentity, measures, failures }, null, 2));
+  await writeFile(join(output, 'metrics.json'), JSON.stringify({ chromeIdentity, visits, measures, failures }, null, 2));
   for (const failure of failures) console.error(failure);
   console.log(`Google Chrome ${browser.version()}: ${measures.length} cases, ${failures.length} failed assertions`);
   process.exitCode = failures.length ? 1 : 0;

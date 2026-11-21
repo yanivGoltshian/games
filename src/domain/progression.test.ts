@@ -103,7 +103,7 @@ describe('progression', () => {
     expect(next.domain.lastProgressionChoice).toBe('next');
   });
 
-  it('advances memory after exactly two wins per stage even with mistakes, up to eight pairs', () => {
+  it('preserves the lifetime Memory checkpoint of two wins per stage, up to level seven', () => {
     let progress = createInitialProgress(false, 1000);
     const imperfectWin = { attempts: 12, requiredActions: 2, concepts: ['dog', 'cat'] };
     for (let win = 1; win <= 15; win += 1) {
@@ -119,7 +119,7 @@ describe('progression', () => {
     expect(recommendLevelAdvance(progress.domains.memory, 'memory')).toBeNull();
   });
 
-  it('advances Number Pairs exactly once per board won, including imperfect wins, but never on failure or past ten pairs', () => {
+  it('preserves the lifetime Number Pairs checkpoint per win, never moving on failure or past level eight', () => {
     let progress = createInitialProgress(false, 1000);
     for (let win = 1; win <= 9; win += 1) {
       const failed = applyRoundResult(progress, 'numberPairs', {
