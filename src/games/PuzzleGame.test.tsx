@@ -7,6 +7,7 @@ import { createInitialProgress } from '../domain/progression';
 import type { PuzzleRound } from '../domain/types';
 import type { FamilyPhotoPreview } from '../components/useFamilyPhotoPreviews';
 import { PuzzleGame } from './PuzzleGame';
+import type * as SpeechModule from '../services/speech';
 
 const doubles = vi.hoisted(() => ({
   familyPhotos: [] as FamilyPhotoPreview[],
@@ -16,7 +17,7 @@ const doubles = vi.hoisted(() => ({
   cancelScope: vi.fn(),
   startNextRound: vi.fn(),
   adaptiveLevel: 0,
-  onDrop: null as null | ((itemId: string, zoneId: string) => boolean),
+  speakRetrySequence: vi.fn(),
 }));
 
 const builtInRounds = new Map<1 | 2 | 3, PuzzleRound>(
@@ -59,23 +60,9 @@ vi.mock('../components/useMeasuredSize', () => ({
   useMeasuredSize: () => ({ width: 360, height: 520 }),
 }));
 
-vi.mock('../components/drag/useToddlerDrag', () => ({
-  useToddlerDrag: (options: { onDrop: (itemId: string, zoneId: string) => boolean }) => {
-    doubles.onDrop = options.onDrop;
-    return {
-    bindItem: () => ({}),
-    bindZone: () => ({}),
-    selectedId: null,
-    draggingId: null,
-    hoverZoneId: null,
-    wigglingId: null,
-    };
-  },
-}));
-
 vi.mock('../components/puzzle/PuzzlePieceArt', () => ({
-  PuzzlePieceArt: ({ scene }: { scene: PuzzleRound['scene'] }) => (
-    <span data-testid="puzzle-art" data-image-kind={scene.image.kind}>
+  PuzzlePieceArt: ({ scene, row, col }: { scene: PuzzleRound['scene']; row: number; col: number }) => (
+    <span data-testid="puzzle-art" data-cell={`${row}:${col}`} data-image-kind={scene.image.kind}>
       {scene.image.kind === 'family' ? scene.image.href : scene.id}
     </span>
   ),
@@ -86,17 +73,21 @@ vi.mock('../art/puzzleScenes', () => ({
 }));
 
 vi.mock('../services/sound', () => ({
+  getSharedAudioContext: vi.fn(() => null),
+  unlockAudioContext: vi.fn(async () => undefined),
   soundService: {
     playSuccess: vi.fn(),
+    playRetry: vi.fn(),
   },
 }));
 
-vi.mock('../services/speech', () => ({
+vi.mock('../services/speech', async (importOriginal) => ({
+  ...await importOriginal<typeof SpeechModule>(),
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
     speakSegments: doubles.speakSegments,
     cancelScope: doubles.cancelScope,
-    supersedeRetry: vi.fn(),
+    speakRetrySequence: doubles.speakRetrySequence,
   },
 }));
 
@@ -109,13 +100,6 @@ vi.mock('./useAdaptiveRound', () => ({
     startNextRound: doubles.startNextRound,
     };
   },
-}));
-
-vi.mock('./useRetryFeedback', () => ({
-  useRetryFeedback: () => ({
-    retryBusy: false,
-    runRetry: vi.fn(),
-  }),
 }));
 
 vi.mock('./RoundSuccessOverlay', () => ({
@@ -175,7 +159,7 @@ describe('PuzzleGame family photos', () => {
     doubles.cancelScope.mockReset();
     doubles.startNextRound.mockReset();
     doubles.adaptiveLevel = 0;
-    doubles.onDrop = null;
+    doubles.speakRetrySequence.mockReset();
     doubles.speakSegments.mockResolvedValue({ status: 'completed' });
     container = document.createElement('div');
     document.body.append(container);
@@ -235,22 +219,37 @@ describe('PuzzleGame family photos', () => {
     expect(container.querySelectorAll('.puzzle-piece')).toHaveLength(2);
   });
 
+  it('allows immediate reselection after a wrong destination and ignores a late retry on the next board', async () => {
+    let finishRetry!: () => void;
+    doubles.speakRetrySequence.mockReturnValue(new Promise<void>((resolve) => { finishRetry = resolve; }));
+    await renderGame();
+    const piece = container.querySelector<HTMLButtonElement>('.puzzle-piece:has([data-cell="0:0"])')!;
+    const wrong = container.querySelector<HTMLButtonElement>('.puzzle-slot:has([data-cell="0:1"])')!;
+    await act(async () => piece.click());
+    await act(async () => wrong.click());
+    expect(doubles.speakRetrySequence).toHaveBeenCalledOnce();
+    expect(piece.disabled).toBe(false);
+    await solveVisiblePuzzle(2);
+    await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="success-overlay"]')!.click());
+    const nextPiece = container.querySelector<HTMLButtonElement>('.puzzle-piece')!;
+    await act(async () => nextPiece.click());
+    await act(async () => finishRetry());
+    expect(nextPiece.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelectorAll('.puzzle-piece')).toHaveLength(4);
+    expect(container.querySelectorAll('.puzzle-piece.is-placed')).toHaveLength(0);
+  });
+
   it('advances after one success from two to four to nine pieces', async () => {
     await renderGame(3);
 
-    await solveVisiblePuzzle(['built-in-1-0', 'built-in-1-1']);
+    await solveVisiblePuzzle(2);
     await act(async () => {
       container.querySelector<HTMLButtonElement>('[data-testid="success-overlay"]')!.click();
     });
     expect(doubles.startNextRound).toHaveBeenLastCalledWith(expect.objectContaining({ level: 2 }));
     expect(container.querySelectorAll('.puzzle-piece')).toHaveLength(4);
 
-    await solveVisiblePuzzle([
-      'built-in-2-0',
-      'built-in-2-1',
-      'built-in-2-2',
-      'built-in-2-3',
-    ]);
+    await solveVisiblePuzzle(4);
     await act(async () => {
       container.querySelector<HTMLButtonElement>('[data-testid="success-overlay"]')!.click();
     });
@@ -295,7 +294,7 @@ describe('PuzzleGame family photos', () => {
       container.querySelector<HTMLButtonElement>('[data-family-photo-choice]')!.click();
     });
 
-    await solveVisiblePuzzle(['family-photo-piece-0', 'family-photo-piece-1']);
+    await solveVisiblePuzzle(2);
     await act(async () => {
       container.querySelector<HTMLButtonElement>('[data-testid="success-overlay"]')!.click();
     });
@@ -303,12 +302,7 @@ describe('PuzzleGame family photos', () => {
     const nextPieces = container.querySelectorAll('.puzzle-piece');
     expect(nextPieces).toHaveLength(4);
     expect(container.querySelectorAll('.puzzle-piece.is-placed')).toHaveLength(0);
-    await solveVisiblePuzzle([
-      'family-photo-piece-0',
-      'family-photo-piece-1',
-      'family-photo-piece-2',
-      'family-photo-piece-3',
-    ]);
+    await solveVisiblePuzzle(4);
   });
 
   it('preserves the built-in choice alongside local photos', async () => {
@@ -323,11 +317,16 @@ describe('PuzzleGame family photos', () => {
     expect(doubles.startNextRound).toHaveBeenCalledWith(expect.objectContaining({ level: 1 }));
   });
 
-  async function solveVisiblePuzzle(pieceIds: string[]): Promise<void> {
-    for (const pieceId of pieceIds) {
-      await act(async () => {
-        expect(doubles.onDrop?.(pieceId, pieceId)).toBe(true);
-      });
+  async function solveVisiblePuzzle(expectedPieces: number): Promise<void> {
+    const slots = [...container.querySelectorAll<HTMLButtonElement>('.puzzle-slot')];
+    expect(slots).toHaveLength(expectedPieces);
+    for (const slot of slots) {
+      const cell = slot.querySelector<HTMLElement>('[data-cell]')!.dataset.cell;
+      const piece = container.querySelector<HTMLButtonElement>(`.puzzle-piece:has([data-cell="${cell}"])`)!;
+      await act(async () => piece.click());
+      expect(piece.getAttribute('aria-pressed')).toBe('true');
+      await act(async () => slot.click());
+      expect(piece.disabled).toBe(true);
     }
     expect(container.querySelector('[data-testid="success-overlay"]')).not.toBeNull();
   }

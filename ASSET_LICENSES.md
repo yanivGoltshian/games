@@ -36,3 +36,10 @@ The six files matching `public/assets/vocabulary/emotion-*.svg` are original
 local vector illustrations created specifically for this repository. They have
 no third-party source, no network dependency, and may be distributed under this
 repository's license.
+
+## Garden station and portrait treatment
+
+`public/assets/garden/station.webp` is an illustrated garden railway stop generated
+for this project with a text-only GPT-Image-2 request. No portrait, photograph
+or reference image was submitted. The bundled Sean portrait was masked locally
+on its original pixel canvas; device-selected portraits are not modified.

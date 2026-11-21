@@ -767,6 +767,29 @@ describe('SillyAlienGame (hands-free)', () => {
     expect(container.querySelector('[data-testid="success-overlay"]')).not.toBeNull();
   });
 
+  it('lets a tap skip a held success reveal once, without reviving its overlay on the next word', async () => {
+    const reveal = deferred<SpeechResult>();
+    const complete = await renderGame();
+    await act(async () => wakeTap());
+    await settle();
+    speech.speakSegments.mockImplementationOnce(startControlledPlayback(reveal));
+    await act(async () => mic.onSample!(0.6, 900));
+    expect(phase()).toBe('success');
+    expect(complete).toHaveBeenCalledOnce();
+    await act(async () => { wakeTap(); wakeTap(); });
+    expect(round.startNextRound).toHaveBeenCalledOnce();
+    expect(speech.cancelScope).toHaveBeenCalledWith('game:silly-alien', 'navigation');
+    round.roundKey = 'silly-round-2';
+    await renderGame(complete);
+    await act(async () => {
+      reveal.resolve({ requestId: 9, status: 'completed' });
+      await vi.advanceTimersByTimeAsync(1_600);
+    });
+    expect(phase()).toBe('listening');
+    expect(container.querySelector('[data-testid="success-overlay"]')).toBeNull();
+    expect(complete).toHaveBeenCalledOnce();
+  });
+
   it('automatically starts the next round when the round key advances (no new tap)', async () => {
     const onCompleteRound = await renderGame();
 

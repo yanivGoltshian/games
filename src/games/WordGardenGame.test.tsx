@@ -12,10 +12,11 @@ const mocks = vi.hoisted(() => ({
   speak: vi.fn(),
   read: vi.fn(),
   play: vi.fn(),
+  train: vi.fn(),
   avatar: null as string | null,
 }));
 
-vi.mock('../services/sound', () => ({ soundService: { playTap: vi.fn() } }));
+vi.mock('../services/sound', () => ({ soundService: { playTap: vi.fn(), playGardenTrain: mocks.train } }));
 vi.mock('../services/recordedSpeech', () => ({ recordedSpeechPlayer: { cancel: mocks.cancel, play: mocks.speak } }));
 vi.mock('../services/gardenVoiceStorage', () => ({ readGardenVoice: mocks.read }));
 vi.mock('../services/gardenVoiceMedia', () => ({ playGardenVoice: mocks.play }));
@@ -31,16 +32,19 @@ describe('Word Garden sentence train', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     container = document.createElement('div');
+    document.body.append(container);
     root = createRoot(container);
     mocks.cancel.mockReset();
     mocks.speak.mockReset().mockResolvedValue(undefined);
     mocks.read.mockReset().mockResolvedValue(null);
     mocks.play.mockReset().mockResolvedValue(true);
+    mocks.train.mockReset();
     mocks.avatar = 'blob:locally-selected-avatar';
     onCompleteRound.mockReset();
   });
   afterEach(async () => {
     await act(async () => root?.unmount());
+    container.remove();
     vi.useRealTimers();
   });
 
@@ -70,6 +74,88 @@ describe('Word Garden sentence train', () => {
   const advance = async (ms = GARDEN_RESPONSE_PAUSE_MS) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); };
   const spoken = () => mocks.speak.mock.calls.map(([clip]) => clip.text);
 
+  it.each(['he', 'en'] as const)('arrives, dwells and automatically opens exactly one next actor in %s', async (languageMode) => {
+    await render({ languageMode });
+    await tap(); await tap(); await tap();
+    expect(mocks.train).not.toHaveBeenCalled();
+    await advance();
+    expect(spoken()).toContain(languageMode === 'he' ? 'שון אוכל בננה' : 'Sean eats a banana');
+    expect(mocks.train).toHaveBeenCalledTimes(1);
+    expect(next()).toBe(document.activeElement);
+    await advance(2_399);
+    expect(board().getAttribute('data-journey')).toBe('travel');
+    await advance(1);
+    expect(board().getAttribute('data-journey')).toBe('station');
+    await advance(949);
+    expect(next()).not.toBeNull();
+    await advance(1);
+    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(target()).toBe(document.activeElement);
+    await advance(10_000);
+    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(onCompleteRound).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives a manual next priority at the last instant, without a stale timer or quiet whistle', async () => {
+    await render({ quietMode: true });
+    await tap(); await tap(); await tap();
+    await advance(2_400); await advance(949);
+    await tap(next());
+    await advance(1);
+    await tap(); await tap(); await tap();
+    await advance(2_400); await advance(950);
+    expect(board().getAttribute('data-sentence')).toBe('germinate');
+    expect(onCompleteRound).toHaveBeenCalledTimes(2);
+    expect(mocks.train).not.toHaveBeenCalled();
+    expect(mocks.speak).not.toHaveBeenCalled();
+  });
+
+  it('holds a completed journey in the background and resumes without repeating sound or scoring', async () => {
+    await render();
+    await tap(); await tap(); await tap(); await advance();
+    await act(async () => { window.dispatchEvent(new Event('pagehide')); });
+    await advance(12_000);
+    expect(board().getAttribute('data-sentence')).toBe('banana');
+    await act(async () => { window.dispatchEvent(new Event('pageshow')); });
+    await advance(2_400); await advance(950);
+    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(mocks.train).toHaveBeenCalledTimes(1);
+    expect(onCompleteRound).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets a parent replay the full model at the station without auto-cutting it or repeating the whistle', async () => {
+    await render();
+    await tap(); await tap(); await tap(); await advance(); await advance(2_400);
+    await advance(900);
+    let finishClip!: () => void;
+    mocks.play.mockImplementationOnce(() => new Promise<boolean>((resolve) => { finishClip = () => resolve(true); }));
+    mocks.read.mockResolvedValue(new Blob(['synthetic'], { type: 'audio/webm' }));
+    await tap(container.querySelector<HTMLButtonElement>('.rail-button--replay')!);
+    await advance(1_800);
+    expect(board().getAttribute('data-sentence')).toBe('banana');
+    await act(async () => finishClip());
+    await advance(50);
+    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(mocks.train).toHaveBeenCalledTimes(1);
+    expect(onCompleteRound).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels departure audio and does not open another actor after Home or unmount', async () => {
+    const stop = vi.fn();
+    mocks.train.mockReturnValue(stop);
+    await render();
+    await tap(); await tap(); await tap(); await advance();
+    await tap(container.querySelector<HTMLButtonElement>('.rail-button--home')!);
+    const lastWords = spoken();
+    await advance(8_000);
+    expect(board().getAttribute('data-sentence')).toBe('banana');
+    expect(stop).toHaveBeenCalledTimes(1);
+    await act(async () => root!.unmount());
+    root = undefined;
+    await advance(8_000);
+    expect(spoken()).toEqual(lastWords);
+  });
+
   it('asks, waits for an optional answer, then models the active word and sentence; one tap opens the next actor', async () => {
     await render();
     expect(container.querySelector('main')?.dir).toBe('rtl');
@@ -87,7 +173,7 @@ describe('Word Garden sentence train', () => {
     await advance();
     expect(spoken().at(-1)).toBe('אוכל');
     await tap();
-    expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('src')).toContain('banana-bitten.webp');
+    expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('href')).toContain('banana-bitten.webp');
     expect(container.querySelectorAll('.sentence-train__card.is-target')).toHaveLength(1);
     await advance();
     expect(spoken()).toContain('בננה');
@@ -96,6 +182,8 @@ describe('Word Garden sentence train', () => {
     expect(spoken().at(-1)).toBe('אפשר להגיד את כל המשפט?');
     expect(onCompleteRound).toHaveBeenCalledExactlyOnceWith({ attempts: 3, requiredActions: 3, concepts: ['garden-banana'] });
     await advance();
+    expect(spoken().at(-1)).toBe('שון אוכל בננה');
+    await advance(550);
     expect(spoken().slice(-2)).toEqual(['שון אוכל בננה', 'עוד משפט']);
     expect(board().getAttribute('data-departed')).toBe('true');
     expect(container.querySelectorAll('.sentence-train__next')).toHaveLength(1);
@@ -158,8 +246,8 @@ describe('Word Garden sentence train', () => {
       await tap(); await tap();
       expect(board().querySelector('.sentence-train__action')?.getAttribute('data-acted')).toBe('true');
       if (id === 'bury') expect(board().querySelector('.sentence-train__pit')).not.toBeNull();
-      if (id === 'water') expect(board().querySelectorAll('.sentence-train__drops i')).toHaveLength(3);
-      if (id === 'palm') expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('src')).toContain('date-palm-tree.webp');
+      if (id === 'water') expect(board().querySelectorAll('.garden-drop')).toHaveLength(3);
+      if (id === 'palm') expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('href')).toContain('date-palm-tree.webp');
       if (id === 'token') expect(board().querySelector('.sentence-train__recipient')).not.toBeNull();
       await tap();
       expect(board().getAttribute('data-departed')).toBe('true');
@@ -183,7 +271,7 @@ describe('Word Garden sentence train', () => {
     expect(board().querySelectorAll('img[src="/assets/garden/sean-avatar.webp"]')).toHaveLength(2);
     expect(board().querySelector('.sentence-train__badge')).toBeNull();
     await tap();
-    expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('src')).toContain('banana-bitten.webp');
+    expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('href')).toContain('banana-bitten.webp');
     await tap();
     expect(board().textContent).toContain('שון אוכל בננה');
     expect(onCompleteRound).toHaveBeenCalledTimes(1);

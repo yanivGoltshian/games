@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { gameMeta } from '../content/games';
 import {
   SILLY_ALIEN_LISTENING,
@@ -230,6 +231,13 @@ export function SillyAlienGame({
     invalidateGeneration: generation.invalidate,
   };
   const successHandledRef = useRef(false);
+  const advancedRoundRef = useRef<typeof roundKey | null>(null);
+  const advanceFromReveal = useCallback((): void => {
+    if (advancedRoundRef.current === roundKey) return;
+    advancedRoundRef.current = roundKey;
+    speechService.cancelScope(SPEECH_SCOPE, 'navigation');
+    startNextRound();
+  }, [roundKey, startNextRound]);
 
   // The one obvious, non-reading gesture. It must run inside the user gesture so
   // iOS Safari grants both the AudioContext (soundService.unlock) and the
@@ -253,11 +261,15 @@ export function SillyAlienGame({
 
   // Tapping the alien: wakes it when locked; otherwise it is an optional,
   // non-blocking "I said it / grown-up help" shortcut (never required, never a
-  // press-and-hold). Ignored while the alien is talking or celebrating.
+  // press-and-hold). Once the word is solved the same tap can skip its reveal.
   const handleAlienTap = useCallback((): void => {
     const { phase, settings: current, micStop } = dataRef.current;
     if (phase === 'locked') {
       void unlock();
+      return;
+    }
+    if (phase === 'success') {
+      advanceFromReveal();
       return;
     }
     if (phase === 'listening' || phase === 'nudge' || phase === 'parentFallback') {
@@ -265,7 +277,7 @@ export function SillyAlienGame({
       micStop();
       dispatch({ type: 'succeed' });
     }
-  }, [unlock]);
+  }, [advanceFromReveal, unlock]);
 
   const handleRepeat = useCallback((): void => {
     const snapshot = dataRef.current;
@@ -278,6 +290,7 @@ export function SillyAlienGame({
       mediaScope: scope,
     } = snapshot;
     micStop();
+    if (phase === 'parentFallback') speechService.cancelScope(SPEECH_SCOPE, 'replay');
     interactionMediaCoordinator.notifyInteraction(scope, 'touch');
     const replayToken = replayGeneration.issue({
       ...scope,
@@ -548,6 +561,9 @@ export function SillyAlienGame({
     successHandledRef.current = true;
     const snapshot = dataRef.current;
     snapshot.micStop();
+    replayGenerationRef.current?.invalidate();
+    interactionMediaCoordinator.notifyInteraction(snapshot.mediaScope, 'round-replacement');
+    speechService.cancelScope(SPEECH_SCOPE, 'replay');
     soundService.playBoing(snapshot.settings); // spring snap-back
     soundService.playSuccess(snapshot.settings);
     setReplaying(true);
@@ -576,6 +592,7 @@ export function SillyAlienGame({
 
     const revealMs = snapshot.settings.reducedMotion ? 650 : 1500;
     const timer = window.setTimeout(() => {
+      if (advancedRoundRef.current === snapshot.roundKey) return;
       setReplaying(false);
       setCelebration({
         seed: `silly-alien-${snapshot.roundKey}-${snapshot.round.signature}-${snapshot.listenAttempts}`,
@@ -633,7 +650,7 @@ export function SillyAlienGame({
   const voiceActive = state.currentLevel >= SILLY_ALIEN_LEVEL_THRESHOLD;
   const syllableLoose = isPresenting || isListening || isNudge;
 
-  const alienTapLabel = englishOnly
+  const alienTapLabel = isSuccess ? (englishOnly ? 'Next word' : 'המילה הבאה') : englishOnly
     ? isLocked
       ? 'Wake up the alien'
       : isFallback
@@ -678,7 +695,7 @@ export function SillyAlienGame({
       reducedMotion={settings.reducedMotion}
       onHome={handleBack}
       onRepeat={handleRepeat}
-      repeatDisabled={settings.quietMode || !speechStatus.supported || isLocked || !mediaReady}
+      repeatDisabled={settings.quietMode || !speechStatus.supported || isLocked || isSuccess || !mediaReady}
       repeatSpeaking={speechStatus.speaking}
       replayLabel={englishOnly ? 'Hear it again' : 'לשמוע שוב'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
@@ -700,6 +717,7 @@ export function SillyAlienGame({
           <button
             type="button"
             className={`silly-alien-figure-tap silly-alien-figure-tap--${state.phase}`}
+            {...cardPressFeedback}
             onClick={handleAlienTap}
             aria-label={alienTapLabel}
           >
@@ -762,6 +780,7 @@ export function SillyAlienGame({
               <button
                 type="button"
                 className="silly-alien-fallback__button"
+                {...cardPressFeedback}
                 onClick={handleAlienTap}
               >
                 {englishOnly ? 'Help the alien' : 'עוזרים לחייזר'}

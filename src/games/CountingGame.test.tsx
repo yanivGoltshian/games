@@ -421,6 +421,7 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     await act(async () => {
       voiceToggle.click();
     });
+
     await act(async () => {
       container.querySelectorAll<HTMLButtonElement>('.choice-button--number')[0]!.click();
       await Promise.resolve();
@@ -453,6 +454,30 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     });
     expect(micDouble.start).toHaveBeenCalledTimes(3);
     expect(container.querySelector('.counting-voice__toggle')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('accepts a correction during held retry speech, and advances only on release of the success button', async () => {
+    const oldRetry = deferred<SpeechResult>();
+    const oldSuccess = deferred<SpeechResult>();
+    doubles.speakSegments.mockReturnValueOnce(oldRetry.promise).mockReturnValueOnce(oldSuccess.promise);
+    const complete = await renderGame();
+    const options = container.querySelectorAll<HTMLButtonElement>('.choice-button--number');
+    await act(async () => options[0]!.click());
+    await act(async () => options[1]!.click());
+    await act(async () => options[1]!.click());
+    expect(complete).toHaveBeenCalledExactlyOnceWith({ attempts: 2, requiredActions: 1, concepts: ['count-3'] });
+    await act(async () => oldRetry.resolve({ status: 'completed', requestId: 1 }));
+    const overlay = container.querySelector<HTMLButtonElement>('.success-overlay button')!;
+    await act(async () => { overlay.dispatchEvent(new Event('pointerdown', { bubbles: true })); });
+    expect(doubles.startNextRound).not.toHaveBeenCalled();
+    await act(async () => overlay.click());
+    expect(doubles.startNextRound).toHaveBeenCalledOnce();
+    await act(async () => {
+      oldSuccess.resolve({ status: 'completed', requestId: 2 });
+      await vi.advanceTimersByTimeAsync(16_000);
+    });
+    expect(doubles.startNextRound).toHaveBeenCalledOnce();
+    expect(complete).toHaveBeenCalledOnce();
   });
 
   it('keeps success narration isolated until true completion plus the 400 ms guard', async () => {
@@ -494,9 +519,7 @@ describe('CountingGame — count-out-loud voice affordance', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      container.querySelector('.success-overlay')!.dispatchEvent(
-        new Event('pointerdown', { bubbles: true }),
-      );
+      container.querySelector<HTMLButtonElement>('.success-overlay button')!.click();
     });
     const voiceToggle = container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!;
     await act(async () => {
@@ -533,9 +556,7 @@ describe('CountingGame — count-out-loud voice affordance', () => {
     });
 
     await act(async () => {
-      container.querySelector('.success-overlay')!.dispatchEvent(
-        new Event('pointerdown', { bubbles: true }),
-      );
+      container.querySelector<HTMLButtonElement>('.success-overlay button')!.click();
     });
     expect(doubles.cancelScope).toHaveBeenCalledOnce();
     expect(micDouble.start).not.toHaveBeenCalled();
@@ -546,6 +567,18 @@ describe('CountingGame — count-out-loud voice affordance', () => {
       await vi.advanceTimersByTimeAsync(400);
     });
     expect(micDouble.start).not.toHaveBeenCalled();
+  });
+
+  it('cleans up the scheduled microphone guard retry on exit', async () => {
+    micDouble.start.mockResolvedValue({ status: 'playback-guarded' });
+    await renderGame();
+    await act(async () => container.querySelector<HTMLButtonElement>('.counting-voice__toggle')!.click());
+    expect(micDouble.start).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    await act(async () => root.render(null));
+    expect(vi.getTimerCount()).toBe(0);
+    await act(async () => { await vi.advanceTimersByTimeAsync(400); });
+    expect(micDouble.start).toHaveBeenCalledOnce();
   });
 
   it('does not reopen a pending voice request after backgrounding', async () => {

@@ -145,4 +145,20 @@ describe('soundService synthesis engine', () => {
     soundService.playMemoryComplete(quiet);
     expect(created.oscillators.length).toBe(before);
   });
+
+  it('plays a brief Garden train cue only on a running context with sound enabled', () => {
+    const context = soundService.getContext() as unknown as FakeAudioContext;
+    const before = created.oscillators.length;
+    context.state = 'suspended';
+    soundService.playGardenTrain(audible);
+    context.state = 'running';
+    soundService.playGardenTrain({ ...audible, quietMode: true });
+    soundService.playGardenTrain({ ...audible, soundLevel: 0 });
+    expect(created.oscillators).toHaveLength(before);
+    soundService.playGardenTrain(audible);
+    const voices = created.oscillators.slice(before);
+    expect(voices.length).toBeGreaterThan(1);
+    expect(voices.every((voice) => voice.stop.mock.calls[0]![0] < 0.6)).toBe(true);
+    expect(context.resume).not.toHaveBeenCalled();
+  });
 });

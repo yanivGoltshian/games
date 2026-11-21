@@ -4,11 +4,12 @@ import {
   useRef,
   useState,
   type Dispatch,
-  type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
   type RefObject,
   type SetStateAction,
 } from 'react';
+import { cardPressFeedback } from '../cardPressFeedback';
 
 export interface DragItemState {
   x: number;
@@ -25,6 +26,8 @@ interface ActiveDrag {
   pointerId: number;
   offsetX: number;
   offsetY: number;
+  startX: number;
+  startY: number;
   moved: boolean;
 }
 
@@ -34,6 +37,8 @@ interface UseToddlerDragOptions {
   setItems: Dispatch<SetStateAction<Record<string, DragItemState>>>;
   zones: Record<string, RefObject<HTMLElement | null>>;
   onDrop: (itemId: string, zoneId: string) => boolean;
+  onSelect: (itemId: string) => void;
+  roundKey: string | number;
   disabled?: boolean;
 }
 
@@ -43,30 +48,36 @@ const WIGGLE_MS = 520;
  * Pointer-capture drag with a tap-select / tap-destination fallback so a
  * toddler can either drag with a finger or tap an item then tap its target.
  * Exposes explicit interaction states (pressed via aria-pressed, selected,
- * dragging, zone-hover, and a brief wiggle-then-return on a wrong drop) so
+ * dragging, zone-hover, and a brief wiggle back at home on a wrong drop) so
  * every game can render consistent, non-color-only feedback.
  */
-export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, disabled = false }: UseToddlerDragOptions) {
+export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, onSelect, roundKey, disabled = false }: UseToddlerDragOptions) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverZoneId, setHoverZoneId] = useState<string | null>(null);
   const [wigglingId, setWigglingId] = useState<string | null>(null);
   const itemsRef = useRef(items);
   const activeRef = useRef<ActiveDrag | null>(null);
+  const suppressClick = useRef<string | null>(null);
   const wiggleTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    setSelectedId(null);
+    setDraggingId(null);
+    setHoverZoneId(null);
+    setWigglingId(null);
+    return () => {
+      activeRef.current = null;
+      suppressClick.current = null;
       if (wiggleTimeoutRef.current !== null) {
         window.clearTimeout(wiggleTimeoutRef.current);
       }
-    },
-    [],
-  );
+    };
+  }, [roundKey]);
 
   const resetItem = useCallback(
     (itemId: string): void => {
@@ -88,15 +99,15 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, dis
     [setItems],
   );
 
-  const wiggleThenReset = useCallback(
+  const returnHomeWithWiggle = useCallback(
     (itemId: string): void => {
       setWigglingId(itemId);
+      resetItem(itemId);
       if (wiggleTimeoutRef.current !== null) {
         window.clearTimeout(wiggleTimeoutRef.current);
       }
       wiggleTimeoutRef.current = window.setTimeout(() => {
         setWigglingId((current) => (current === itemId ? null : current));
-        resetItem(itemId);
       }, WIGGLE_MS);
     },
     [resetItem],
@@ -165,7 +176,7 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, dis
       return;
     }
     if (!zoneId || !onDrop(itemId, zoneId)) {
-      wiggleThenReset(itemId);
+      returnHomeWithWiggle(itemId);
       setSelectedId((current) => (current === itemId ? null : current));
       return;
     }
@@ -175,95 +186,93 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, dis
   const bindItem = (itemId: string) => {
     const unavailable = disabled || Boolean(items[itemId]?.locked);
     return {
-    onPointerDown: (event: PointerEvent<HTMLElement>) => {
-      const surfaceRect = surfaceRef.current?.getBoundingClientRect();
-      const item = itemsRef.current[itemId];
-      if (disabled || !surfaceRect || !item || item.locked) {
-        return;
-      }
+      ...cardPressFeedback,
+      onPointerDown: (event: PointerEvent<HTMLElement>) => {
+        const surfaceRect = surfaceRef.current?.getBoundingClientRect();
+        const item = itemsRef.current[itemId];
+        if (disabled || !surfaceRect || !item || item.locked || activeRef.current || !event.isPrimary || event.button !== 0) {
+          return;
+        }
 
-      event.preventDefault();
-      event.currentTarget.setPointerCapture(event.pointerId);
-      activeRef.current = {
-        id: itemId,
-        pointerId: event.pointerId,
-        offsetX: event.clientX - surfaceRect.left - item.x,
-        offsetY: event.clientY - surfaceRect.top - item.y,
-        moved: false,
-      };
-      setSelectedId(itemId);
-    },
-    onPointerMove: (event: PointerEvent<HTMLElement>) => {
-      const active = activeRef.current;
-      const surfaceRect = surfaceRef.current?.getBoundingClientRect();
-      if (!active || active.id !== itemId || active.pointerId !== event.pointerId || !surfaceRect) {
-        return;
-      }
+        suppressClick.current = null;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        activeRef.current = {
+          id: itemId,
+          pointerId: event.pointerId,
+          offsetX: event.clientX - surfaceRect.left - item.x,
+          offsetY: event.clientY - surfaceRect.top - item.y,
+          startX: event.clientX,
+          startY: event.clientY,
+          moved: false,
+        };
+      },
+      onPointerMove: (event: PointerEvent<HTMLElement>) => {
+        const active = activeRef.current;
+        const surfaceRect = surfaceRef.current?.getBoundingClientRect();
+        if (!active || active.id !== itemId || active.pointerId !== event.pointerId || !surfaceRect) {
+          return;
+        }
 
-      event.preventDefault();
-      const nextX = event.clientX - surfaceRect.left - active.offsetX;
-      const nextY = event.clientY - surfaceRect.top - active.offsetY;
-      active.moved = active.moved || Math.abs(nextX - itemsRef.current[itemId]!.x) > 6 || Math.abs(nextY - itemsRef.current[itemId]!.y) > 6;
-      if (active.moved) {
-        setDraggingId(itemId);
-      }
-      updateItemPosition(itemId, nextX, nextY);
-      const item = itemsRef.current[itemId];
-      if (item) {
-        setHoverZoneId(findZoneAt(event.clientX, event.clientY) ?? findZone(itemId));
-      }
-    },
-    onPointerUp: (event: PointerEvent<HTMLElement>) => {
-      const active = activeRef.current;
-      if (!active || active.id !== itemId || active.pointerId !== event.pointerId) {
-        return;
-      }
-
-      event.preventDefault();
-      setDraggingId(null);
-      setHoverZoneId(null);
-      if (!active.moved) {
-        // Pointer-down already selected the item so it can be named
-        // immediately. Keep that selection after a tap for the
-        // tap-item/tap-destination fallback.
-        setSelectedId(itemId);
-      } else {
-        attemptDrop(itemId, findZone(itemId));
-      }
-      activeRef.current = null;
-    },
-    onPointerCancel: () => {
-      activeRef.current = null;
-      setDraggingId(null);
-      setHoverZoneId(null);
-      resetItem(itemId);
-    },
-    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-      if (disabled) {
-        return;
-      }
-      if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        setSelectedId((current) => (current === itemId ? null : itemId));
-      }
-    },
-    disabled: unavailable,
-    tabIndex: unavailable ? -1 : 0,
-    role: 'button' as const,
-    'aria-pressed': selectedId === itemId,
-    'aria-disabled': unavailable,
-  };
+        const nextX = event.clientX - surfaceRect.left - active.offsetX;
+        const nextY = event.clientY - surfaceRect.top - active.offsetY;
+        if (!active.moved) {
+          if (Math.hypot(event.clientX - active.startX, event.clientY - active.startY) <= 6) return;
+          active.moved = true;
+          onSelect(itemId);
+          setSelectedId(itemId);
+          setDraggingId(itemId);
+          setWigglingId(null);
+        }
+        updateItemPosition(itemId, nextX, nextY);
+        const item = itemsRef.current[itemId];
+        if (item) {
+          setHoverZoneId(findZoneAt(event.clientX, event.clientY) ?? findZone(itemId));
+        }
+      },
+      onPointerUp: (event: PointerEvent<HTMLElement>) => {
+        const active = activeRef.current;
+        if (!active || active.id !== itemId || active.pointerId !== event.pointerId) {
+          return;
+        }
+
+        setDraggingId(null);
+        setHoverZoneId(null);
+        if (active.moved) {
+          suppressClick.current = itemId;
+          attemptDrop(itemId, findZoneAt(event.clientX, event.clientY) ?? findZone(itemId));
+        }
+        activeRef.current = null;
+      },
+      onPointerCancel: (event: PointerEvent<HTMLElement>) => {
+        if (activeRef.current?.pointerId !== event.pointerId) return;
+        activeRef.current = null;
+        setDraggingId(null);
+        setHoverZoneId(null);
+        setSelectedId(null);
+        resetItem(itemId);
+      },
+      onClick: (event: MouseEvent<HTMLElement>) => {
+        if (unavailable || (event.detail !== 0 && suppressClick.current === itemId)) {
+          suppressClick.current = null;
+          return;
+        }
+        onSelect(itemId);
+        setWigglingId(null);
+        setSelectedId(event.detail === 0 && selectedId === itemId ? null : itemId);
+      },
+      disabled: unavailable,
+      tabIndex: unavailable ? -1 : 0,
+      role: 'button' as const,
+      'aria-pressed': selectedId === itemId,
+      'aria-disabled': unavailable,
+    };
   };
 
   const bindZone = (zoneId: string) => ({
+    ...cardPressFeedback,
     onClick: () => {
       if (!disabled && selectedId) {
-        attemptDrop(selectedId, zoneId);
-      }
-    },
-    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-      if (!disabled && (event.key === 'Enter' || event.key === ' ') && selectedId) {
-        event.preventDefault();
         attemptDrop(selectedId, zoneId);
       }
     },
