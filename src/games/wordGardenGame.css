@@ -25,7 +25,30 @@
   line-height: 1.15;
 }
 
+.sentence-train__play {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1.4fr) minmax(86px, 1fr);
+  gap: 8px;
+}
+.sentence-train__theater {
+  grid-area: 1 / 1;
+  justify-self: center;
+  width: min(100%, 660px);
+  min-height: 0;
+  pointer-events: none;
+  display: grid;
+  border-radius: clamp(16px, 3vmin, 30px);
+  border: 2px solid #a6b6a2;
+  background: #fffefa;
+}
+.sentence-train__theater .garden-scene { max-height: 100%; }
+.sentence-train__card .sentence-train__action[data-acted="true"] * {
+  animation: none;
+}
+
 .sentence-train__cards {
+  grid-area: 2 / 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
@@ -33,6 +56,32 @@
   padding-block-end: 20px;
   min-height: 0;
 }
+
+[data-acted="true"] [class*="garden-motion--"] {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: var(--garden-move) 980ms cubic-bezier(.25,.66,.36,1) both;
+}
+.garden-motion--settle, .garden-motion--wash { --garden-move: garden-settle; }
+.garden-motion--drop-in, .garden-motion--transplant { --garden-move: garden-lower; }
+.garden-motion--emerge, .garden-motion--blossom { --garden-move: garden-open; }
+.garden-motion--root { --garden-move: garden-root; transform-origin: center top !important; }
+.garden-motion--decompose { --garden-move: garden-compost; opacity: .25; }
+.garden-motion--ripen { --garden-move: garden-ripen; }
+.garden-motion--land { --garden-move: garden-land; }
+.garden-motion--drip { --garden-move: garden-drip; }
+.garden-motion--pick { --garden-move: garden-pick; }
+.garden-motion--pull { --garden-move: garden-pull; }
+@keyframes garden-settle { from { transform: translateY(-10px) rotate(-12deg); } }
+@keyframes garden-lower { from { transform: translate(-43px,-55px) rotate(-12deg); } }
+@keyframes garden-open { from { transform: scale(.24,.15); } }
+@keyframes garden-root { from { transform: scaleY(.1); } }
+@keyframes garden-compost { from { opacity: 1; transform: scale(1.55); } }
+@keyframes garden-ripen { from { filter: hue-rotate(72deg) saturate(.55); transform: scale(.62); } }
+@keyframes garden-land { from { transform: translate(-72px,-32px) rotate(-12deg); } 60% { transform: translate(-18px,-24px); } }
+@keyframes garden-drip { from { transform: translateY(-27px); opacity: .32; } }
+@keyframes garden-pick { from { transform: translate(16px,-24px); } }
+@keyframes garden-pull { from { transform: translate(24px,44px); } }
 
 .sentence-train__card {
   position: relative;
@@ -266,6 +315,11 @@
 @media (max-height: 430px) and (orientation: landscape) {
   .sentence-train { gap: 6px; padding: 7px 12px; }
   .sentence-train__cards { padding-block-end: 16px; }
+}
+@media (orientation: landscape) and (min-aspect-ratio: 5/4) {
+  .sentence-train__play { grid-template: minmax(0, 1fr) / minmax(0, .88fr) minmax(0, 1.12fr); align-items: center; }
+  .sentence-train__theater { height: min(100%, 380px); }
+  .sentence-train__cards { grid-area: 1 / 2; height: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

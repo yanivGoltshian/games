@@ -4,7 +4,8 @@ import { GARDEN_SENTENCES, getGardenVoiceKey } from '../content/gardenSentences'
 import { deleteGardenVoice, GARDEN_VOICE_MAX_BYTES, readGardenVoice, saveGardenVoice } from './gardenVoiceStorage';
 
 it('keeps locally saved Sean clips isolated by sentence and language through save, replace, and delete', async () => {
-  const [banana, dates] = GARDEN_SENTENCES;
+  const banana = GARDEN_SENTENCES.find(s => s.id === 'banana')!;
+  const dates = GARDEN_SENTENCES.find(s => s.id === 'dates')!;
   const hebrew = getGardenVoiceKey(banana, 'he');
   const english = getGardenVoiceKey(banana, 'en');
   const otherSentence = getGardenVoiceKey(dates, 'he');
@@ -25,7 +26,7 @@ it('keeps locally saved Sean clips isolated by sentence and language through sav
 });
 
 it('rejects invalid local clips without overwriting the existing sentence recording', async () => {
-  const key = getGardenVoiceKey(GARDEN_SENTENCES[0], 'en');
+  const key = getGardenVoiceKey(GARDEN_SENTENCES[0]!, 'en');
   await saveGardenVoice(key, new Blob(['original'], { type: 'audio/mp4' }));
   for (const invalid of [
     new Blob([], { type: 'audio/mp4' }),

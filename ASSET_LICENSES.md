@@ -43,3 +43,7 @@ repository's license.
 for this project with a text-only GPT-Image-2 request. No portrait, photograph
 or reference image was submitted. The bundled Sean portrait was masked locally
 on its original pixel canvas; device-selected portraits are not modified.
+
+## Garden story drawings
+
+`public/assets/garden/story-art.svg` contains original vector illustrations of the garden, fruit and plant stages made for this game. It contains no uploaded or personal media. The story scenes also reuse the existing bundled paintings.

@@ -6,6 +6,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createInitialProgress } from '../domain/progression';
 import type { ToddlerSettings } from '../domain/types';
 import { GARDEN_CLIP_TIMEOUT_MS, GARDEN_RESPONSE_PAUSE_MS, WordGardenGame } from './WordGardenGame';
+import { GARDEN_SENTENCES, makeGardenVisit } from '../content/gardenSentences';
+import type * as GardenContent from '../content/gardenSentences';
 
 const mocks = vi.hoisted(() => ({
   cancel: vi.fn(),
@@ -21,6 +23,10 @@ vi.mock('../services/recordedSpeech', () => ({ recordedSpeechPlayer: { cancel: m
 vi.mock('../services/gardenVoiceStorage', () => ({ readGardenVoice: mocks.read }));
 vi.mock('../services/gardenVoiceMedia', () => ({ playGardenVoice: mocks.play }));
 vi.mock('./useGardenAvatar', () => ({ useGardenAvatar: () => mocks.avatar }));
+vi.mock('../content/gardenSentences', async (importOriginal) => {
+  const actual = await importOriginal<typeof GardenContent>();
+  return { ...actual, makeGardenVisit: vi.fn(() => actual.GARDEN_SENTENCES) };
+});
 
 describe('Word Garden sentence train', () => {
   let container: HTMLDivElement;
@@ -39,6 +45,7 @@ describe('Word Garden sentence train', () => {
     mocks.read.mockReset().mockResolvedValue(null);
     mocks.play.mockReset().mockResolvedValue(true);
     mocks.train.mockReset();
+    vi.mocked(makeGardenVisit).mockClear();
     mocks.avatar = 'blob:locally-selected-avatar';
     onCompleteRound.mockReset();
   });
@@ -74,6 +81,66 @@ describe('Word Garden sentence train', () => {
   const advance = async (ms = GARDEN_RESPONSE_PAUSE_MS) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); };
   const spoken = () => mocks.speak.mock.calls.map(([clip]) => clip.text);
 
+  it('opens an enlarged action without taking the next target and closes it without a dismissal', async () => {
+    await render({ quietMode: true });
+    await tap(); await tap();
+    const preview = board().querySelector('.sentence-train__theater');
+    expect(preview).not.toBeNull();
+    expect(preview?.getAttribute('aria-hidden')).toBe('true');
+    expect(preview?.querySelector('button,[tabindex]')).toBeNull();
+    const object = target();
+    expect(object.dataset.gardenPart).toBe('object');
+    expect(document.activeElement).toBe(object);
+    await advance(2_500);
+    expect(board().querySelector('.sentence-train__theater')).toBeNull();
+    expect(target()).toBe(object);
+    await tap(container.querySelector<HTMLButtonElement>('.rail-button--replay')!);
+    expect(board().querySelector('.sentence-train__theater')).not.toBeNull();
+    await tap(object);
+    expect(board().querySelector('.sentence-train__theater')).toBeNull();
+    expect(next()).toBe(document.activeElement);
+  });
+
+  it('starts a different intact story on route re-entry, not on settings changes', async () => {
+    const actual = await vi.importActual<typeof GardenContent>('../content/gardenSentences');
+    vi.mocked(makeGardenVisit).mockImplementation(previous => actual.makeGardenVisit(previous, 3));
+    try {
+      await render({ quietMode: true });
+      const initial = board().getAttribute('data-story');
+      await tap(); await render({ quietMode: true, languageMode: 'en' });
+      expect(board().getAttribute('data-story')).toBe(initial);
+      expect(makeGardenVisit).toHaveBeenCalledTimes(1);
+      await act(async () => root!.unmount());
+      root = createRoot(container);
+      await render({ quietMode: true });
+      expect(board().getAttribute('data-story')).not.toBe(initial);
+      expect(target().textContent).toContain('שון');
+      expect(makeGardenVisit).toHaveBeenLastCalledWith(initial);
+    } finally {
+      vi.mocked(makeGardenVisit).mockImplementation(() => GARDEN_SENTENCES);
+    }
+  });
+  it('stays in the first story after a replay and continues with its real next subject', async () => {
+    await render({ quietMode: true });
+    for (const id of ['banana', 'banana-peel']) {
+      expect(board().getAttribute('data-sentence')).toBe(id);
+      if (id === 'banana-peel') {
+        expect(target().textContent).toBe('הקליפה↑');
+        expect(heading()).toBe('מה בתמונה?');
+        expect(board().querySelector('img[src^="blob:"]')).toBeNull();
+        await tap();
+        expect(heading()).toBe('מה קורה לקליפה?');
+        await tap(container.querySelector<HTMLButtonElement>('.rail-button--replay')!);
+        await render({ quietMode: true, reducedMotion: true });
+        expect(board().getAttribute('data-sentence')).toBe(id);
+        expect(target().dataset.gardenPart).toBe('action');
+        expect(board().querySelector('img[src^="blob:"]')).toBeNull();
+      } else {
+        await tap(); await tap(); await tap(); await tap(next());
+      }
+    }
+  });
+
   it.each(['he', 'en'] as const)('arrives, dwells and automatically opens exactly one next actor in %s', async (languageMode) => {
     await render({ languageMode });
     await tap(); await tap(); await tap();
@@ -89,10 +156,10 @@ describe('Word Garden sentence train', () => {
     await advance(949);
     expect(next()).not.toBeNull();
     await advance(1);
-    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(target()).toBe(document.activeElement);
     await advance(10_000);
-    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
   });
 
@@ -104,7 +171,7 @@ describe('Word Garden sentence train', () => {
     await advance(1);
     await tap(); await tap(); await tap();
     await advance(2_400); await advance(950);
-    expect(board().getAttribute('data-sentence')).toBe('germinate');
+    expect(board().getAttribute('data-sentence')).toBe('banana-bucket');
     expect(onCompleteRound).toHaveBeenCalledTimes(2);
     expect(mocks.train).not.toHaveBeenCalled();
     expect(mocks.speak).not.toHaveBeenCalled();
@@ -118,7 +185,7 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-sentence')).toBe('banana');
     await act(async () => { window.dispatchEvent(new Event('pageshow')); });
     await advance(2_400); await advance(950);
-    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(mocks.train).toHaveBeenCalledTimes(1);
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
   });
@@ -135,7 +202,7 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-sentence')).toBe('banana');
     await act(async () => finishClip());
     await advance(50);
-    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(mocks.train).toHaveBeenCalledTimes(1);
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
   });
@@ -188,7 +255,7 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-departed')).toBe('true');
     expect(container.querySelectorAll('.sentence-train__next')).toHaveLength(1);
     await tap(next());
-    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(target().dataset.gardenPart).toBe('actor');
   });
 
@@ -241,19 +308,23 @@ describe('Word Garden sentence train', () => {
     await render({ languageMode: 'en', quietMode: true, reducedMotion: true });
     expect(container.querySelector('main')?.dir).toBe('ltr');
     expect(container.querySelector('main')?.classList.contains('reduced-motion')).toBe(true);
-    for (const id of ['banana', 'dates', 'germinate', 'bury', 'water', 'palm', 'token', 'persimmon']) {
+    for (const { id, isSean, art, model } of GARDEN_SENTENCES) {
       expect(board().getAttribute('data-sentence')).toBe(id);
       await tap(); await tap();
-      expect(board().querySelector('.sentence-train__action')?.getAttribute('data-acted')).toBe('true');
-      if (id === 'bury') expect(board().querySelector('.sentence-train__pit')).not.toBeNull();
-      if (id === 'water') expect(board().querySelectorAll('.garden-drop')).toHaveLength(3);
-      if (id === 'palm') expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('href')).toContain('date-palm-tree.webp');
-      if (id === 'token') expect(board().querySelector('.sentence-train__recipient')).not.toBeNull();
+      const preview = board().querySelector('.sentence-train__theater .sentence-train__action')!;
+      expect(preview.getAttribute('data-acted')).toBe('true');
+      expect(!!preview.querySelector('foreignObject')).toBe(isSean);
+      expect(preview.querySelector('image,use,.sentence-train__pit'), id).not.toBeNull();
+      if (art.motion === 'bury') expect(preview.querySelector('.sentence-train__pit')).not.toBeNull();
+      if (art.motion === 'water') expect(preview.querySelectorAll('.garden-drop')).toHaveLength(3);
+      if (art.motion === 'grow') expect(preview.querySelector('.garden-palm')?.getAttribute('href')).toContain('date-palm-tree.webp');
       await tap();
       expect(board().getAttribute('data-departed')).toBe('true');
+      expect(heading()).toBe(model.en);
       await tap(next());
     }
-    expect(onCompleteRound).toHaveBeenCalledTimes(8);
+    expect(onCompleteRound).toHaveBeenCalledTimes(24);
+    expect(makeGardenVisit).toHaveBeenCalledTimes(1);
     expect(mocks.speak).not.toHaveBeenCalled();
     expect(mocks.read).not.toHaveBeenCalled();
     expect(board().getAttribute('data-sentence')).toBe('banana');
@@ -297,7 +368,7 @@ describe('Word Garden sentence train', () => {
     expect(board().textContent).toContain('Sean eats a banana');
     expect(board().getAttribute('data-departed')).toBe('true');
     await tap(next());
-    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(target().dataset.gardenPart).toBe('actor');
   });
 
@@ -365,7 +436,7 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-departed')).toBe('true');
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
     await tap(next());
-    expect(target().textContent).toContain('שון');
-    expect(board().getAttribute('data-sentence')).toBe('dates');
+    expect(target().textContent).toContain('הקליפה');
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
   });
 });

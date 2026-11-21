@@ -126,9 +126,9 @@ function VoiceEditor({ voiceKey, sentence, language }: { voiceKey: string; sente
 
 export function GardenVoiceManager() {
   const [language, setLanguage] = useState<GardenVoiceLanguage>('he');
-  const [sentenceId, setSentenceId] = useState<string>(GARDEN_SENTENCES[0].id);
-  const sentence = GARDEN_SENTENCES.find((item) => item.id === sentenceId) ?? GARDEN_SENTENCES[0];
-  const model = sentence.seanModel;
+  const [sentenceId, setSentenceId] = useState<string>(GARDEN_SENTENCES[0]!.id);
+  const sentence = GARDEN_SENTENCES.find((item) => item.id === sentenceId) ?? GARDEN_SENTENCES[0]!;
+  const model = sentence.model;
   const voiceKey = getGardenVoiceKey(sentence, language);
   return (
     <section className="caregiver-card garden-voice" aria-labelledby="garden-voice-title">
@@ -143,7 +143,7 @@ export function GardenVoiceManager() {
         </label>
         <label>משפט להקלטה
           <select value={sentenceId} onChange={(event) => setSentenceId(event.target.value)}>
-            {GARDEN_SENTENCES.map((item) => <option key={item.id} value={item.id}>{item.seanModel[language]}</option>)}
+            {GARDEN_SENTENCES.map((item) => <option key={item.id} value={item.id}>{item.model[language]}</option>)}
           </select>
         </label>
       </div>

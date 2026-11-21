@@ -19,7 +19,7 @@ const EATS = line('אוֹכֵל', 'eats');
 const PEEL = line('הַקְּלִיפָּה', 'The peel');
 const SPROUT = line('הַנֵּבֶט', 'The sprout');
 
-function beat(id: string, subject: GardenLine, action: GardenLine, object: GardenLine,
+function beat<const Id extends string>(id: Id, subject: GardenLine, action: GardenLine, object: GardenLine,
   actionQuestion: GardenLine, objectQuestion: GardenLine, connector?: GardenLine) {
   const words = [subject, action, object] as const;
   const parts = connector ? [connector, ...words] : words;

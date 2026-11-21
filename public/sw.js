@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v32';
+const CACHE_NAME = 'sean-learning-adventure-v33';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -46,9 +46,15 @@ const APP_SHELL = [
   '/assets/garden/persimmon.webp',
   '/assets/garden/sean-avatar.webp',
   '/assets/garden/station.webp',
+  '/assets/garden/story-art.svg',
   '/assets/garden/token.webp',
   '/assets/garden/watering-can.webp',
   '/speech/manifest.json',
+  '/speech/manifest.json?rev=garden-stories-v1',
+  '/speech/garden-question-he-IL-v1.mp3',
+  '/speech/garden-stories-he-IL-v1.mp3',
+  '/speech/garden-stories-en-GB-v1.mp3',
+  '/speech/garden-stories-en-US-v1.mp3',
   '/speech/he-IL.mp3',
   '/speech/en-US.mp3',
   '/speech/en-GB.mp3',
@@ -77,7 +83,20 @@ self.addEventListener('install', (event) => {
           .filter((path) => path?.startsWith('/assets/'));
         const cache = await caches.open(CACHE_NAME);
         await cache.put('/index.html', response);
-        await cache.addAll([...APP_SHELL, ...buildAssets]);
+        await cache.addAll([...APP_SHELL, ...buildAssets].map((path) =>
+          path.startsWith('/speech/manifest.json') ? new Request(path, { cache: 'reload' }) : path));
+        // Already-open v32 tabs still request the plain manifest and its old
+        // sentence IDs. New code uses the revision URL; both share the unchanged base sprites.
+        const previous = await caches.match('/speech/manifest.json', { cacheName: 'sean-learning-adventure-v32' });
+        if (previous) {
+          const old = await previous.json().catch(() => null);
+          if (old?.version === 2 && old.entries) {
+            const current = await (await cache.match('/speech/manifest.json')).json();
+            await cache.put('/speech/manifest.json', Response.json({
+              ...current, entries: { ...old.entries, ...current.entries },
+            }));
+          }
+        }
         await self.skipWaiting();
       }),
   );

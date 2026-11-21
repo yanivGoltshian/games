@@ -9,6 +9,7 @@ assert(url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostn
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const baseline = mode === 'baseline';
+const visualOnly = mode === 'visual';
 const fixtures = [
   ['phone', 390, 844, 'he', 'normal'],
   ['phone-landscape', 844, 390, 'en', 'app'],
@@ -29,7 +30,7 @@ const synthetic = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 456 936"
 </svg>`;
 try {
   await mkdir(output, { recursive: true });
-  for (const [name, width, height, languageMode, motion] of baseline ? fixtures.slice(0, 1) : fixtures) {
+  for (const [name, width, height, languageMode, motion] of baseline || visualOnly ? fixtures.filter((f) => f[4] === 'normal') : fixtures) {
     const context = await browser.newContext({
       viewport: { width, height }, isMobile: true, hasTouch: true, serviceWorkers: 'block',
       reducedMotion: motion === 'system' ? 'reduce' : 'no-preference',
@@ -41,9 +42,13 @@ try {
         if (request.pathname.endsWith('sean-avatar.webp')) return route.fulfill({ contentType: 'image/svg+xml', body: synthetic });
         return route.continue();
       });
-      await context.addInitScript(({ languageMode, motion }) => localStorage.setItem('sean-learning-adventure-progress', JSON.stringify({
-        version: 6, settings: { languageMode, quietMode: true, reducedMotion: motion === 'app' },
-      })), { languageMode, motion });
+      await context.addInitScript(({ languageMode, motion }) => {
+        // Same opening banana for the before/after comparison, no test flags in the app.
+        Math.random = () => 2 / 0x100000000;
+        localStorage.setItem('sean-learning-adventure-progress', JSON.stringify({
+          version: 6, settings: { languageMode, quietMode: true, reducedMotion: motion === 'app' },
+        }));
+      }, { languageMode, motion });
       const page = await context.newPage();
       page.setDefaultTimeout(4_500);
       page.on('pageerror', (err) => errors.push(`${name}: ${err.message}`));
@@ -80,6 +85,24 @@ try {
       check(held === 'action', `${name}: 550ms hold + 18px slip advances exactly one card`);
       if (held === 'actor') await target.tap(); // Independent auto-advance check even on the released build.
       await target.tap();
+      assert.equal(await board.getAttribute('data-sentence'), 'banana');
+      const scene = board.locator(baseline ? '[data-garden-part="action"] .garden-scene' : '.sentence-train__theater .garden-scene');
+      const sceneBox = await scene.boundingBox();
+      const actorScale = await scene.locator('.sentence-train__actor').evaluate(el => el.getScreenCTM().a);
+      if (motion === 'normal') {
+        await page.waitForTimeout(550);
+        await page.screenshot({ path: join(output, `${name}-bite-synthetic.png`) });
+      }
+      if (!baseline) {
+        const cardScale = await board.locator('[data-garden-part="action"] .sentence-train__actor').evaluate(el => el.getScreenCTM().a);
+        if (motion === 'normal') {
+          check(sceneBox.width > width * .58 && actorScale > cardScale * 1.6, `${name}: substantial enlargement of the actual actor`);
+        }
+        check(await target.evaluate(el => {
+          const b = el.getBoundingClientRect();
+          return el.contains(document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2));
+        }), `${name}: object still exposed throughout playback`);
+      }
       const startX = (await board.locator('.sentence-train__engine').boundingBox()).x;
       await target.tap(); await next.waitFor();
       const started = Date.now();
@@ -98,30 +121,48 @@ try {
       if (!baseline) await page.screenshot({ path: join(output, `${name}-station-synthetic.png`) });
       await page.waitForTimeout(1_000);
       const automatic = await board.getAttribute('data-sentence');
-      check(automatic === 'dates', `${name}: next sentence without input`);
+      check(automatic === (baseline ? 'dates' : 'banana-peel'), `${name}: next sentence without input`);
       results.push({ name, width, height, languageMode, motion, brands, idle, held, startX, midX, endX: end.x,
-        automatic, observedAfterMs: Date.now() - started });
-      if (!baseline && name === 'ipad' && automatic === 'dates') {
-        for (const id of ['dates', 'germinate', 'bury', 'water', 'palm', 'token', 'persimmon', 'banana']) {
-          assert.equal(await board.getAttribute('data-sentence'), id);
-          await target.tap(); await target.tap();
-          await page.waitForTimeout(880);
-          await board.locator('.sentence-train__action').screenshot({ path: join(output, `scene-${id}-synthetic.png`) });
-          await target.tap(); await next.tap();
-        }
+        sceneBox, actorScale, automatic, observedAfterMs: Date.now() - started });
+      if (!baseline && motion === 'normal') {
+        await target.tap(); await target.tap();
+        const plant = board.locator('.sentence-train__theater');
+        assert.equal(await plant.locator('.sentence-train__actor').count(), 0);
+        assert(await plant.locator('use[href$="#peel"]').evaluate(el => el.getBBox().width > 0));
+        await page.waitForTimeout(550);
+        await page.screenshot({ path: join(output, `${name}-peel-synthetic.png`) });
+        await plant.waitFor({ state: 'detached' });
+        assert.equal(await target.getAttribute('data-garden-part'), 'object');
       }
     } finally { await context.close(); }
   }
-  if (!baseline) {
-    // Separate fresh profile, installed build, no overrides. Only synthetic
-    // screenshots above are shareable; local visual review below is opt-in.
-    const context = await browser.newContext({ viewport: { width: 820, height: 1180 }, hasTouch: true, isMobile: true });
+  if (!baseline && !visualOnly) {
+    // Clean installed profiles. The only offline screenshot is a non-person
+    // plant scene; the bundled portrait is checked by digest, never captured.
+    for (const [name, width, height] of fixtures.filter(f => f[4] === 'normal')) {
+    const context = await browser.newContext({ viewport: { width, height }, hasTouch: true, isMobile: true });
     try {
       const page = await context.newPage();
       page.setDefaultTimeout(6_000);
-      await context.addInitScript(() => localStorage.setItem('sean-learning-adventure-progress', JSON.stringify({
-        version: 6, settings: { languageMode: 'he', quietMode: true },
-      })));
+      await context.addInitScript(({ name }) => {
+        Math.random = () => 3 / 0x100000000;
+        const checkVoice = location.search === '?voice-proof';
+        localStorage.setItem('sean-learning-adventure-progress', JSON.stringify({
+          version: 6, settings: { languageMode: checkVoice && name === 'ipad' ? 'en' : 'he',
+            englishVoiceLocale: 'en-US', quietMode: !checkVoice },
+        }));
+        // Observe the real player's decoded-buffer slices, without replacing sound or advancing its clock.
+        window.gardenPlayback = [];
+        const start = AudioBufferSourceNode.prototype.start;
+        AudioBufferSourceNode.prototype.start = function (...args) {
+          const began = this.context.currentTime;
+          const receipt = { offset: args[1], duration: args[2], elapsed: 0, state: this.context.state };
+          this.addEventListener('ended', () => { receipt.elapsed = this.context.currentTime - began; });
+          const result = start.apply(this, args);
+          window.gardenPlayback.push(receipt);
+          return result;
+        };
+      }, { name });
       await page.goto(`${url.origin}/#/games/wordGarden`);
       await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
       await context.setOffline(true);
@@ -145,25 +186,52 @@ try {
             image.close();
           }
         }
-        return { caches: await caches.keys(), hashes, alpha };
+        const manifest = await (await fetch('/speech/manifest.json?rev=garden-stories-v1')).json();
+        const clips = {};
+        for (const key of ['he-IL\u0000שורש לבן צומח לתוך המים', 'en-US\u0000A white root grows down into the water',
+          'en-GB\u0000A white root grows down into the water', 'he-IL\u0000אפשר להגיד את כל המשפט?']) {
+          const entry = manifest.entries[key];
+          const buffer = await (await fetch(entry.src)).arrayBuffer();
+          if (!entry.duration || buffer.byteLength < 1000) throw Error(`Missing offline clip: ${key}`);
+          clips[key] = { ...entry, bytes: buffer.byteLength };
+        }
+        return { caches: await caches.keys(), hashes, alpha, clips };
       });
-      assert(receipt.caches.includes('sean-learning-adventure-v32'));
+      assert(receipt.caches.includes('sean-learning-adventure-v33'));
       assert.deepEqual(receipt.alpha, [0, 0, 0, 0, 0, 0, 255, 255]);
       assert.equal(receipt.hashes.station, '9a454e7148fe17f82a5798c214f4a932239af503e208b63dc460c9ac5eac10a6');
       assert.equal(receipt.hashes['sean-avatar'], '628e5081c1098ab6aa9a7f28c8a4fdf09aaababf31a95014f3068a4ce86a68b8');
-      await writeFile(join(output, 'offline-assets.json'), JSON.stringify(receipt, null, 2));
+      await writeFile(join(output, `${name}-offline-assets.json`), JSON.stringify(receipt, null, 2));
       const target = page.locator('.sentence-train__card.is-target');
-      for (const id of ['banana', 'dates', 'germinate', 'bury', 'water']) {
+      for (const id of ['avocado-water', 'avocado-root', 'avocado-shoot', 'avocado-soil']) {
         assert.equal(await page.locator('.sentence-train').getAttribute('data-sentence'), id);
         await target.tap(); await target.tap();
-        if (id === 'water' && process.env.GARDEN_LOCAL_REVIEW_PATH) {
-          assert.equal(await page.locator('img[src^="blob:"]').count(), 0);
-          await page.waitForTimeout(560);
-          await page.screenshot({ path: process.env.GARDEN_LOCAL_REVIEW_PATH });
+        if (id === 'avocado-root') {
+          const preview = page.locator('.sentence-train__theater');
+          assert.equal(await preview.locator('foreignObject').count(), 0);
+          assert(await preview.locator('use[href$="#root"]').evaluate(el => el.getBBox().width > 0));
+          await page.waitForTimeout(760);
+          await page.screenshot({ path: join(output, `${name}-offline-root.png`) });
         }
         await target.tap(); await page.locator('.sentence-train__next').tap();
       }
+      await page.goto(`${url.origin}/?voice-proof#/games/wordGarden`);
+      const checks = await page.evaluate(async (english) => {
+        const manifest = await (await fetch('/speech/manifest.json?rev=garden-stories-v1')).json();
+        const keys = english ? ['en-US\u0000Can you say the whole sentence?', 'en-US\u0000Sean puts an avocado pit in water']
+          : ['he-IL\u0000אפשר להגיד את כל המשפט?', 'he-IL\u0000שון שם גרעין אבוקדו במים'];
+        return keys.map(key => ({ key, ...manifest.entries[key] }));
+      }, name === 'ipad');
+      await target.tap(); await target.tap(); await target.tap();
+      await page.locator('.sentence-train__next').waitFor({ timeout: 20_000 });
+      const playback = await page.evaluate(() => window.gardenPlayback);
+      for (const clip of checks) {
+        assert(playback.some(item => item.elapsed >= clip.duration - .05 && item.state === 'running'
+          && item.offset === clip.offset && item.duration === clip.duration), `${name}: offline app plays ${clip.key}`);
+      }
+      await writeFile(join(output, `${name}-offline-playback.json`), JSON.stringify({ checks, playback }, null, 2));
     } finally { await context.close(); }
+    }
   }
 } finally {
   await browser.close();

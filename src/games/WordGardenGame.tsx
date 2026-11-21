@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { GameShell } from '../components/GameShell';
 import { gameMeta } from '../content/games';
 import {
-  GARDEN_DEFAULT_AVATAR, GARDEN_NEXT_SENTENCE, GARDEN_PART_QUESTIONS, GARDEN_SENTENCE_QUESTION, GARDEN_SENTENCES,
-  getGardenSentenceLines, getGardenVoiceKey, type GardenSentence,
+  GARDEN_DEFAULT_AVATAR, GARDEN_NEXT_SENTENCE, GARDEN_SENTENCE_QUESTION,
+  makeGardenVisit, getGardenVoiceKey, type GardenSentence,
 } from '../content/gardenSentences';
 import { gardenSegments, type GardenLine } from '../content/wordGarden';
 import { readAppLifecycleState, subscribeAppLifecycle } from '../platform/useAppLifecycle';
@@ -15,12 +15,15 @@ import { readGardenVoice } from '../services/gardenVoiceStorage';
 import type { ToddlerGameProps } from './types';
 import { useGardenAvatar } from './useGardenAvatar';
 import { GardenActionScene } from './GardenActionScene';
+import { GardenDrawing } from './GardenStoryScene';
 import './wordGardenGame.css';
 
 export const GARDEN_RESPONSE_PAUSE_MS = 1_300;
 export const GARDEN_CLIP_TIMEOUT_MS = 5_000;
 const TRAVEL_MS = 2_400;
 const STATION_DWELL_MS = 950;
+const SHOW_ACTION_MS = 2_300;
+let previousFirstStory: string | undefined;
 const PARTS = ['actor', 'action', 'object'] as const;
 type Part = 0 | 1 | 2 | 3;
 
@@ -51,9 +54,13 @@ function SeanArt({ url, english, onLoad, onError }: SeanArtProps) {
 function Picture({ sentence, index, art, acted }: {
   sentence: GardenSentence; index: number; art: SeanArtProps; acted: boolean;
 }) {
-  if (index === 0) return <div className="sentence-train__picture"><SeanArt {...art} /></div>;
-  if (index === 2) {
-    return <div className="sentence-train__picture"><img src={sentence.image} alt="" draggable={false} /></div>;
+  if (index === 0 && sentence.isSean) return <div className="sentence-train__picture"><SeanArt {...art} /></div>;
+  if (index !== 1) {
+    const src = index === 0 ? sentence.art.subject! : sentence.art.object;
+    return <div className="sentence-train__picture">
+      {src.startsWith('#') ? <svg viewBox="0 0 100 100" aria-hidden="true"><GardenDrawing src={src} /></svg>
+        : <img src={src} alt="" draggable={false} />}
+    </div>;
   }
   return <GardenActionScene sentence={sentence} acted={acted} original={art.url === GARDEN_DEFAULT_AVATAR} actor={<SeanArt {...art} />} />;
 }
@@ -118,7 +125,11 @@ function playNarrator(segment: SpeechSegment, volume: number, signal: AbortSigna
 }
 
 export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }: ToddlerGameProps) {
+  const [visit] = useState(() => makeGardenVisit(previousFirstStory));
+  useEffect(() => { previousFirstStory = visit[0]!.story; }, [visit]);
   const [sentenceIndex, setSentenceIndex] = useState(0);
+  const sentence = visit[sentenceIndex]!;
+  const [actionTake, setActionTake] = useState(0);
   const [part, setPart] = useState<Part>(0);
   const [journey, setJourney] = useState<'waiting' | 'travel' | 'station'>('waiting');
   const trainReady = journey !== 'waiting';
@@ -133,7 +144,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
   const [defaultStatus, setDefaultStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const override = selectedAvatar === unreadableOverride ? null : selectedAvatar;
   const avatar = override ?? (defaultStatus === 'failed' ? null : GARDEN_DEFAULT_AVATAR);
-  const actorCue = override || defaultStatus === 'ready' ? 'picture' : defaultStatus === 'failed' ? 'card' : 'loading';
+  const actorCue = !sentence.isSean || override || defaultStatus === 'ready' ? 'picture' : defaultStatus === 'failed' ? 'card' : 'loading';
   const art: SeanArtProps = {
     url: avatar,
     english,
@@ -144,13 +155,12 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     },
   };
   const voiceEnabled = mediaReady && !settings.quietMode && settings.soundLevel > 0;
-  const sentence = GARDEN_SENTENCES[sentenceIndex]!;
-  const { words, model } = getGardenSentenceLines(sentence);
+  const { words, model } = sentence;
   const localized = (line: GardenLine) => english ? line.en : line.he;
   const prompts = [
-    avatar ? localized(GARDEN_PART_QUESTIONS[0]) : english ? 'Tap Sean’s card' : 'נוגעים בקלף של שון',
-    localized(GARDEN_PART_QUESTIONS[1]),
-    localized(sentence.objectQuestion),
+    actorCue !== 'card' ? localized(sentence.questions[0]) : english ? 'Tap Sean’s card' : 'נוגעים בקלף של שון',
+    localized(sentence.questions[1]),
+    localized(sentence.questions[2]),
   ];
   const step = useRef<Part>(0);
   const run = useRef<AbortController | null>(null);
@@ -189,7 +199,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     const controller = new AbortController();
     run.current = controller;
     const { signal } = controller;
-    const { words: currentWords, model: currentModel } = getGardenSentenceLines(sentence);
+    const { words: currentWords, model: currentModel } = sentence;
     const speak = async (value: GardenLine, role: 'question' | 'word' | 'model' | 'next') => {
       if (signal.aborted) return;
       const segments = gardenSegments(value, settings.languageMode, settings.englishVoiceLocale);
@@ -211,7 +221,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     const previousWord = pendingWord.current;
     pendingWord.current = null;
     setPhase('question');
-    const question = index === 3 ? GARDEN_SENTENCE_QUESTION : index === 2 ? sentence.objectQuestion : GARDEN_PART_QUESTIONS[index];
+    const question = index === 3 ? GARDEN_SENTENCE_QUESTION : sentence.questions[index];
     void (async () => {
       if (previousWord !== null) await speak(currentWords[previousWord], 'word');
       if (signal.aborted) return;
@@ -258,6 +268,11 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
   }, [cancel]);
   const activeActorCue = part === 0 ? actorCue : null;
   useEffect(() => {
+    if (!actionTake || !foreground) return;
+    const timer = setTimeout(() => setActionTake(0), SHOW_ACTION_MS);
+    return () => clearTimeout(timer);
+  }, [actionTake, foreground]);
+  useEffect(() => {
     latestTurn.current(part);
     if (focusOnChange.current && part < 3) {
       activeCard.current?.focus();
@@ -277,6 +292,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     soundService.playTap(settings);
     focusOnChange.current = keyboard;
     pendingWord.current = modeled.current === index ? null : index;
+    setActionTake(take => index === 1 ? take + 1 : 0);
     step.current = (index + 1) as Part;
     setPart(step.current);
     if (index === 2) {
@@ -315,7 +331,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     setReplaying(false);
     setJourney('waiting');
     setPart(0);
-    setSentenceIndex((current) => (current + 1) % GARDEN_SENTENCES.length);
+    setSentenceIndex((current) => (current + 1) % visit.length);
   };
   const autoNext = useRef(() => {});
   autoNext.current = () => next(document.activeElement === nextButton.current, true);
@@ -347,14 +363,21 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
       reducedMotion={settings.reducedMotion}
       languageMode={settings.languageMode}
       onHome={() => { visible.current = false; cancel(); onBack(); }}
-      onRepeat={() => speakTurn(part, true)}
+      onRepeat={() => {
+        if (part === 1 || part === 2) setActionTake(take => take + 1);
+        speakTurn(part, true);
+      }}
       homeLabel={english ? 'Back home' : 'חזרה לבית'}
       replayLabel={english ? 'Hear this part again' : 'השמיעו שוב'}
       liveStatus={heading}
     >
-      <div className="sentence-train" data-sentence={sentence.id} data-part={part} data-phase={phase} data-departed={trainReady}
+      <div className="sentence-train" data-story={sentence.story} data-sentence={sentence.id} data-part={part} data-phase={phase} data-departed={trainReady}
         data-journey={journey} data-paused={!foreground || replaying} style={{ '--travel-time': `${TRAVEL_MS}ms` } as CSSProperties}>
         <h1 className="sentence-train__prompt">{heading}</h1>
+        <div className="sentence-train__play">
+        {actionTake !== 0 && <div key={actionTake} className="sentence-train__theater" aria-hidden="true">
+          <Picture sentence={sentence} index={1} art={art} acted />
+        </div>}
         <div className="sentence-train__cards">
           {PARTS.map((name, i) => {
             const index = i as 0 | 1 | 2;
@@ -364,7 +387,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
             return index === part ? (
               <button
                 key={name} type="button" className="sentence-train__card is-target" data-garden-part={name}
-                aria-label={index === 0 ? (english ? 'Sean’s card' : 'הקלף של שון') : undefined}
+                aria-label={index === 0 && sentence.isSean ? (english ? 'Sean’s card' : 'הקלף של שון') : undefined}
                 ref={activeCard} data-pressed={pressed} onPointerDown={touchStart} onPointerMove={checkSlip}
                 onPointerUp={(event) => {
                   const start = checkSlip(event);
@@ -388,6 +411,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
               </div>
             );
           })}
+        </div>
         </div>
         <div className="sentence-train__track" aria-hidden="true">
           <img className="sentence-train__station" src="/assets/garden/station.webp" alt="" draggable={false} />
