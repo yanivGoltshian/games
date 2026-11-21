@@ -35,4 +35,18 @@
   <symbol id="drops" viewBox="0 0 100 100"><g fill="url(#blue)" stroke="#508da5" stroke-width="1.8"><path d="M28 19Q7 46 22 51q22 8 6-32Z"/><path d="M63 6Q44 29 57 35q21 6 6-29Z"/><path d="M58 55q-24 29-8 35 25 9 8-35Z"/></g></symbol>
   <symbol id="rain" viewBox="0 0 100 100"><use href="#drops" x="15" y="43" width="71" height="57"/><path d="M18 57C1 55 6 31 21 32q0-19 17-20 11-11 24-2 8 2 12 15 16-1 19 13 4 17-13 18Z" fill="#a9c4ca" stroke="#748f9a" stroke-width="2.5"/></symbol>
   <symbol id="tops" viewBox="0 0 100 100"><g fill="none" stroke-linecap="round" stroke="#6d944d" stroke-width="3.5"><path d="M49 92 46 22m3 68L25 40m24 51 24-53m-26 27-13-9m14-3 13-16m-14 1-10-11m13 49 18-11m-28 8-18-9m10-10 1-15m22 37 20-7m-11-11 14-5"/></g><g fill="#87a653"><ellipse cx="45" cy="18" rx="4" ry="9"/><ellipse cx="24" cy="37" rx="4" ry="9" transform="rotate(-39 24 37)"/><ellipse cx="74" cy="35" rx="4" ry="9" transform="rotate(33 74 35)"/></g></symbol>
+  <symbol id="bin" viewBox="0 0 100 100">
+    <path d="M17 37 10 18l5-4 12 18Z" fill="#759385" stroke="#3f6254" stroke-width="3"/>
+    <path d="M19 38h64l-6 49q-29 8-51 0Z" fill="#749381" stroke="#456451" stroke-width="3"/>
+    <ellipse cx="51" cy="37" rx="33" ry="6" fill="#3d5549" stroke="#91ad9d" stroke-width="3"/>
+    <path d="m33 50 3 29m13-29 1 31m16-31-2 29" fill="none" stroke="#a9bdaf" stroke-linecap="round" stroke-width="3"/>
+    <circle cx="34" cy="91" r="5" fill="#43574e"/><circle cx="70" cy="91" r="5" fill="#43574e"/>
+  </symbol>
+  <symbol id="bin-peel" viewBox="0 0 100 100"><use href="#bin" width="100" height="100"/><use href="#peel" x="28" y="8" width="47" height="34"/></symbol>
+  <symbol id="avocado-flesh" viewBox="0 0 100 100">
+    <path d="M47 6q14-2 18 18c2 16 23 29 22 47-1 19-20 26-39 25S11 84 13 68c1-17 14-26 20-44Q38 7 47 6Z" fill="#c3d877" stroke="#527749" stroke-width="5"/>
+    <path d="M48 18q8-1 11 15c4 14 20 26 18 40-2 11-14 16-29 15S23 81 24 71c0-16 14-28 18-44Z" fill="#e8e29b"/>
+    <ellipse cx="50" cy="65" rx="16" ry="20" fill="#d6cc7e"/>
+    <path d="M37 72q-6-18 9-25" fill="none" stroke="#c2b76a" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
 </svg>

@@ -143,11 +143,11 @@ export function GardenVoiceManager() {
         </label>
         <label>משפט להקלטה
           <select value={sentenceId} onChange={(event) => setSentenceId(event.target.value)}>
-            {GARDEN_SENTENCES.map((item) => <option key={item.id} value={item.id}>{item.model[language]}</option>)}
+            {GARDEN_SENTENCES.map((item) => <option key={item.id} value={item.id}>{language === 'he' ? item.model.spokenHe : item.model.en}</option>)}
           </select>
         </label>
       </div>
-      <VoiceEditor key={voiceKey} voiceKey={voiceKey} language={language} sentence={model[language]} />
+      <VoiceEditor key={voiceKey} voiceKey={voiceKey} language={language} sentence={language === 'he' ? model.spokenHe : model.en} />
     </section>
   );
 }

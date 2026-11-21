@@ -81,7 +81,7 @@ describe('Word Garden sentence train', () => {
   const advance = async (ms = GARDEN_RESPONSE_PAUSE_MS) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); };
   const spoken = () => mocks.speak.mock.calls.map(([clip]) => clip.text);
 
-  it('opens an enlarged action without taking the next target and closes it without a dismissal', async () => {
+  it('keeps the enlarged action through the model until Next, without covering the target', async () => {
     await render({ quietMode: true });
     await tap(); await tap();
     const preview = board().querySelector('.sentence-train__theater');
@@ -92,13 +92,15 @@ describe('Word Garden sentence train', () => {
     expect(object.dataset.gardenPart).toBe('object');
     expect(document.activeElement).toBe(object);
     await advance(2_500);
-    expect(board().querySelector('.sentence-train__theater')).toBeNull();
+    expect(board().querySelector('.sentence-train__theater')).toBe(preview);
     expect(target()).toBe(object);
     await tap(container.querySelector<HTMLButtonElement>('.rail-button--replay')!);
     expect(board().querySelector('.sentence-train__theater')).not.toBeNull();
     await tap(object);
-    expect(board().querySelector('.sentence-train__theater')).toBeNull();
+    expect(board().querySelector('.sentence-train__theater')).not.toBeNull();
     expect(next()).toBe(document.activeElement);
+    await tap(next());
+    expect(board().querySelector('.sentence-train__theater')).toBeNull();
   });
 
   it('starts a different intact story on route re-entry, not on settings changes', async () => {
@@ -114,7 +116,7 @@ describe('Word Garden sentence train', () => {
       root = createRoot(container);
       await render({ quietMode: true });
       expect(board().getAttribute('data-story')).not.toBe(initial);
-      expect(target().textContent).toContain('שון');
+      expect(target().textContent).toContain('שׁוֹן');
       expect(makeGardenVisit).toHaveBeenLastCalledWith(initial);
     } finally {
       vi.mocked(makeGardenVisit).mockImplementation(() => GARDEN_SENTENCES);
@@ -125,11 +127,11 @@ describe('Word Garden sentence train', () => {
     for (const id of ['banana', 'banana-peel']) {
       expect(board().getAttribute('data-sentence')).toBe(id);
       if (id === 'banana-peel') {
-        expect(target().textContent).toBe('הקליפה↑');
-        expect(heading()).toBe('מה בתמונה?');
+        expect(target().textContent).toBe('הַקְּלִיפָּה↑');
+        expect(heading()).toBe('מָה בַּתְּמוּנָה?');
         expect(board().querySelector('img[src^="blob:"]')).toBeNull();
         await tap();
-        expect(heading()).toBe('מה קורה לקליפה?');
+        expect(heading()).toBe('מָה קוֹרֶה לַקְּלִיפָּה?');
         await tap(container.querySelector<HTMLButtonElement>('.rail-button--replay')!);
         await render({ quietMode: true, reducedMotion: true });
         expect(board().getAttribute('data-sentence')).toBe(id);
@@ -141,7 +143,7 @@ describe('Word Garden sentence train', () => {
     }
   });
 
-  it.each(['he', 'en'] as const)('arrives, dwells and automatically opens exactly one next actor in %s', async (languageMode) => {
+  it.each(['he', 'en'] as const)('waits silently at the station until Next in %s', async (languageMode) => {
     await render({ languageMode });
     await tap(); await tap(); await tap();
     expect(mocks.train).not.toHaveBeenCalled();
@@ -153,9 +155,12 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-journey')).toBe('travel');
     await advance(1);
     expect(board().getAttribute('data-journey')).toBe('station');
-    await advance(949);
+    const afterModel = spoken();
+    await advance(60_000);
+    expect(spoken()).toEqual(afterModel);
+    expect(board().getAttribute('data-sentence')).toBe('banana');
     expect(next()).not.toBeNull();
-    await advance(1);
+    await tap(next());
     expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(target()).toBe(document.activeElement);
     await advance(10_000);
@@ -163,7 +168,16 @@ describe('Word Garden sentence train', () => {
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
   });
 
-  it('gives a manual next priority at the last instant, without a stale timer or quiet whistle', async () => {
+  it('lets Next interrupt the question immediately, without a stale model or departure', async () => {
+    await render();
+    await tap(); await tap(); await tap();
+    expect(board().getAttribute('data-departed')).toBe('false');
+    await tap(next()); await advance(12_000);
+    expect(board().getAttribute('data-sentence')).toBe('banana-peel');
+    expect(spoken()).not.toContain('שון אוכל בננה');
+    expect(mocks.train).not.toHaveBeenCalled();
+  });
+  it('advances immediately in quiet mode without a whistle or stale timer', async () => {
     await render({ quietMode: true });
     await tap(); await tap(); await tap();
     await advance(2_400); await advance(949);
@@ -171,7 +185,8 @@ describe('Word Garden sentence train', () => {
     await advance(1);
     await tap(); await tap(); await tap();
     await advance(2_400); await advance(950);
-    expect(board().getAttribute('data-sentence')).toBe('banana-bucket');
+    await tap(next());
+    expect(board().getAttribute('data-sentence')).toBe('banana-bin');
     expect(onCompleteRound).toHaveBeenCalledTimes(2);
     expect(mocks.train).not.toHaveBeenCalled();
     expect(mocks.speak).not.toHaveBeenCalled();
@@ -185,6 +200,8 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-sentence')).toBe('banana');
     await act(async () => { window.dispatchEvent(new Event('pageshow')); });
     await advance(2_400); await advance(950);
+    expect(board().getAttribute('data-sentence')).toBe('banana');
+    await tap(next());
     expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(mocks.train).toHaveBeenCalledTimes(1);
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
@@ -201,7 +218,9 @@ describe('Word Garden sentence train', () => {
     await advance(1_800);
     expect(board().getAttribute('data-sentence')).toBe('banana');
     await act(async () => finishClip());
-    await advance(50);
+    await advance(10_000);
+    expect(board().getAttribute('data-sentence')).toBe('banana');
+    await tap(next());
     expect(board().getAttribute('data-sentence')).toBe('banana-peel');
     expect(mocks.train).toHaveBeenCalledTimes(1);
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
@@ -227,7 +246,7 @@ describe('Word Garden sentence train', () => {
     await render();
     expect(container.querySelector('main')?.dir).toBe('rtl');
     expect(target().dataset.gardenPart).toBe('actor');
-    expect(heading()).toBe('מי בתמונה?');
+    expect(heading()).toBe('מִי בַּתְּמוּנָה?');
     expect(target().getAttribute('aria-label')).toBe('הקלף של שון');
     expect(spoken()).toEqual(['מי בתמונה?']);
     await advance(GARDEN_RESPONSE_PAUSE_MS - 1);
@@ -251,7 +270,7 @@ describe('Word Garden sentence train', () => {
     await advance();
     expect(spoken().at(-1)).toBe('שון אוכל בננה');
     await advance(550);
-    expect(spoken().slice(-2)).toEqual(['שון אוכל בננה', 'עוד משפט']);
+    expect(spoken().at(-1)).toBe('שון אוכל בננה');
     expect(board().getAttribute('data-departed')).toBe('true');
     expect(container.querySelectorAll('.sentence-train__next')).toHaveLength(1);
     await tap(next());
@@ -323,7 +342,7 @@ describe('Word Garden sentence train', () => {
       expect(heading()).toBe(model.en);
       await tap(next());
     }
-    expect(onCompleteRound).toHaveBeenCalledTimes(24);
+    expect(onCompleteRound).toHaveBeenCalledTimes(22);
     expect(makeGardenVisit).toHaveBeenCalledTimes(1);
     expect(mocks.speak).not.toHaveBeenCalled();
     expect(mocks.read).not.toHaveBeenCalled();
@@ -344,7 +363,7 @@ describe('Word Garden sentence train', () => {
     await tap();
     expect(board().querySelector('.sentence-train__moving-object')?.getAttribute('href')).toContain('banana-bitten.webp');
     await tap();
-    expect(board().textContent).toContain('שון אוכל בננה');
+    expect(board().textContent).toContain('שׁוֹן אוֹכֵל בָּנָנָה');
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
   });
 
@@ -376,7 +395,7 @@ describe('Word Garden sentence train', () => {
     mocks.avatar = null;
     await render();
     const actor = target();
-    expect(heading()).toBe('מי בתמונה?');
+    expect(heading()).toBe('מִי בַּתְּמוּנָה?');
     expect(actor.disabled).toBe(false);
     expect(spoken()).toEqual([]);
     await tap();
@@ -436,7 +455,7 @@ describe('Word Garden sentence train', () => {
     expect(board().getAttribute('data-departed')).toBe('true');
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
     await tap(next());
-    expect(target().textContent).toContain('הקליפה');
+    expect(target().textContent).toContain('הַקְּלִיפָּה');
     expect(board().getAttribute('data-sentence')).toBe('banana-peel');
   });
 });

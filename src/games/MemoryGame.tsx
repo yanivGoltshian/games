@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type TransitionEvent } from 'react';
 import { ConceptArt } from '../art/objects';
+import { ShapeArt } from '../art/shapes';
 import { GameShell } from '../components/GameShell';
 import { cardPressFeedback } from '../components/cardPressFeedback';
 import { getMemoryConcept, MEMORY_GARDEN_ART } from '../content/memoryGarden';
@@ -294,7 +295,9 @@ export function MemoryGame({
                     className="memory-face memory-face--front"
                     aria-hidden={flipped ? undefined : true}
                   >
-                    {MEMORY_GARDEN_ART[concept.id]
+                    {'shapeId' in concept
+                      ? <ShapeArt shapeId={concept.shapeId} colorId={concept.colorId} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />
+                      : MEMORY_GARDEN_ART[concept.id]
                       ? <img className="memory-face__art" src={MEMORY_GARDEN_ART[concept.id]} alt={englishOnly ? concept.en : concept.he} data-memory-art={concept.id} draggable={false} />
                       : <ConceptArt conceptId={concept.id} label={englishOnly ? concept.en : concept.he} className="memory-face__art" />}
                   </span>

@@ -1,13 +1,12 @@
 import {
   countingConceptIds,
-  emotionConceptIds,
   learningConcepts,
   originalPuzzleScenes,
   requireLearningConcept,
   sortingItems,
 } from '../content/concepts';
 import { getCountingQuestion } from '../content/countingQuantity';
-import { EARLY_MEMORY_GARDEN_WORDS, memoryConcepts } from '../content/memoryGarden';
+import { memoryTopicPool } from '../content/memoryGarden';
 import {
   SILLY_ALIEN_PROMPT,
   SILLY_ALIEN_WORDS,
@@ -39,19 +38,10 @@ const learningStages: string[][] = ([1, 2, 3] as const).map((level) => learningC
   .filter((concept) => concept.category !== 'emotion' && concept.introducedAtLevel <= level)
   .map((concept) => concept.id));
 
-const memoryStages: string[][] = ([1, 2, 3] as const).map((level) => memoryConcepts
-  .filter((concept) => concept.introducedAtLevel <= level)
-  .map((concept) => concept.id));
-const emotionConceptIdSet = new Set<string>(emotionConceptIds);
-
 export const MEMORY_MAX_PAIR_COUNT = MEMORY_MAX_LEVEL + 1;
 
 export function memoryPairCountForLevel(level: DomainProgress['level']): number {
   return Math.min(MEMORY_MAX_PAIR_COUNT, level + 1);
-}
-
-export function minimumMemoryEmotionPairs(pairCount: number): number {
-  return pairCount >= 4 ? 2 : 1;
 }
 
 export const SORTING_COLOR_LABELS: Record<ColorId, { he: string; en: string }> = {
@@ -321,30 +311,11 @@ function createMemoryCandidate(
   domain: DomainProgress,
   seed: string | number,
   available: readonly string[],
-  featuredWord: string | undefined,
 ): MemoryRound {
   const random = createSeededRandom(seed);
   const pairCount = memoryPairCountForLevel(domain.level);
   const weights = buildPracticeWeights(domain, available);
-  const availableEmotionIds = available.filter((conceptId) => emotionConceptIdSet.has(conceptId));
-  const availableWordIds = available.filter((conceptId) => !emotionConceptIdSet.has(conceptId) && conceptId !== featuredWord);
-  const emotionPairCount = Math.min(
-    minimumMemoryEmotionPairs(pairCount),
-    availableEmotionIds.length,
-  );
-  const selectedEmotions = pickWeightedUnique(
-    availableEmotionIds,
-    weights,
-    emotionPairCount,
-    random,
-  );
-  const selectedWords = pickWeightedUnique(
-    availableWordIds,
-    weights,
-    pairCount - selectedEmotions.length - (featuredWord ? 1 : 0),
-    random,
-  );
-  const pairConceptIds = random.shuffle([...selectedEmotions, ...selectedWords, ...(featuredWord ? [featuredWord] : [])]);
+  const pairConceptIds = pickWeightedUnique(available, weights, pairCount, random);
   const cards = random.shuffle(
     pairConceptIds.flatMap((conceptId, index) => [
       { id: `a-${index}-${conceptId}`, pairId: conceptId, conceptId },
@@ -369,17 +340,12 @@ export function generateMemoryRound(
   seed: string | number,
   recentSignatures: readonly string[] = [],
 ): MemoryRound {
-  const stageIndex = Math.min(memoryStages.length - 1, Math.max(0, domain.level - 1));
-  const available = memoryStages[stageIndex]!;
-  const recentlySeen = new Set(recentSignatures.flatMap((signature) => signature.split(',')));
-  const featuredWord = EARLY_MEMORY_GARDEN_WORDS.find((id) => (
-    available.includes(id) && !domain.concepts[id]?.successes && !recentlySeen.has(id)
-  ));
+  const available = memoryTopicPool(memoryPairCountForLevel(domain.level), domain.level, recentSignatures.at(-1)?.split(',') ?? []);
   return createRepeatSafeRound({
     seed,
     scope: 'memory',
     recentSignatures,
-    create: (candidateSeed) => createMemoryCandidate(domain, candidateSeed, available, featuredWord),
+    create: (candidateSeed) => createMemoryCandidate(domain, candidateSeed, available),
     getSignature: getMemoryRoundSignature,
     getTokens: (round) => round.pairConceptIds,
     getSignatureTokens: (signature) => signature.split(','),
