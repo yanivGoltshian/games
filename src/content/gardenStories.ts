@@ -82,6 +82,16 @@ export const GARDEN_STORIES = [
     beat('carrot-pull', SEAN, line('מוֹשֵׁךְ', 'pulls'), line('גֶּזֶר מֵהָאֲדָמָה', 'a carrot from the soil'),
       DOES, line('מָה הוּא מוֹשֵׁךְ?', 'What does he pull?'), line('לְבַסּוֹף', 'Finally')),
   ] },
+  { id: 'apple', beats: [
+    beat('apple-pick', SEAN, line('קוֹטֵף', 'picks'), line('תַּפּוּחַ מֵהָעֵץ', 'an apple from the tree'),
+      DOES, line('מָה הוּא קוֹטֵף?', 'What does he pick?')),
+    beat('apple-wash', SEAN, line('שׁוֹטֵף', 'washes'), line('אֶת הַתַּפּוּחַ', 'the apple'),
+      DOES, line('מָה הוּא שׁוֹטֵף?', 'What does he wash?'), LATER),
+    beat('apple-drops', line('טִיפּוֹת מַיִם', 'Water drops'), line('נוֹפְלוֹת', 'fall'), line('מֵהַתַּפּוּחַ', 'from the apple'),
+      line('מָה עוֹשׂוֹת הַטִּיפּוֹת?', 'What do the drops do?'), line('מֵאֵיפֹה נוֹפְלוֹת הַטִּיפּוֹת?', 'Where do the drops fall from?')),
+    beat('apple-bite', SEAN, line('נוֹגֵס', 'takes a bite'), line('בַּתַּפּוּחַ', 'of the apple'),
+      DOES, line('בְּמָה הוּא נוֹגֵס?', 'What does he bite into?'), line('לְבַסּוֹף', 'Finally')),
+  ] },
 ] as const;
 
 export const GARDEN_SENTENCE_QUESTION = line('אֶפְשָׁר לְהַגִּיד אֶת כָּל הַמִּשְׁפָּט?', 'Can you say the whole sentence?');
