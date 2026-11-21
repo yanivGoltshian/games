@@ -13,7 +13,6 @@ import {
   buildPersonalizedPhraseSegments,
   speechService,
   type LocalizedSpeechLine,
-  type SpeechResult,
 } from '../services/speech';
 
 const retryHistory = new SessionRetryHistory();
@@ -33,8 +32,6 @@ interface RunRetryOptions {
   seed: string;
   modelLines: LocalizedSpeechLine[];
   phraseScope?: RetryScope;
-  beforeSpeech?: Promise<unknown> | null;
-  lockUntilComplete?: boolean;
 }
 
 export function useRetryFeedback({
@@ -43,60 +40,40 @@ export function useRetryFeedback({
   settings,
   coordinatedSpeech,
 }: RetryFeedbackOptions) {
-  const [retryBusy, setRetryBusy] = useState(false);
-  const interactionLockedRef = useRef(false);
+  const [retryVisible, setRetryVisible] = useState(false);
+  const timerRef = useRef<number | undefined>(undefined);
   const callIdRef = useRef(0);
-  const generationRef = useRef(0);
+
+  const cancelFeedback = useCallback(() => {
+    window.clearTimeout(timerRef.current);
+    if (coordinatedSpeech) {
+      interactionMediaCoordinator.notifyInteraction(coordinatedSpeech.scope, 'touch');
+    } else {
+      speechService.cancelScope(scope, 'replay');
+    }
+  }, [coordinatedSpeech, scope]);
+  const beginInteraction = useCallback(() => {
+    cancelFeedback();
+    setRetryVisible(false);
+  }, [cancelFeedback]);
 
   useEffect(() => {
-    generationRef.current += 1;
-    callIdRef.current += 1;
-    interactionLockedRef.current = false;
-    setRetryBusy(false);
-    return () => {
-      generationRef.current += 1;
-      callIdRef.current += 1;
-      interactionLockedRef.current = false;
-    };
-  }, [roundKey]);
+    setRetryVisible(false);
+    return cancelFeedback;
+  }, [cancelFeedback, roundKey]);
 
   const runRetry = useCallback(
-    async ({
+    ({
       missCount,
       seed,
       modelLines,
       phraseScope = 'generic',
-      beforeSpeech = null,
-      lockUntilComplete = false,
-    }: RunRetryOptions): Promise<void> => {
-      if (interactionLockedRef.current) {
-        return;
-      }
-
-      interactionLockedRef.current = true;
+    }: RunRetryOptions): void => {
       const callId = ++callIdRef.current;
-      setRetryBusy(true);
+      setRetryVisible(true);
+      window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => setRetryVisible(false), settings.reducedMotion ? 450 : 720);
       soundService.playRetry(settings);
-      const generation = generationRef.current;
-      const minimumMs = settings.reducedMotion ? 450 : 720;
-      const minimumVisualTime = new Promise<void>((resolve) => window.setTimeout(resolve, minimumMs));
-
-      if (beforeSpeech) {
-        const result = await beforeSpeech;
-        if (
-          isSpeechResult(result)
-          && (result.status === 'cancelled' || result.status === 'superseded')
-        ) {
-          if (generation === generationRef.current && callId === callIdRef.current) {
-            interactionLockedRef.current = false;
-            setRetryBusy(false);
-          }
-          return;
-        }
-      }
-      if (generation !== generationRef.current) {
-        return;
-      }
 
       const heLine = retryHistory.select({
         locale: 'he',
@@ -124,61 +101,33 @@ export function useRetryFeedback({
       }, settings);
       const model = buildLocalizedSegments(modelLines, settings.languageMode, settings.englishVoiceLocale);
 
-      const speech = coordinatedSpeech
-        ? (() => {
-            const mediaScope = {
-              ...coordinatedSpeech.scope,
-              stepId: `${coordinatedSpeech.scope.stepId}:${callId}`,
-            };
-            const segments = [...model, ...encouragement];
-            const modelEndIndex = model.length - 1;
-            if (modelEndIndex >= 0 && encouragement.length > 0) {
-              segments[modelEndIndex] = { ...segments[modelEndIndex]!, pauseAfterMs: 260 };
-            }
-            return interactionMediaCoordinator.play({
-              intentId: `${coordinatedSpeech.intentIdPrefix}:${roundKey}:${callId}`,
-              source: 'automatic',
-              scope: mediaScope,
-              audioClass: 'conditional',
-              settings,
-              units: createInteractionMediaUnits(mediaScope, segments),
-            });
-          })()
-        : speechService.speakRetrySequence(model, encouragement, settings, {
-            scope,
-            key: 'retry',
-          });
-
-      if (!lockUntilComplete) {
-        await minimumVisualTime;
-        if (generation === generationRef.current && callId === callIdRef.current) {
-          interactionLockedRef.current = false;
-          setRetryBusy(false);
+      if (coordinatedSpeech) {
+        const mediaScope = {
+          ...coordinatedSpeech.scope,
+          stepId: `${coordinatedSpeech.scope.stepId}:${callId}`,
+        };
+        const segments = [...model, ...encouragement];
+        const modelEndIndex = model.length - 1;
+        if (modelEndIndex >= 0 && encouragement.length > 0) {
+          segments[modelEndIndex] = { ...segments[modelEndIndex]!, pauseAfterMs: 260 };
         }
-      }
-
-      await speech;
-      await minimumVisualTime;
-      if (generation === generationRef.current && callId === callIdRef.current) {
-        interactionLockedRef.current = false;
-        setRetryBusy(false);
+        void interactionMediaCoordinator.play({
+          intentId: `${coordinatedSpeech.intentIdPrefix}:${roundKey}:${callId}`,
+          source: 'automatic',
+          scope: mediaScope,
+          audioClass: 'conditional',
+          settings,
+          units: createInteractionMediaUnits(mediaScope, segments),
+        });
+      } else {
+        void speechService.speakRetrySequence(model, encouragement, settings, {
+          scope,
+          key: 'retry',
+        });
       }
     },
     [coordinatedSpeech, roundKey, scope, settings],
   );
 
-  return { retryBusy, runRetry };
-}
-
-function isSpeechResult(value: unknown): value is SpeechResult {
-  if (!value || typeof value !== 'object' || !('status' in value)) {
-    return false;
-  }
-  const { status } = value as { status: unknown };
-  return status === 'completed'
-    || status === 'cancelled'
-    || status === 'superseded'
-    || status === 'error'
-    || status === 'timed-out'
-    || status === 'skipped';
+  return { retryVisible, beginInteraction, runRetry };
 }

@@ -82,7 +82,7 @@ export function PuzzleGame({
     ? `family:${experience.photoId}:${puzzleLevel}:${arrangementIndex}`
     : `built-in:${builtInRoundKey}`;
   const itemsRoundKeyRef = useRef(roundKey);
-  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
+  const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = playing
     ? (englishOnly ? round.promptEn : round.promptHe)
@@ -174,12 +174,14 @@ export function PuzzleGame({
     items,
     setItems,
     zones: zoneRefs,
-    disabled: retryBusy || !playing,
+    roundKey,
+    onSelect: beginInteraction,
+    disabled: !!celebration || !playing,
     onDrop: (itemId, zoneId) => {
-      if (retryBusy) {
+      if (celebration || solvedIds.includes(itemId)) {
         return false;
       }
-      speechService.supersedeRetry(SPEECH_SCOPE);
+      beginInteraction();
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       if (itemId !== zoneId) {
@@ -188,11 +190,11 @@ export function PuzzleGame({
         if (nextMisses >= 2 && (settings.quietMode || !speechStatus.supported)) {
           setHintSlotId(itemId);
         }
-        void runRetry({
+        runRetry({
           missCount: nextMisses,
           seed: `${roundKey}:${nextMisses}:${itemId}`,
           modelLines: [buildPuzzleMissModelLine(nextMisses, `puzzle-slot:${itemId}`)],
-        }).finally(() => setHintSlotId(null));
+        });
         return false;
       }
 
@@ -327,7 +329,7 @@ export function PuzzleGame({
       restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
-      retryActive={retryBusy}
+      retryActive={retryVisible}
       successOverlay={
         celebration ? (
           <RoundSuccessOverlay
@@ -358,7 +360,7 @@ export function PuzzleGame({
             <button
               key={piece.id}
               ref={zoneRefs[piece.id]}
-              className={`puzzle-slot ${hoverZoneId === piece.id ? 'is-zone-hover' : ''} ${hintSlotId === piece.id || speechStatus.activeCue === `puzzle-slot:${piece.id}` ? 'is-teaching-hint' : ''}`}
+              className={`puzzle-slot ${hoverZoneId === piece.id ? 'is-zone-hover' : ''} ${(retryVisible && hintSlotId === piece.id) || speechStatus.activeCue === `puzzle-slot:${piece.id}` ? 'is-teaching-hint' : ''}`}
               type="button"
               style={{
                 width: layout.pieceWidth,

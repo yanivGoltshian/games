@@ -11,7 +11,6 @@ import { RoundSuccessOverlay } from './RoundSuccessOverlay';
 import { useAdaptiveRound } from './useAdaptiveRound';
 import { useRetryFeedback } from './useRetryFeedback';
 
-const WIGGLE_MS = 520;
 const SPEECH_SCOPE = 'game:listening';
 
 export function ListeningGame({
@@ -31,7 +30,7 @@ export function ListeningGame({
     generateListeningRound,
     { getSignature: getListeningRoundSignature, limit: 8 },
   );
-  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
+  const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
 
@@ -57,10 +56,10 @@ export function ListeningGame({
   }, [mediaReady, roundKey]);
 
   const handleChoice = (optionId: string) => {
-    if (celebration || retryBusy) {
+    if (celebration || (retryVisible && wiggleId === optionId)) {
       return;
     }
-
+    beginInteraction();
     const concept = learningConcepts.find((item) => item.id === optionId)!;
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
@@ -78,8 +77,7 @@ export function ListeningGame({
     }
 
     setWiggleId(optionId);
-    window.setTimeout(() => setWiggleId((current) => (current === optionId ? null : current)), WIGGLE_MS);
-    void runRetry({
+    runRetry({
       missCount: nextAttempts,
       seed: `${roundKey}:${nextAttempts}`,
       modelLines: [{ he: round.promptHe, en: round.promptEn, pauseAfterMs: 240 }],
@@ -100,7 +98,7 @@ export function ListeningGame({
       restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
-      retryActive={retryBusy}
+      retryActive={retryVisible}
       successOverlay={
         celebration ? (
           <RoundSuccessOverlay
@@ -119,8 +117,8 @@ export function ListeningGame({
           return (
             <button
               key={optionId}
-              className={`choice-button ${wiggleId === optionId ? 'is-wiggling' : ''}`}
-              disabled={retryBusy}
+              className={`choice-button ${retryVisible && wiggleId === optionId ? 'is-wiggling' : ''}`}
+              disabled={!!celebration}
               onClick={() => handleChoice(optionId)}
               type="button"
               aria-label={englishOnly ? concept.en : concept.he}

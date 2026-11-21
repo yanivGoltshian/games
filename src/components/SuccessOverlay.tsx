@@ -4,7 +4,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
 } from 'react';
 import { CelebrationArt } from '../art/celebrations';
 import { LEVEL_UP_SPEECH } from '../content/levelUpSpeech';
@@ -163,7 +162,7 @@ export function SuccessOverlay({
 
     const speakAndAdvance = async (): Promise<void> => {
       await beforeSpeech;
-      if (cancelled || livenessTimedOut) {
+      if (cancelled || livenessTimedOut || advancedRef.current) {
         return;
       }
       const conclusionSegments = recommendation
@@ -194,7 +193,7 @@ export function SuccessOverlay({
           },
         );
       }
-      if (cancelled || livenessTimedOut) {
+      if (cancelled || livenessTimedOut || advancedRef.current) {
         return;
       }
       if (soundTiming === 'after-speech') {
@@ -246,23 +245,15 @@ export function SuccessOverlay({
     ? LEVEL_UP_SPEECH[0]!.en
     : LEVEL_UP_SPEECH[0]!.he;
   const displayText = recommendation ? levelUpText : praise.displayText;
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return;
-    }
-    event.preventDefault();
-    advanceOnce(true);
-  };
-
   return (
-    <div
-      className="success-overlay"
-      role="button"
-      tabIndex={0}
-      aria-label={settings.languageMode === 'en' ? 'Continue' : 'המשך'}
-      onPointerDown={() => advanceOnce(true)}
-      onKeyDown={handleKeyDown}
-    >
+    <div className="success-overlay">
+      <button
+        className="success-overlay__continue"
+        type="button"
+        autoFocus
+        aria-label={settings.languageMode === 'en' ? 'Continue' : 'המשך'}
+        onClick={() => advanceOnce(true)}
+      />
       <p className="visually-hidden" role="status" aria-live="polite">{displayText}</p>
       <div
         className={`success-card success-card--${celebrationVariant} ${tier === 'milestone' ? 'success-card--milestone' : ''}`}

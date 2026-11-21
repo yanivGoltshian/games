@@ -6,8 +6,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createInitialProgress } from '../domain/progression';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import type { SpeechResult } from '../services/speech';
+import type * as SpeechModule from '../services/speech';
 import {
-  MEMORY_PAIR_SOUND_HOLD_MS,
+  MEMORY_MISMATCH_HOLD_MS,
   MEMORY_REVEAL_FALLBACK_MS,
 } from './memoryCelebration';
 import { MemoryGame } from './MemoryGame';
@@ -16,7 +17,7 @@ const doubles = vi.hoisted(() => ({
   cancelScope: vi.fn(),
   playMemoryPair: vi.fn(),
   playTap: vi.fn(),
-  runRetry: vi.fn(),
+  speakRetrySequence: vi.fn(),
   speakSegments: vi.fn(),
   startNextRound: vi.fn(),
   roundOverride: null as null | { cards: { id: string; pairId: string; conceptId: string }[]; pairConceptIds: string[]; promptHe: string; promptEn: string },
@@ -31,15 +32,18 @@ vi.mock('../services/sound', () => ({
   getSharedAudioContext: vi.fn(() => null),
   unlockAudioContext: vi.fn(async () => undefined),
   soundService: {
+    playRetry: vi.fn(),
     playMemoryPair: doubles.playMemoryPair,
     playTap: doubles.playTap,
   },
 }));
 
-vi.mock('../services/speech', () => ({
+vi.mock('../services/speech', async (importOriginal) => ({
+  ...await importOriginal<typeof SpeechModule>(),
   buildPhraseSegments: (hebrew: string) => [{ text: hebrew, locale: 'he-IL' }],
   speechService: {
     cancelScope: doubles.cancelScope,
+    speakRetrySequence: doubles.speakRetrySequence,
     speakSegments: doubles.speakSegments,
   },
 }));
@@ -59,13 +63,6 @@ vi.mock('./useAdaptiveRound', () => ({
     },
     roundKey: 'memory-round-1',
     startNextRound: doubles.startNextRound,
-  }),
-}));
-
-vi.mock('./useRetryFeedback', () => ({
-  useRetryFeedback: () => ({
-    retryBusy: false,
-    runRetry: doubles.runRetry,
   }),
 }));
 
@@ -127,7 +124,7 @@ describe('MemoryGame celebrations', () => {
     doubles.cancelScope.mockReset();
     doubles.playMemoryPair.mockReset();
     doubles.playTap.mockReset();
-    doubles.runRetry.mockReset();
+    doubles.speakRetrySequence.mockReset();
     doubles.speakSegments.mockReset();
     doubles.startNextRound.mockReset();
     doubles.lastCelebration = null;
@@ -185,10 +182,6 @@ describe('MemoryGame celebrations', () => {
     expect(container.querySelectorAll('.memory-card__sparkles i')).toHaveLength(10);
     await act(async () => cards[0]!.click());
     expect(doubles.playMemoryPair).toHaveBeenCalledTimes(1);
-    await act(async () => {
-      vi.advanceTimersByTime(MEMORY_PAIR_SOUND_HOLD_MS);
-    });
-
     await act(async () => cards[2]!.click());
     await act(async () => cards[3]!.click());
     expect(onCompleteRound).toHaveBeenCalledTimes(1);
@@ -211,6 +204,49 @@ describe('MemoryGame celebrations', () => {
     });
     expect(doubles.lastCelebration?.beforeSpeech).toBeInstanceOf(Promise);
     expect(doubles.playMemoryPair).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts the next card during either label and never chimes for a superseded pair', async () => {
+    vi.useFakeTimers();
+    const first = deferredSpeech();
+    const pair = deferredSpeech();
+    doubles.speakSegments.mockReturnValueOnce(first.promise).mockReturnValueOnce(pair.promise);
+    const complete = vi.fn(completeSummary);
+    await renderGame(complete);
+    const cards = container.querySelectorAll<HTMLButtonElement>('.memory-card');
+    for (const index of [0, 1, 2, 2, 3, 3]) {
+      await act(async () => cards[index]!.click());
+    }
+    expect(complete).toHaveBeenCalledExactlyOnceWith({
+      attempts: 2, requiredActions: 2, concepts: ['emotion-happy', 'tree'],
+    });
+    await act(async () => {
+      pair.resolve({ requestId: 2, status: 'completed' });
+      first.resolve({ requestId: 1, status: 'completed' });
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(doubles.playMemoryPair).not.toHaveBeenCalled();
+    expect(complete).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a miss visible for the mechanic hold only, then accepts a card during stuck retry speech', async () => {
+    vi.useFakeTimers();
+    const retry = deferredSpeech();
+    doubles.speakRetrySequence.mockReturnValue(retry.promise);
+    await renderGame();
+    const cards = container.querySelectorAll<HTMLButtonElement>('.memory-card');
+    await act(async () => cards[0]!.click());
+    await act(async () => cards[2]!.click());
+    expect(doubles.speakRetrySequence).toHaveBeenCalledOnce();
+    await act(async () => { await vi.advanceTimersByTimeAsync(MEMORY_MISMATCH_HOLD_MS - 1); });
+    expect(container.querySelectorAll('.memory-card--flipped')).toHaveLength(2);
+    expect(cards[1]!.disabled).toBe(true);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    await act(async () => cards[1]!.click());
+    expect(cards[1]!.getAttribute('aria-pressed')).toBe('true');
+    await act(async () => retry.resolve({ requestId: 3, status: 'completed' }));
+    expect(container.querySelectorAll('.memory-card--flipped')).toHaveLength(1);
+    expect(cards[1]!.getAttribute('aria-pressed')).toBe('true');
   });
 
   it.each([

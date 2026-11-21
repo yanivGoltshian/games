@@ -47,7 +47,7 @@ const settings = {
 };
 
 describe('automatic success transition', () => {
-  it('renders an accessible automatic celebration without progression buttons', () => {
+  it('makes the whole automatic celebration a single native continue target', () => {
     const markup = renderToStaticMarkup(
       <SuccessOverlay
         settings={settings}
@@ -62,10 +62,10 @@ describe('automatic success transition', () => {
     );
 
     expect(markup).toContain('עברת שלב!');
-    expect(markup).toContain('role="button"');
-    expect(markup).toContain('tabindex="0"');
+    expect(markup).toContain('class="success-overlay__continue"');
+    expect(markup).toContain('aria-label="המשך"');
     expect(markup).toContain('role="status"');
-    expect(markup).not.toContain('<button');
+    expect(markup.match(/<button/g)).toHaveLength(1);
     expect(markup).not.toContain('מוכנים לשלב הבא');
   });
 
