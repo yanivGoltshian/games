@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { GARDEN_SENTENCE_QUESTION } from '../src/content/gardenSentences.js';
 import {
   getHebrewPronunciation,
   stripNiqqud,
@@ -60,6 +61,18 @@ describe('Azure neural speech SSML', () => {
       `<phoneme alphabet="ipa" ph="nemaiˈen">${fullSpelling}</phoneme>`,
     );
     expect(ssml).toContain('בּוֹא<break time="160ms"/> ');
+  });
+
+  it('voices the garden final question with hard g and final stress, not just niqqud', () => {
+    const { he, spokenHe } = GARDEN_SENTENCE_QUESTION;
+    expect(he).toBe('אפשר להגיד את כל המשפט?');
+    expect(stripNiqqud(spokenHe)).toBe(he);
+    expect(buildSpeechSsml('he-IL', spokenHe)).toContain(
+      '<phoneme alphabet="ipa" ph="lehaˈgid">לְהַגִּיד</phoneme>'.normalize('NFC'),
+    );
+    expect(buildSpeechSsml('he-IL', spokenHe)).toContain(
+      '<phoneme alphabet="ipa" ph="kol">כָּל</phoneme>'.normalize('NFC'),
+    );
   });
 });
 

@@ -16,19 +16,39 @@ const SPRITE_BOUNDARY_TOLERANCE_SECONDS = 0.02;
 const CONTAINER_DURATION_TOLERANCE_SECONDS = 0.08;
 const EXPECTED_SPRITES = {
   '/speech/he-IL.mp3': {
-    count: 623,
+    count: 603,
     bytes: 12_441_644,
     sha256: '34499d78c68f8ef7583131b650895637bc7b54ab43acd2217c54eb653c043d79',
   },
   '/speech/en-US.mp3': {
-    count: 626,
+    count: 605,
     bytes: 12_204_716,
     sha256: 'ebe3158686dd39cde0a0f088fc877ca1607e9f1100c37ef50127ecfbf4dbaf9e',
   },
   '/speech/en-GB.mp3': {
-    count: 626,
+    count: 605,
     bytes: 11_385_644,
     sha256: 'cab71f5bf92247d08ea11e5a14a1a416cd7544140498feda3b3187e3ddb3c4f1',
+  },
+  '/speech/garden-question-he-IL-v1.mp3': {
+    count: 1,
+    bytes: 28_460,
+    sha256: 'a0cf0fa053869eaa5a662ca8dcb737d881b8bd3ab9902ab33a815d42987bd77c',
+  },
+  '/speech/garden-stories-he-IL-v1.mp3': {
+    count: 101,
+    bytes: 1_909_100,
+    sha256: 'a5d5f9807b3771d85315bf833ac2a7926d143153dec440c9a409ad813b6ba522',
+  },
+  '/speech/garden-stories-en-US-v1.mp3': {
+    count: 99,
+    bytes: 1_921_580,
+    sha256: '5838d083e85c1576cac2cd1f81b5bbd6fb1867aa24b6caa98303de3f1e223552',
+  },
+  '/speech/garden-stories-en-GB-v1.mp3': {
+    count: 99,
+    bytes: 1_838_252,
+    sha256: 'e0ee9c3db8b1daa7a87d4bf6b3a029d63caa76628988f9781579980b902ee2d2',
   },
 } as const;
 
@@ -370,4 +390,4 @@ for (const [src, entries] of expectedSpriteEntries.map(([spriteSrc]) => (
   );
 }
 
-console.log(`Validated ${actualKeys.length} manifest clips and three 24 kHz mono sprites.`);
+console.log(`Validated ${actualKeys.length} manifest clips and ${sprites.size} 24 kHz mono sprites.`);

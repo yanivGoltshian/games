@@ -5,6 +5,7 @@ import {
   type RecordedSpeechEnvironment,
 } from './recordedSpeech';
 
+const manifestUrl = '/speech/manifest.json?rev=garden-stories-v1';
 const installedIPadEnvironment: RecordedSpeechEnvironment = {
   userAgent: 'Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   platform: 'iPad',
@@ -110,7 +111,7 @@ describe('recorded iPad speech', () => {
     const { context, sources, decodeAudioData } = createContext();
     const unlock = vi.fn(async () => undefined);
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
+      if (String(input) === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {
@@ -145,9 +146,11 @@ describe('recorded iPad speech', () => {
     });
 
     expect(unlock).toHaveBeenCalledOnce();
+    expect(fetcher).toHaveBeenCalledWith(manifestUrl, { cache: 'no-cache' });
+    expect(fetcher).toHaveBeenCalledWith('/speech/he-IL.mp3', { cache: 'force-cache' });
     expect(decodeAudioData).toHaveBeenCalledOnce();
     expect(fetcher.mock.calls.map(([input]) => String(input))).toEqual([
-      '/speech/manifest.json',
+      manifestUrl,
       '/speech/he-IL.mp3',
     ]);
     expect(sources).toHaveLength(1);
@@ -165,7 +168,7 @@ describe('recorded iPad speech', () => {
       releaseAudio = resolve;
     });
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
+      if (String(input) === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {
@@ -219,7 +222,7 @@ describe('recorded iPad speech', () => {
     });
     decodeAudioData.mockImplementationOnce(() => decode);
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
+      if (String(input) === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {
@@ -270,7 +273,7 @@ describe('recorded iPad speech', () => {
   it('evicts the previous locale buffer when the requested locale changes', async () => {
     const { context, sources, decodeAudioData } = createContext();
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
+      if (String(input) === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {
@@ -304,7 +307,7 @@ describe('recorded iPad speech', () => {
 
     expect(decodeAudioData).toHaveBeenCalledTimes(3);
     expect(fetcher.mock.calls.map(([input]) => String(input))).toEqual([
-      '/speech/manifest.json',
+      manifestUrl,
       '/speech/he-IL.mp3',
       '/speech/en-US.mp3',
       '/speech/he-IL.mp3',
@@ -334,7 +337,7 @@ describe('recorded iPad speech', () => {
         return { duration: 10 } as AudioBuffer;
       });
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
+      if (String(input) === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {
@@ -382,7 +385,7 @@ describe('recorded iPad speech', () => {
 
     expect(maximumActiveDecodes).toBe(1);
     expect(fetcher.mock.calls.map(([input]) => String(input))).toEqual([
-      '/speech/manifest.json',
+      manifestUrl,
       '/speech/he-IL.mp3',
       '/speech/en-US.mp3',
     ]);
@@ -418,7 +421,7 @@ describe('recorded iPad speech', () => {
       });
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.endsWith('manifest.json')) {
+      if (url === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {
@@ -495,7 +498,7 @@ describe('recorded iPad speech', () => {
     const { context, sources, decodeAudioData } = createContext();
     let audioAttempt = 0;
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
+      if (String(input) === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {
@@ -543,7 +546,7 @@ describe('recorded iPad speech', () => {
       releaseAudio = resolve;
     });
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('manifest.json')) {
+      if (String(input) === manifestUrl) {
         return new Response(JSON.stringify({
           version: 1,
           entries: {

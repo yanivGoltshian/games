@@ -1,6 +1,7 @@
 import type { AccessToken } from '@azure/identity';
 import { spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -30,6 +31,10 @@ const PLAYBACK_TAIL_SECONDS = 0.06;
 const SYNTHESIS_CONCURRENCY = 4;
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 5;
+// F0 permits 20 transactions per minute. Space starts rather than bursting
+// concurrently and discarding a partially completed locale on HTTP 429.
+const MIN_START_INTERVAL_MS = process.env.AZURE_SPEECH_F0 === 'true' ? 3_100 : 0;
+let nextStartAt = 0;
 const outputDirectory = resolve('public/speech');
 const transientStatuses = new Set([408, 429, 500, 502, 503, 504]);
 
@@ -59,12 +64,6 @@ interface AudioProbe {
 interface GeneratedClip {
   path: string;
   duration: number;
-}
-
-interface ExistingLocaleAssets {
-  manifest: RecordedSpeechManifest;
-  spritePath: string;
-  regenerateTexts: ReadonlySet<string>;
 }
 
 function run(command: string, args: string[]): { stdout: string; stderr: string } {
@@ -163,6 +162,9 @@ async function synthesize(
   const ssml = buildSpeechSsml(locale, spokenText);
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    const startAt = Math.max(nextStartAt, Date.now());
+    nextStartAt = startAt + MIN_START_INTERVAL_MS;
+    await delay(startAt - Date.now());
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response: Response;
@@ -234,7 +236,7 @@ async function generateLocale(
   manifest: RecordedSpeechManifest,
   endpoint: string,
   authorizer: SpeechAuthorizer,
-  existing?: ExistingLocaleAssets,
+  spriteFile = `${locale}.mp3`,
 ): Promise<void> {
   const tempDirectory = mkdtempSync(join(tmpdir(), `sean-speech-${locale}-`));
 
@@ -250,22 +252,6 @@ async function generateLocale(
       silencePath,
     ]);
 
-    let existingPcmPath: string | undefined;
-    if (existing) {
-      existingPcmPath = join(tempDirectory, 'existing.wav');
-      verifyAudio(existing.spritePath, 'mp3');
-      run('ffmpeg', [
-        '-loglevel', 'error',
-        '-y',
-        '-i', existing.spritePath,
-        '-ar', String(SAMPLE_RATE),
-        '-ac', '1',
-        '-c:a', 'pcm_s16le',
-        existingPcmPath,
-      ]);
-      verifyAudio(existingPcmPath, 'pcm_s16le');
-    }
-
     const clips = new Array<GeneratedClip>(entries.length);
     await mapWithConcurrency(
       entries,
@@ -275,40 +261,12 @@ async function generateLocale(
         const prefix = String(index).padStart(3, '0');
         const responsePath = join(tempDirectory, `${prefix}-azure.wav`);
         const normalizedPath = join(tempDirectory, `${prefix}.wav`);
-        const shouldRegenerate = !existing || existing.regenerateTexts.has(entry.text);
-        if (shouldRegenerate) {
-          const audio = await synthesize(endpoint, authorizer, locale, spokenText);
-          writeFileSync(responsePath, audio);
-          run('ffmpeg', [
-            '-loglevel', 'error',
-            '-y',
-            '-i', responsePath,
-            '-ar', String(SAMPLE_RATE),
-            '-ac', '1',
-            '-c:a', 'pcm_s16le',
-            normalizedPath,
-          ]);
-        } else {
-          const clip = existing.manifest.entries[manifestKey(locale, entry.text)];
-          if (!clip || !existingPcmPath) {
-            throw new Error(`Existing speech assets are missing ${locale}: ${entry.text}`);
-          }
-          const sourceDuration = clip.duration - PLAYBACK_TAIL_SECONDS;
-          if (sourceDuration <= 0.1) {
-            throw new Error(`Existing speech clip is too short to reuse: ${locale}: ${entry.text}`);
-          }
-          run('ffmpeg', [
-            '-loglevel', 'error',
-            '-y',
-            '-ss', String(clip.offset),
-            '-t', String(sourceDuration),
-            '-i', existingPcmPath,
-            '-ar', String(SAMPLE_RATE),
-            '-ac', '1',
-            '-c:a', 'pcm_s16le',
-            normalizedPath,
-          ]);
-        }
+        const audio = await synthesize(endpoint, authorizer, locale, spokenText);
+        writeFileSync(responsePath, audio);
+        run('ffmpeg', [
+          '-loglevel', 'error', '-y', '-i', responsePath,
+          '-ar', String(SAMPLE_RATE), '-ac', '1', '-c:a', 'pcm_s16le', normalizedPath,
+        ]);
         const duration = verifyAudio(normalizedPath, 'pcm_s16le');
         verifyAudible(normalizedPath);
         clips[index] = { path: normalizedPath, duration };
@@ -323,7 +281,7 @@ async function generateLocale(
         throw new Error(`Missing synthesized clip ${locale} index ${index}.`);
       }
       manifest.entries[manifestKey(locale, entry.text)] = {
-        src: `/speech/${locale}.mp3`,
+        src: `/speech/${spriteFile}`,
         offset: Number(offset.toFixed(6)),
         duration: Number((clip.duration + PLAYBACK_TAIL_SECONDS).toFixed(6)),
       };
@@ -336,7 +294,7 @@ async function generateLocale(
       concatListPath,
       concatPaths.map((path) => `file '${path.replaceAll("'", "'\\''")}'`).join('\n'),
     );
-    const spritePath = join(outputDirectory, `${locale}.mp3`);
+    const spritePath = join(outputDirectory, spriteFile);
     run('ffmpeg', [
       '-loglevel', 'error',
       '-y',
@@ -387,6 +345,12 @@ async function main(): Promise<void> {
     const existingManifest = JSON.parse(
       readFileSync(manifestPath, 'utf8'),
     ) as RecordedSpeechManifest;
+    if (existingManifest.version !== 2 || (Object.keys(NEURAL_VOICES) as SpeechLocale[])
+      .some((locale) => existingManifest.voices?.[locale] !== RECORDED_NARRATION_VOICE_NAMES[locale])) {
+      throw new Error('Refusing to reuse a manifest without the approved narration voices.');
+    }
+    const pack = /^([a-z][a-z0-9-]*)-(v[1-9]\d*)$/.exec(process.env.AZURE_SPEECH_PACK ?? '');
+    if (!pack) throw new Error('Set AZURE_SPEECH_PACK to a new versioned name, e.g. garden-stories-v1.');
     manifest = {
       version: 2,
       voices: { ...RECORDED_NARRATION_VOICE_NAMES },
@@ -399,26 +363,22 @@ async function main(): Promise<void> {
     let selectedCount = 0;
     for (const locale of locales) {
       const localeEntries = grouped[locale] ?? [];
-      const regenerateTexts = new Set(
-        localeEntries
-          .filter((entry) => regenerateMatch
-            ? entry.text.includes(regenerateMatch)
-            : !existingManifest.entries[manifestKey(locale, entry.text)])
-          .map((entry) => entry.text),
-      );
-      if (regenerateTexts.size === 0) {
+      const selected = localeEntries.filter((entry) => regenerateMatch
+        ? entry.text.includes(regenerateMatch)
+        : !existingManifest.entries[manifestKey(locale, entry.text)]);
+      if (selected.length === 0) {
         console.log(`No missing ${locale} clips; preserving the existing sprite.`);
         continue;
       }
-      selectedCount += regenerateTexts.size;
+      const spriteFile = `${pack[1]}-${locale}-${pack[2]}.mp3`;
+      if (existsSync(join(outputDirectory, spriteFile))) {
+        throw new Error(`Refusing to overwrite ${spriteFile}. Use a new pack version.`);
+      }
+      selectedCount += selected.length;
       console.log(
-        `Generating ${regenerateTexts.size} selected ${locale} clips with ${NEURAL_VOICES[locale].name}`,
+        `Generating ${selected.length} selected ${locale} clips with ${NEURAL_VOICES[locale].name}`,
       );
-      await generateLocale(locale, localeEntries, manifest, endpoint, authorizer, {
-        manifest: existingManifest,
-        spritePath: join(outputDirectory, `${locale}.mp3`),
-        regenerateTexts,
-      });
+      await generateLocale(locale, selected, manifest, endpoint, authorizer, spriteFile);
     }
     if (selectedCount === 0) {
       throw new Error(
@@ -449,7 +409,7 @@ async function main(): Promise<void> {
   );
   if (regenerateMatch || generateMissing) {
     console.log(
-      `Rebuilt selected sprites and preserved ${catalog.length} manifest clips.`,
+      `Added versioned packs; the manifest now covers ${catalog.length} clips.`,
     );
   } else {
     console.log(
