@@ -11,19 +11,22 @@ describe('Garden story visits', () => {
       expect(visit[0]!.story).not.toBe(last);
       last = visit[0]!.story;
       firsts.add(last);
-      expect(new Set(visit.map(b => b.id)).size).toBe(24);
-      for (let i = 0; i < visit.length; i += 4) {
-        const episode = visit.slice(i, i + 4);
-        expect(episode).toEqual(GARDEN_SENTENCES.filter(b => b.story === episode[0]!.story));
+      expect(new Set(visit.map(b => b.id)).size).toBe(22);
+      for (let i = 0; i < visit.length;) {
+        const episode = GARDEN_SENTENCES.filter(b => b.story === visit[i]!.story);
+        expect(visit.slice(i, i + episode.length)).toEqual(episode);
         expect(episode[0]?.words[0].he).toBe('שון');
-        expect(episode.some(b => !b.isSean && b.art.subject)).toBe(true);
-        expect(episode.some(b => b.connector)).toBe(true);
+        i += episode.length;
       }
     }
     expect(firsts.size).toBe(6);
-    expect(GARDEN_SENTENCES.filter(b => b.story === 'avocado').map(b => b.id))
-      .toEqual(['avocado-water', 'avocado-root', 'avocado-shoot', 'avocado-soil']);
-    expect(GARDEN_SENTENCES.find(b => b.id === 'date-palm')?.model.he).toBe('עם השנים הנבט גדל והופך לדקל');
+    const models = (story: string) => GARDEN_SENTENCES.filter(b => b.story === story).map(b => b.model.he);
+    expect(models('banana')).toEqual(['שון אוכל בננה', 'הקליפה נשארת ביד של שון', 'שון שם את הקליפה בפח']);
+    expect(models('date')).toEqual(['שון אוכל תמרים', 'שון טומן את הגרעין באדמה', 'נבט ירוק גדל מהאדמה', 'הנבט גדל והופך לעץ דקל']);
+    expect(models('avocado')).toEqual(['שון אוכל אבוקדו', 'שון שם את גרעין האבוקדו במים', 'נבט קטן מציץ מהגרעין', 'שון שותל את הנבט באדמה']);
+    expect(models('strawberry')).toEqual(['שון משקה את השתיל באדמה', 'פרח לבן נפתח בשמש', 'דבורה מבקרת את הפרח']);
+    expect(models('carrot')).toEqual(['שון זורע זרעי גזר', 'הגשם מרטיב את האדמה', 'עלים ירוקים מבצבצים מהאדמה', 'שון מושך את הגזר מהאדמה', 'שון אוכל את הגזר']);
+    expect(models('apple')).toEqual(['שון קוטף תפוח מהעץ', 'שון שוטף את התפוח', 'לבסוף שון נוגס בתפוח']);
   });
   it('reuses unchanged legacy recordings only, and invalidates a changed sentence in its own language', () => {
     for (const b of GARDEN_SENTENCES) {

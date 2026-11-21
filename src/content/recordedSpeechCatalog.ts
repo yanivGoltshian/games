@@ -43,7 +43,7 @@ export interface RecordedSpeechCatalogEntry {
   locale: SpeechLocale;
   /**
    * Unpointed source text. This is the runtime lookup key and the manifest key,
-   * and it is also the on-screen visual text. It must never contain niqqud.
+   * independent of whether an activity displays a pointed caption.
    */
   text: string;
   /**

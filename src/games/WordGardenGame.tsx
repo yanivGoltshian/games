@@ -21,8 +21,6 @@ import './wordGardenGame.css';
 export const GARDEN_RESPONSE_PAUSE_MS = 1_300;
 export const GARDEN_CLIP_TIMEOUT_MS = 5_000;
 const TRAVEL_MS = 2_400;
-const STATION_DWELL_MS = 950;
-const SHOW_ACTION_MS = 2_300;
 let previousFirstStory: string | undefined;
 const PARTS = ['actor', 'action', 'object'] as const;
 type Part = 0 | 1 | 2 | 3;
@@ -156,7 +154,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
   };
   const voiceEnabled = mediaReady && !settings.quietMode && settings.soundLevel > 0;
   const { words, model } = sentence;
-  const localized = (line: GardenLine) => english ? line.en : line.he;
+  const localized = (line: GardenLine) => english ? line.en : line.spokenHe;
   const prompts = [
     actorCue !== 'card' ? localized(sentence.questions[0]) : english ? 'Tap Sean’s card' : 'נוגעים בקלף של שון',
     localized(sentence.questions[1]),
@@ -200,7 +198,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     run.current = controller;
     const { signal } = controller;
     const { words: currentWords, model: currentModel } = sentence;
-    const speak = async (value: GardenLine, role: 'question' | 'word' | 'model' | 'next') => {
+    const speak = async (value: GardenLine, role: 'question' | 'word' | 'model') => {
       if (signal.aborted) return;
       const segments = gardenSegments(value, settings.languageMode, settings.englishVoiceLocale);
       for (const segment of segments) {
@@ -225,7 +223,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     void (async () => {
       if (previousWord !== null) await speak(currentWords[previousWord], 'word');
       if (signal.aborted) return;
-      if (!(index === 0 && actorCue === 'card') && !(replay && index === 3 && departed.current)) {
+      if (!(index === 0 && actorCue === 'card') && !(replay && index === 3)) {
         await speak(question, 'question');
         if (signal.aborted) return;
         setPhase('your-turn');
@@ -237,11 +235,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
         await speak(currentModel, 'model');
         if (!signal.aborted) {
           if (departed.current) setReplaying(false);
-          else {
-            depart();
-            await quietTurn(signal, 550);
-            await speak(GARDEN_NEXT_SENTENCE, 'next');
-          }
+          else depart();
         }
       } else {
         await speak(currentWords[index], 'word');
@@ -268,11 +262,6 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
   }, [cancel]);
   const activeActorCue = part === 0 ? actorCue : null;
   useEffect(() => {
-    if (!actionTake || !foreground) return;
-    const timer = setTimeout(() => setActionTake(0), SHOW_ACTION_MS);
-    return () => clearTimeout(timer);
-  }, [actionTake, foreground]);
-  useEffect(() => {
     latestTurn.current(part);
     if (focusOnChange.current && part < 3) {
       activeCard.current?.focus();
@@ -280,11 +269,11 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     }
   }, [part, sentenceIndex, voiceEnabled, activeActorCue]);
   useEffect(() => {
-    if (trainReady && focusOnChange.current) {
+    if (part === 3 && focusOnChange.current) {
       nextButton.current?.focus();
       focusOnChange.current = false;
     }
-  }, [trainReady]);
+  }, [part]);
 
   const tap = (index: 0 | 1 | 2, keyboard: boolean) => {
     if (!visible.current || step.current !== index) return;
@@ -292,7 +281,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     soundService.playTap(settings);
     focusOnChange.current = keyboard;
     pendingWord.current = modeled.current === index ? null : index;
-    setActionTake(take => index === 1 ? take + 1 : 0);
+    if (index === 1) setActionTake(take => take + 1);
     step.current = (index + 1) as Part;
     setPart(step.current);
     if (index === 2) {
@@ -320,38 +309,37 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
     return start;
   };
   const clearPress = () => { contact.current = null; setPressed(false); };
-  const next = (keyboard: boolean, automatic = false) => {
-    if (!visible.current || !departed.current || step.current !== 3) return;
+  const next = (keyboard: boolean) => {
+    if (!visible.current || step.current !== 3) return;
     departed.current = false;
     cancel();
-    if (!automatic) soundService.playTap(settings);
+    soundService.playTap(settings);
     step.current = 0;
     modeled.current = null;
+    pendingWord.current = null;
     focusOnChange.current = keyboard;
     setReplaying(false);
+    setActionTake(0);
     setJourney('waiting');
     setPart(0);
     setSentenceIndex((current) => (current + 1) % visit.length);
   };
-  const autoNext = useRef(() => {});
-  autoNext.current = () => next(document.activeElement === nextButton.current, true);
-  const remaining = useRef({ travel: TRAVEL_MS, station: STATION_DWELL_MS });
+  const remaining = useRef(TRAVEL_MS);
   useEffect(() => {
     if (journey === 'waiting') {
-      remaining.current = { travel: TRAVEL_MS, station: STATION_DWELL_MS };
+      remaining.current = TRAVEL_MS;
       return;
     }
-    if (!foreground || replaying) return;
+    if (journey !== 'travel' || !foreground || replaying) return;
     const budget = remaining.current;
     const start = performance.now();
     const timer = setTimeout(() => {
       if (!visible.current || !departed.current) return;
-      if (journey === 'travel') setJourney('station');
-      else autoNext.current();
-    }, budget[journey]);
+      setJourney('station');
+    }, budget);
     return () => {
       clearTimeout(timer);
-      budget[journey] = Math.max(0, budget[journey] - (performance.now() - start));
+      remaining.current = Math.max(0, budget - (performance.now() - start));
     };
   }, [journey, foreground, replaying]);
   const heading = part === 3 ? localized(model) : prompts[part]!;
@@ -364,7 +352,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
       languageMode={settings.languageMode}
       onHome={() => { visible.current = false; cancel(); onBack(); }}
       onRepeat={() => {
-        if (part === 1 || part === 2) setActionTake(take => take + 1);
+        if (part >= 1) setActionTake(take => take + 1);
         speakTurn(part, true);
       }}
       homeLabel={english ? 'Back home' : 'חזרה לבית'}
@@ -418,7 +406,7 @@ export function WordGardenGame({ settings, mediaReady, onBack, onCompleteRound }
           <div key={sentence.id} className="sentence-train__rail-run"><div className="sentence-train__engine"><TrainArt /></div></div>
         </div>
         <div className="sentence-train__footer">
-          {trainReady
+          {part === 3
             ? <button className="sentence-train__next" ref={nextButton} type="button" onClick={(event) => next(event.detail === 0)}>
                 <span aria-hidden="true">{english ? '→' : '←'}</span> {localized(GARDEN_NEXT_SENTENCE)}
               </button>

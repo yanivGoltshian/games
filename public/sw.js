@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sean-learning-adventure-v33';
+const CACHE_NAME = 'sean-learning-adventure-v34';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -51,10 +51,14 @@ const APP_SHELL = [
   '/assets/garden/watering-can.webp',
   '/speech/manifest.json',
   '/speech/manifest.json?rev=garden-stories-v1',
+  '/speech/manifest.json?rev=garden-stories-v2',
   '/speech/garden-question-he-IL-v1.mp3',
   '/speech/garden-stories-he-IL-v1.mp3',
   '/speech/garden-stories-en-GB-v1.mp3',
   '/speech/garden-stories-en-US-v1.mp3',
+  '/speech/garden-stories-he-IL-v2.mp3',
+  '/speech/garden-stories-en-GB-v2.mp3',
+  '/speech/garden-stories-en-US-v2.mp3',
   '/speech/he-IL.mp3',
   '/speech/en-US.mp3',
   '/speech/en-GB.mp3',
@@ -84,15 +88,21 @@ self.addEventListener('install', (event) => {
         const cache = await caches.open(CACHE_NAME);
         await cache.put('/index.html', response);
         await cache.addAll([...APP_SHELL, ...buildAssets].map((path) =>
-          path.startsWith('/speech/manifest.json') ? new Request(path, { cache: 'reload' }) : path));
-        // Already-open v32 tabs still request the plain manifest and its old
-        // sentence IDs. New code uses the revision URL; both share the unchanged base sprites.
-        const previous = await caches.match('/speech/manifest.json', { cacheName: 'sean-learning-adventure-v32' });
-        if (previous) {
+          path.startsWith('/speech/manifest.json') || path === '/assets/garden/story-art.svg'
+            ? new Request(path, { cache: 'reload' }) : path));
+        // Keep the lookup URLs used by already-open tabs. New tabs see only
+        // the current catalog; old tabs can still finish removed story beats.
+        for (const [path, from] of [
+          ['/speech/manifest.json?rev=garden-stories-v1', 'v33'],
+          ['/speech/manifest.json', 'v33'],
+          ['/speech/manifest.json', 'v32'],
+        ]) {
+          const previous = await caches.match(path, { cacheName: `sean-learning-adventure-${from}` });
+          if (!previous) continue;
           const old = await previous.json().catch(() => null);
           if (old?.version === 2 && old.entries) {
-            const current = await (await cache.match('/speech/manifest.json')).json();
-            await cache.put('/speech/manifest.json', Response.json({
+            const current = await (await cache.match(path)).json();
+            await cache.put(path, Response.json({
               ...current, entries: { ...old.entries, ...current.entries },
             }));
           }

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
 
-it.each([false, true])('installs a fresh story catalog without stranding old Garden tabs (upgrade=%s)', async (upgrade) => {
+it.each(['fresh', 'v32', 'v33'])('installs a fresh story catalog without stranding old Garden tabs (upgrade=%s)', async (upgrade) => {
   const install = new Map<string, (event: { waitUntil: (p: Promise<void>) => void }) => void>();
   const self = { addEventListener: install.set.bind(install), skipWaiting: vi.fn() };
   const fresh = { version: 2, entries: { question: 'corrected', story: 'new' } };
@@ -16,7 +16,8 @@ it.each([false, true])('installs a fresh story catalog without stranding old Gar
         if (typeof item === 'string') stored.set(item, 'bundled');
         else {
           expect(item.cache).toBe('reload');
-          stored.set(item.url.slice(origin.length), JSON.stringify(fresh));
+          const path = item.url.slice(origin.length);
+          stored.set(path, path.startsWith('/speech/manifest.json') ? JSON.stringify(fresh) : 'bundled');
         }
       }
     },
@@ -24,7 +25,8 @@ it.each([false, true])('installs a fresh story catalog without stranding old Gar
   const storage = {
     open: async () => cache,
     match: async (key: string, options: CacheQueryOptions & { cacheName: string }) =>
-      upgrade && key === '/speech/manifest.json' && options.cacheName.endsWith('v32') ? old : undefined,
+      upgrade !== 'fresh' && options.cacheName.endsWith(upgrade) &&
+        (key === '/speech/manifest.json' || (key.endsWith('v1') && upgrade === 'v33')) ? old.clone() : undefined,
   };
   class LocalRequest extends Request {
     constructor(path: string, init?: RequestInit) { super(new URL(path, origin), init); }
@@ -34,12 +36,15 @@ it.each([false, true])('installs a fresh story catalog without stranding old Gar
   let done: Promise<void> | undefined;
   install.get('install')!({ waitUntil: p => { done = p; } });
   await done;
-  expect(JSON.parse(stored.get('/speech/manifest.json?rev=garden-stories-v1')!)).toEqual(fresh);
+  expect(JSON.parse(stored.get('/speech/manifest.json?rev=garden-stories-v2')!)).toEqual(fresh);
+  expect(JSON.parse(stored.get('/speech/manifest.json?rev=garden-stories-v1')!).entries)
+    .toEqual(upgrade === 'v33' ? { retired: 'original', ...fresh.entries } : fresh.entries);
   expect(JSON.parse(stored.get('/speech/manifest.json')!).entries)
-    .toEqual(upgrade ? { retired: 'original', ...fresh.entries } : fresh.entries);
+    .toEqual(upgrade !== 'fresh' ? { retired: 'original', ...fresh.entries } : fresh.entries);
   expect(stored.get('/assets/garden/story-art.svg')).toBe('bundled');
   for (const file of ['garden-question-he-IL', 'garden-stories-he-IL', 'garden-stories-en-US', 'garden-stories-en-GB']) {
     expect(stored.get(`/speech/${file}-v1.mp3`)).toBe('bundled');
+    if (file.startsWith('garden-stories')) expect(stored.get(`/speech/${file}-v2.mp3`)).toBe('bundled');
   }
   expect(self.skipWaiting).toHaveBeenCalledOnce();
 });

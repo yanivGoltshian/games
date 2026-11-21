@@ -21,16 +21,13 @@ export function GardenStoryScene({ sentence: s }: { sentence: GardenSentence }) 
   const apple = '/assets/vocabulary/apple.webp';
   switch (s.id) {
     case 'banana-peel': return <>{draw('#hand', 18, 64, 155, 113)}{draw('#peel', 60, 32, 87, 89, 'settle')}</>;
-    case 'banana-bucket': return <>{draw('#bucket', 109, 93, 83)}{draw('#peel', 123, 84, 53, 56, 'drop-in')}</>;
-    case 'banana-compost': return <>{draw('#compost', 9, 59, 183, 137)}{draw('#peel', 77, 99, 51, 51, 'decompose')}</>;
+    case 'banana-bin': return <>{draw('#bin', 109, 82, 90)}{draw('#peel', 130, 87, 46, 48, 'drop-in')}</>;
     case 'date-sprout': return <>{soil}{draw(s.art.subject!, 48, 26, 109, 121, 'emerge')}</>;
     case 'avocado-water': return <>{draw('#avocado', 79, 136, 46)}{draw('#water', 114, 91, 82)}{draw('#pit', 137, 84, 36, 42, 'drop-in')}</>;
-    case 'avocado-root': return <>{cup}{draw('#root', 86, 102, 45, 51, 'root')}{pit}</>;
     case 'avocado-shoot': return <>{cup}{draw('#root', 86, 102, 45, 51)}{draw('#shoot', 82, 17, 55, 63, 'emerge')}{pit}</>;
     case 'avocado-soil': return <>{draw('#pot', 96, 94, 100)}{draw('#shoot', 114, 64, 64, 64, 'transplant')}</>;
     case 'berry-flower': return <>{draw('#sun', 135, 8, 46)}{plant}{draw('#flower', 73, 41, 65, 65, 'blossom')}</>;
     case 'berry-bee': return <>{plant}{draw('#flower', 80, 60, 66)}{draw('#bee', 88, 48, 47, 43, 'land')}</>;
-    case 'berry-red': return <>{plant}{draw(s.art.subject!, 60, 100, 52, 53, 'ripen')}</>;
     case 'carrot-sow': return <>{draw('#soil', 83, 92, 115)}{draw('#seeds', 114, 123, 44, 40, 'drop-in')}</>;
     case 'carrot-rain': return <>{soil}{draw('#rain', 44, 3, 108)}{draw('#drops', 82, 91, 45, 55, 'drip')}</>;
     case 'carrot-leaves': return <>{soil}{draw('#tops', 47, 37, 105, 111, 'emerge')}</>;
@@ -44,6 +41,5 @@ export function GardenStoryScene({ sentence: s }: { sentence: GardenSentence }) 
       <path d="M188 51h-23q-11 0-11 11v9" fill="none" stroke="#799f99" strokeWidth="11" strokeLinecap="round"/>
       {draw('#drops', 137, 75, 35, 36, 'drip')}{draw(apple, 109, 103, 66, 63, 'wash')}
     </>;
-    case 'apple-drops': return <>{draw(apple, 43, 15, 112)}{draw('#drops', 71, 113, 57, 58, 'drip')}</>;
   }
 }

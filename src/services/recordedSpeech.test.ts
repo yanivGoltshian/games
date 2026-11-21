@@ -5,7 +5,7 @@ import {
   type RecordedSpeechEnvironment,
 } from './recordedSpeech';
 
-const manifestUrl = '/speech/manifest.json?rev=garden-stories-v1';
+const manifestUrl = '/speech/manifest.json?rev=garden-stories-v2';
 const installedIPadEnvironment: RecordedSpeechEnvironment = {
   userAgent: 'Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   platform: 'iPad',

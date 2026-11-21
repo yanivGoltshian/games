@@ -123,19 +123,25 @@ try {
       check(await board.getAttribute('data-journey') === 'station' && await next.isVisible(), `${name}: visible station dwell`);
       if (!baseline) await page.screenshot({ path: join(output, `${name}-station-synthetic.png`) });
       await page.waitForTimeout(1_000);
-      const automatic = await board.getAttribute('data-sentence');
-      check(automatic === (baseline ? 'dates' : 'banana-peel'), `${name}: next sentence without input`);
+      const restingSentence = await board.getAttribute('data-sentence');
+      check(restingSentence === (baseline ? 'dates' : 'banana'), `${name}: station holds until Next`);
       results.push({ name, width, height, languageMode, motion, brands, idle, held, startX, midX, endX: end.x,
-        sceneBox, actorScale, automatic, observedAfterMs: Date.now() - started });
+        sceneBox, actorScale, restingSentence, observedAfterMs: Date.now() - started });
       if (!baseline && motion === 'normal') {
+        assert(await scene.isVisible());
+        await next.tap();
+        assert.equal(await board.getAttribute('data-sentence'), 'banana-peel');
         await target.tap(); await target.tap();
         const plant = board.locator('.sentence-train__theater');
         assert.equal(await plant.locator('.sentence-train__actor').count(), 0);
         await waitForPaint(page, 'peel');
         await page.waitForTimeout(550);
         await page.screenshot({ path: join(output, `${name}-peel-synthetic.png`) });
-        await plant.waitFor({ state: 'detached' });
         assert.equal(await target.getAttribute('data-garden-part'), 'object');
+        await target.tap();
+        assert(await plant.isVisible());
+        await next.tap();
+        await plant.waitFor({ state: 'detached' });
       }
     } finally { await context.close(); }
   }
@@ -189,10 +195,10 @@ try {
             image.close();
           }
         }
-        const manifest = await (await fetch('/speech/manifest.json?rev=garden-stories-v1')).json();
+        const manifest = await (await fetch('/speech/manifest.json?rev=garden-stories-v2')).json();
         const clips = {};
-        for (const key of ['he-IL\u0000שורש לבן צומח לתוך המים', 'en-US\u0000A white root grows down into the water',
-          'en-GB\u0000A white root grows down into the water', 'he-IL\u0000אפשר להגיד את כל המשפט?']) {
+        for (const key of ['he-IL\u0000שון אוכל אבוקדו', 'en-US\u0000Sean eats an avocado',
+          'en-GB\u0000Sean eats an avocado', 'he-IL\u0000אפשר להגיד את כל המשפט?']) {
           const entry = manifest.entries[key];
           const buffer = await (await fetch(entry.src)).arrayBuffer();
           if (!entry.duration || buffer.byteLength < 1000) throw Error(`Missing offline clip: ${key}`);
@@ -200,39 +206,69 @@ try {
         }
         return { caches: await caches.keys(), hashes, alpha, clips };
       });
-      assert(receipt.caches.includes('sean-learning-adventure-v33'));
+      assert(receipt.caches.includes('sean-learning-adventure-v34'));
       assert.deepEqual(receipt.alpha, [0, 0, 0, 0, 0, 0, 255, 255]);
       assert.equal(receipt.hashes.station, '9a454e7148fe17f82a5798c214f4a932239af503e208b63dc460c9ac5eac10a6');
       assert.equal(receipt.hashes['sean-avatar'], '628e5081c1098ab6aa9a7f28c8a4fdf09aaababf31a95014f3068a4ce86a68b8');
       await writeFile(join(output, `${name}-offline-assets.json`), JSON.stringify(receipt, null, 2));
       const target = page.locator('.sentence-train__card.is-target');
-      for (const id of ['avocado-water', 'avocado-root', 'avocado-shoot', 'avocado-soil']) {
+      for (const id of ['avocado-eat', 'avocado-water', 'avocado-shoot', 'avocado-soil']) {
         assert.equal(await page.locator('.sentence-train').getAttribute('data-sentence'), id);
         await target.tap(); await target.tap();
-        if (id === 'avocado-root') {
+        if (id === 'avocado-eat') {
+          await waitForPaint(page, 'avocado-flesh');
+          assert.equal(await page.locator('.sentence-train__theater use[href$="#pit"]').count(), 0);
+        }
+        if (id === 'avocado-shoot') {
           const preview = page.locator('.sentence-train__theater');
           assert.equal(await preview.locator('foreignObject').count(), 0);
-          await waitForPaint(page, 'root');
+          await waitForPaint(page, 'shoot');
           await page.waitForTimeout(760);
-          await page.screenshot({ path: join(output, `${name}-offline-root.png`) });
+          await page.screenshot({ path: join(output, `${name}-offline-shoot.png`) });
         }
         await target.tap(); await page.locator('.sentence-train__next').tap();
       }
       await page.goto(`${url.origin}/?voice-proof#/games/wordGarden`);
       const checks = await page.evaluate(async (english) => {
-        const manifest = await (await fetch('/speech/manifest.json?rev=garden-stories-v1')).json();
-        const keys = english ? ['en-US\u0000Can you say the whole sentence?', 'en-US\u0000Sean puts an avocado pit in water']
-          : ['he-IL\u0000אפשר להגיד את כל המשפט?', 'he-IL\u0000שון שם גרעין אבוקדו במים'];
+        const manifest = await (await fetch('/speech/manifest.json?rev=garden-stories-v2')).json();
+        const keys = english ? ['en-US\u0000Can you say the whole sentence?', 'en-US\u0000Sean eats an avocado']
+          : ['he-IL\u0000אפשר להגיד את כל המשפט?', 'he-IL\u0000שון אוכל אבוקדו'];
         return keys.map(key => ({ key, ...manifest.entries[key] }));
       }, name === 'ipad');
       await target.tap(); await target.tap(); await target.tap();
       await page.locator('.sentence-train__next').waitFor({ timeout: 20_000 });
+      await page.locator('.sentence-train[data-departed="true"]').waitFor({ timeout: 20_000 });
       const playback = await page.evaluate(() => window.gardenPlayback);
       for (const clip of checks) {
         assert(playback.some(item => item.elapsed >= clip.duration - .05 && item.state === 'running'
           && item.offset === clip.offset && item.duration === clip.duration), `${name}: offline app plays ${clip.key}`);
       }
       await writeFile(join(output, `${name}-offline-playback.json`), JSON.stringify({ checks, playback }, null, 2));
+      if (name === 'phone') {
+        const turns = [];
+        for (let i = 0; i < 22; i++) {
+          if (i > 0) {
+            await target.tap(); await target.tap(); await target.tap();
+            await page.locator('.rail-button--replay').tap();
+            await page.locator('.sentence-train[data-departed="true"]').waitFor({ timeout: 15_000 });
+          }
+          const turn = await page.evaluate(async () => {
+            const board = document.querySelector('.sentence-train');
+            const pointed = board.querySelector('h1').textContent;
+            const text = pointed.normalize('NFC').replace(/[\u0591-\u05bd\u05bf-\u05c7]/gu, '');
+            const manifest = await (await fetch('/speech/manifest.json?rev=garden-stories-v2')).json();
+            const clip = manifest.entries[`he-IL\u0000${text}`];
+            return { id: board.dataset.sentence, pointed, text, clip, played: clip && window.gardenPlayback.some(
+              r => r.offset === clip.offset && r.duration === clip.duration && r.elapsed >= clip.duration - .05),
+            };
+          });
+          assert(turn.pointed !== turn.text && turn.played, `${name}: pointed caption and offline full model for ${turn.id}`);
+          turns.push(turn);
+          await page.locator('.sentence-train__next').tap();
+        }
+        assert.equal(new Set(turns.map(t => t.id)).size, 22);
+        await writeFile(join(output, 'all-hebrew-models-offline.json'), JSON.stringify(turns, null, 2));
+      }
     } finally { await context.close(); }
     }
   }

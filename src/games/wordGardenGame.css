@@ -162,7 +162,7 @@
   overflow-wrap: anywhere;
   font-size: clamp(.85rem, 3vmin, 1.55rem);
   font-weight: 800;
-  line-height: 1.08;
+  line-height: 1.25;
 }
 
 .sentence-train__picture {

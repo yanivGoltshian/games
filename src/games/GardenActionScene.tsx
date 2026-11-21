@@ -13,6 +13,7 @@ function Fruit({ sentence, acted }: { sentence: GardenSentence; acted: boolean }
     ? <svg x="344" y="255" width="126" height="139" viewBox="0 0 218 180">
         <image className={className} href={href} width="391" height="402" />
       </svg>
+    : href.startsWith('#') ? <g className={className}><GardenDrawing src={href} x={338} y={245} w={138} h={155} /></g>
     : <image className={className} href={href} x="338" y="245" width="138" height="155" />;
   return <>
     {acted && !sentence.aftermath && <defs>
@@ -35,8 +36,7 @@ export function GardenActionScene({ sentence, acted, original, actor }: {
   const { motion } = sentence;
   const food = motion === 'eat';
   const articulate = food && original;
-  const frame = food ? '0 0 146 175' : sentence.id === 'avocado-root' ? '38 51 135 133'
-    : sentence.id === 'avocado-shoot' ? '36 8 139 176' : '0 0 200 188';
+  const frame = food ? '0 0 146 175' : sentence.id === 'avocado-shoot' ? '36 8 139 176' : '0 0 200 188';
   return <div className={`sentence-train__picture sentence-train__action is-${motion ?? sentence.id}`} data-acted={acted}>
     <svg viewBox={frame} aria-hidden="true" className="garden-scene">
       {articulate && <defs>
