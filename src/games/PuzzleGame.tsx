@@ -1,6 +1,7 @@
 import { createRef, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { sceneImageHref } from '../art/puzzleScenes';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { PuzzlePieceArt } from '../components/puzzle/PuzzlePieceArt';
 import { useFamilyPhotoPreviews } from '../components/useFamilyPhotoPreviews';
 import { useMeasuredSize } from '../components/useMeasuredSize';
@@ -82,7 +83,7 @@ export function PuzzleGame({
     ? `family:${experience.photoId}:${puzzleLevel}:${arrangementIndex}`
     : `built-in:${builtInRoundKey}`;
   const itemsRoundKeyRef = useRef(roundKey);
-  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
+  const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = playing
     ? (englishOnly ? round.promptEn : round.promptHe)
@@ -174,12 +175,14 @@ export function PuzzleGame({
     items,
     setItems,
     zones: zoneRefs,
-    disabled: retryBusy || !playing,
+    roundKey,
+    onSelect: beginInteraction,
+    disabled: !!celebration || !playing,
     onDrop: (itemId, zoneId) => {
-      if (retryBusy) {
+      if (celebration || solvedIds.includes(itemId)) {
         return false;
       }
-      speechService.supersedeRetry(SPEECH_SCOPE);
+      beginInteraction();
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       if (itemId !== zoneId) {
@@ -188,11 +191,11 @@ export function PuzzleGame({
         if (nextMisses >= 2 && (settings.quietMode || !speechStatus.supported)) {
           setHintSlotId(itemId);
         }
-        void runRetry({
+        runRetry({
           missCount: nextMisses,
           seed: `${roundKey}:${nextMisses}:${itemId}`,
           modelLines: [buildPuzzleMissModelLine(nextMisses, `puzzle-slot:${itemId}`)],
-        }).finally(() => setHintSlotId(null));
+        });
         return false;
       }
 
@@ -272,6 +275,7 @@ export function PuzzleGame({
             </button>
             <button
               className="puzzle-photo-choice puzzle-photo-choice--built-in"
+              {...cardPressFeedback}
               onClick={chooseBuiltInPuzzle}
               type="button"
               aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
@@ -289,6 +293,7 @@ export function PuzzleGame({
           <button
             className="puzzle-photo-choice puzzle-photo-choice--built-in"
             data-puzzle-source="built-in"
+            {...cardPressFeedback}
             onClick={chooseBuiltInPuzzle}
             type="button"
             aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
@@ -299,6 +304,7 @@ export function PuzzleGame({
             <button
               className="puzzle-photo-choice"
               data-family-photo-choice={photo.id}
+              {...cardPressFeedback}
               key={photo.id}
               onClick={() => setExperience({ kind: 'family', photoId: photo.id })}
               type="button"
@@ -327,7 +333,7 @@ export function PuzzleGame({
       restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
-      retryActive={retryBusy}
+      retryActive={retryVisible}
       successOverlay={
         celebration ? (
           <RoundSuccessOverlay
@@ -358,7 +364,7 @@ export function PuzzleGame({
             <button
               key={piece.id}
               ref={zoneRefs[piece.id]}
-              className={`puzzle-slot ${hoverZoneId === piece.id ? 'is-zone-hover' : ''} ${hintSlotId === piece.id || speechStatus.activeCue === `puzzle-slot:${piece.id}` ? 'is-teaching-hint' : ''}`}
+              className={`puzzle-slot ${hoverZoneId === piece.id ? 'is-zone-hover' : ''} ${(retryVisible && hintSlotId === piece.id) || speechStatus.activeCue === `puzzle-slot:${piece.id}` ? 'is-teaching-hint' : ''}`}
               type="button"
               style={{
                 width: layout.pieceWidth,

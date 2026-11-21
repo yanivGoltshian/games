@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type TransitionEvent } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { getMemoryConcept, MEMORY_GARDEN_ART } from '../content/memoryGarden';
 import { gameMeta } from '../content/games';
 import { generateMemoryRound, getMemoryRoundSignature } from '../domain/rounds';
 import { soundService } from '../services/sound';
-import { buildPhraseSegments, speechService, type SpeechResult } from '../services/speech';
+import { buildPhraseSegments, speechService } from '../services/speech';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import {
   INITIAL_MEMORY_CELEBRATION_STATE,
-  MEMORY_PAIR_SOUND_HOLD_MS,
   memoryMismatchHoldMs,
   memoryRevealFallbackMs,
   reduceMemoryCelebration,
@@ -38,12 +38,9 @@ export function MemoryGame({
   const [flippedIds, setFlippedIds] = useState<string[]>([]);
   const [matchedPairIds, setMatchedPairIds] = useState<string[]>([]);
   const [celebratedPairIds, setCelebratedPairIds] = useState<string[]>([]);
-  const [narrationBusy, setNarrationBusy] = useState(false);
   const [mismatch, setMismatch] = useState<{ token: number } | null>(null);
   const mismatchTokenRef = useRef(0);
-  const firstLabelPromiseRef = useRef<Promise<SpeechResult> | null>(null);
-  const pairFeedbackTimerRef = useRef<number | null>(null);
-  const roundGenerationRef = useRef(0);
+  const interactionRef = useRef(0);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'memory',
@@ -51,7 +48,7 @@ export function MemoryGame({
     generateMemoryRound,
     { getSignature: getMemoryRoundSignature, limit: 8 },
   );
-  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
+  const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
   const celebration = celebrationState.visible;
@@ -80,26 +77,12 @@ export function MemoryGame({
     setFlippedIds([]);
     setMatchedPairIds([]);
     setCelebratedPairIds([]);
-    setNarrationBusy(false);
     setMismatch(null);
-    firstLabelPromiseRef.current = null;
-    if (pairFeedbackTimerRef.current !== null) {
-      window.clearTimeout(pairFeedbackTimerRef.current);
-      pairFeedbackTimerRef.current = null;
-    }
-    roundGenerationRef.current += 1;
     if (mediaReady) {
       void speakPromptRef.current();
     }
+    return () => { interactionRef.current += 1; };
   }, [mediaReady, roundKey]);
-
-  useEffect(() => () => {
-    roundGenerationRef.current += 1;
-    if (pairFeedbackTimerRef.current !== null) {
-      window.clearTimeout(pairFeedbackTimerRef.current);
-      pairFeedbackTimerRef.current = null;
-    }
-  }, []);
 
   useEffect(() => {
     if (!pendingCelebration) {
@@ -126,13 +109,10 @@ export function MemoryGame({
       return;
     }
 
-    const generation = roundGenerationRef.current;
     const handle = scheduleMemoryMismatchClose(
       mismatchHoldMs,
       () => {
-        if (generation === roundGenerationRef.current) {
-          setFlippedIds([]);
-        }
+        setFlippedIds([]);
         setMismatch(null);
       },
       window,
@@ -146,8 +126,6 @@ export function MemoryGame({
       celebration
       || pendingCelebration
       || mismatch
-      || retryBusy
-      || narrationBusy
       || flippedIds.includes(cardId)
     ) {
       return;
@@ -158,26 +136,20 @@ export function MemoryGame({
       return;
     }
 
+    const interaction = ++interactionRef.current;
+    beginInteraction();
     soundService.playTap(settings);
-    const generation = roundGenerationRef.current;
     const concept = getMemoryConcept(card.conceptId);
     const nextFlipped = [...flippedIds, cardId];
     setFlippedIds(nextFlipped);
 
     if (nextFlipped.length < 2) {
       if (concept) {
-        const firstLabelPromise = speechService.speakSegments(
+        void speechService.speakSegments(
           buildPhraseSegments(concept.he, concept.en, settings.languageMode, settings.englishVoiceLocale),
           settings,
           { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label' },
         );
-        firstLabelPromiseRef.current = firstLabelPromise;
-        setNarrationBusy(true);
-        void firstLabelPromise.then(() => {
-          if (generation === roundGenerationRef.current) {
-            setNarrationBusy(false);
-          }
-        });
       }
       return;
     }
@@ -186,7 +158,6 @@ export function MemoryGame({
     setAttempts(nextAttempts);
     const [firstId] = nextFlipped;
     const firstCard = round.cards.find((item) => item.id === firstId)!;
-    const firstConcept = getMemoryConcept(firstCard.conceptId);
 
     if (firstCard.pairId === card.pairId) {
       const nextMatched = [...matchedPairIds, card.pairId];
@@ -202,9 +173,6 @@ export function MemoryGame({
           { scope: SPEECH_SCOPE, key: 'card-label', priority: 'label' },
         )
         : null;
-      if (secondLabelPromise) {
-        setNarrationBusy(true);
-      }
       if (nextMatched.length === round.pairConceptIds.length) {
         const summary = onCompleteRound({
           attempts: nextAttempts,
@@ -228,47 +196,27 @@ export function MemoryGame({
         });
       } else if (secondLabelPromise) {
         void secondLabelPromise.then((result) => {
-          if (generation !== roundGenerationRef.current) {
+          if (interaction !== interactionRef.current) {
             return;
           }
           if (result.status !== 'cancelled' && result.status !== 'superseded') {
             soundService.playMemoryPair(settings);
           }
-          const soundEnabled = !settings.quietMode && settings.soundLevel > 0;
-          if (!soundEnabled) {
-            setNarrationBusy(false);
-            return;
-          }
-          pairFeedbackTimerRef.current = window.setTimeout(() => {
-            pairFeedbackTimerRef.current = null;
-            if (generation === roundGenerationRef.current) {
-              setNarrationBusy(false);
-            }
-          }, MEMORY_PAIR_SOUND_HOLD_MS);
         });
       }
-      firstLabelPromiseRef.current = null;
       return;
     }
 
     const nextMisses = misses + 1;
     setMisses(nextMisses);
     setMismatch({ token: (mismatchTokenRef.current += 1) });
-    const firstLabel = firstLabelPromiseRef.current;
-    firstLabelPromiseRef.current = null;
-    const modelLines = [
-      ...(firstLabel || !firstConcept ? [] : [{ he: firstConcept.he, en: firstConcept.en, pauseAfterMs: 180 }]),
-      ...(concept ? [{ he: concept.he, en: concept.en, pauseAfterMs: 220 }] : []),
-    ];
     // Fire-and-forget audio only. Card close + interaction lock are owned by the
     // mismatch timeout above, never by this speech promise (which can hang on iPad).
-    void runRetry({
+    runRetry({
       missCount: nextMisses,
       seed: `${roundKey}:${nextMisses}:${firstCard.conceptId}:${card.conceptId}`,
-      modelLines,
+      modelLines: concept ? [{ he: concept.he, en: concept.en, pauseAfterMs: 220 }] : [],
       phraseScope: 'memory-search',
-      beforeSpeech: firstLabel,
-      lockUntilComplete: true,
     });
   };
 
@@ -296,7 +244,7 @@ export function MemoryGame({
       restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
-      retryActive={retryBusy}
+      retryActive={retryVisible}
       successOverlay={
         celebration ? (
           <RoundSuccessOverlay
@@ -325,8 +273,9 @@ export function MemoryGame({
             return (
               <button
                 key={card.id}
+                {...cardPressFeedback}
                 className={`memory-card ${flipped ? 'memory-card--flipped' : ''} ${celebrated ? 'memory-card--celebrated' : ''}`}
-                disabled={mismatch !== null || retryBusy || narrationBusy || matched}
+                disabled={mismatch !== null || matched}
                 onClick={() => handleCardClick(card.id)}
                 type="button"
                 aria-label={flipped ? (englishOnly ? concept.en : concept.he) : (englishOnly ? 'Hidden card' : 'קלף סגור')}

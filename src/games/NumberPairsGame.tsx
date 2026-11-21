@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { gameMeta } from '../content/games';
 import { MORE_NUMBERS_SPEECH } from '../content/levelUpSpeech';
 import {
@@ -46,7 +47,7 @@ export function NumberPairsGame({
     generateNumberPairsRound,
     { getSignature: getNumberPairsRoundSignature, limit: 8 },
   );
-  const { retryBusy, runRetry } = useRetryFeedback({
+  const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({
     scope: SPEECH_SCOPE,
     roundKey,
     settings,
@@ -90,113 +91,38 @@ export function NumberPairsGame({
     });
   };
 
-  const handleTop = (index: number): void => {
-    if (state.completed || celebration || retryBusy) {
+  const chooseTile = (row: 'top' | 'bottom', index: number): void => {
+    const top = row === 'top';
+    if (state.completed || celebration || (retryVisible && (top ? state.wrongTopIndex : state.wrongBottomIndex) === index)) {
       return;
     }
-    const chosenValue = round.topRow[index]!;
-    const selectedBottomIndex = state.selectedBottomIndex;
-    soundService.playTap(settings);
-    const nextState = reduceNumberPairs(state, { type: 'select-top', index }, round);
+    const chosenValue = (top ? round.topRow : round.bottomRow)[index]!;
+    const anchorIndex = top ? state.selectedBottomIndex : state.selectedTopIndex;
+    const nextState = reduceNumberPairs(state, { type: top ? 'select-top' : 'select-bottom', index }, round);
     if (nextState === state) {
       return;
     }
-    setState(nextState);
-
-    // If no bottom was selected, we are just selecting the top.
-    if (selectedBottomIndex === null) {
-      void speakNumber(chosenValue);
-      return;
-    }
-
-    // A bottom was selected, so this is a match check.
-    const selectedValue = round.bottomRow[selectedBottomIndex]!;
-    if (nextState.wrongTopIndex !== null) {
-      const numberSpeech = speakNumber(chosenValue);
-      const missCount = nextState.attempts - nextState.matchedBottomIndices.length;
-      void runRetry({
-        missCount,
-        seed: `${roundKey}:${nextState.attempts}:${selectedValue}`,
-        modelLines: [{
-          he: NUMBER_WORDS_HE[selectedValue] ?? String(selectedValue),
-          en: NUMBER_WORDS_EN[selectedValue] ?? String(selectedValue),
-          pauseAfterMs: 220,
-        }],
-        phraseScope: 'number-pairs',
-        beforeSpeech: numberSpeech,
-        lockUntilComplete: true,
-      }).finally(() => {
-        setState((current) => reduceNumberPairs(current, { type: 'clear-wrong' }, round));
-      });
-      return;
-    }
-
-    soundService.playSuccess(settings);
-    if (!nextState.completed) {
-      void speakNumber(chosenValue);
-      return;
-    }
-
-    const summary = onCompleteRound({
-      attempts: nextState.attempts,
-      requiredActions: round.selectedValues.length,
-      concepts: round.selectedValues.map((value) => `number-${value}`),
-    });
-    const followUpSegments = summary.recommendation
-      ? buildPhraseSegments(
-          MORE_NUMBERS_SPEECH.he,
-          MORE_NUMBERS_SPEECH.en,
-          settings.languageMode,
-          settings.englishVoiceLocale,
-        )
-      : [];
-    setCelebration({
-      seed: `number-pairs-${roundKey}-${round.signature}-${nextState.attempts}`,
-      targetSegments: numberSegments(chosenValue, settings),
-      tier: summary.milestone ? 'milestone' : 'standard',
-      recommendation: summary.recommendation,
-      celebrationVariant: 'trophy-spark',
-      followUpSegments,
-    });
-  };
-
-  const handleBottom = (index: number): void => {
-    if (state.completed || celebration || retryBusy) {
-      return;
-    }
-    const chosenValue = round.bottomRow[index]!;
-    const selectedTopIndex = state.selectedTopIndex;
+    beginInteraction();
     soundService.playTap(settings);
-    const nextState = reduceNumberPairs(state, { type: 'select-bottom', index }, round);
-    if (nextState === state) {
-      return;
-    }
     setState(nextState);
 
-    // If no top was selected, we are just selecting the bottom.
-    if (selectedTopIndex === null) {
+    if (anchorIndex === null) {
       void speakNumber(chosenValue);
       return;
     }
 
-    // A top was selected, so this is a match check.
-    const selectedValue = round.topRow[selectedTopIndex]!;
-    if (nextState.wrongBottomIndex !== null) {
-      const numberSpeech = speakNumber(chosenValue);
+    if (nextState.wrongTopIndex !== null || nextState.wrongBottomIndex !== null) {
+      const selectedValue = (top ? round.bottomRow : round.topRow)[anchorIndex]!;
       const missCount = nextState.attempts - nextState.matchedTopIndices.length;
-      void runRetry({
+      runRetry({
         missCount,
         seed: `${roundKey}:${nextState.attempts}:${selectedValue}`,
-        modelLines: [{
-          he: NUMBER_WORDS_HE[selectedValue] ?? String(selectedValue),
-          en: NUMBER_WORDS_EN[selectedValue] ?? String(selectedValue),
+        modelLines: [chosenValue, selectedValue].map((value) => ({
+          he: NUMBER_WORDS_HE[value] ?? String(value),
+          en: NUMBER_WORDS_EN[value] ?? String(value),
           pauseAfterMs: 220,
-        }],
+        })),
         phraseScope: 'number-pairs',
-        beforeSpeech: numberSpeech,
-        lockUntilComplete: true,
-      }).finally(() => {
-        setState((current) => reduceNumberPairs(current, { type: 'clear-wrong' }, round));
       });
       return;
     }
@@ -245,7 +171,7 @@ export function NumberPairsGame({
       restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
-      retryActive={retryBusy}
+      retryActive={retryVisible}
       successOverlay={
         celebration ? (
           <RoundSuccessOverlay
@@ -270,13 +196,14 @@ export function NumberPairsGame({
             {round.topRow.map((value, index) => {
               const selected = state.selectedTopIndex === index;
               const matched = state.matchedTopIndices.includes(index);
-              const wrong = state.wrongTopIndex === index;
+              const wrong = retryVisible && state.wrongTopIndex === index;
               return (
                 <button
                   key={`top-${index}-${value}`}
+                  {...cardPressFeedback}
                   className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
-                  disabled={retryBusy || matched}
-                  onClick={() => handleTop(index)}
+                  disabled={matched}
+                  onClick={() => chooseTile('top', index)}
                   type="button"
                   aria-label={englishOnly ? NUMBER_WORDS_EN[value] : NUMBER_WORDS_HE[value]}
                   aria-pressed={selected || matched}
@@ -296,13 +223,14 @@ export function NumberPairsGame({
             {round.bottomRow.map((value, index) => {
               const selected = state.selectedBottomIndex === index;
               const matched = state.matchedBottomIndices.includes(index);
-              const wrong = state.wrongBottomIndex === index;
+              const wrong = retryVisible && state.wrongBottomIndex === index;
               return (
                 <button
                   key={`bottom-${index}-${value}`}
+                  {...cardPressFeedback}
                   className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
-                  disabled={retryBusy || matched}
-                  onClick={() => handleBottom(index)}
+                  disabled={matched}
+                  onClick={() => chooseTile('bottom', index)}
                   type="button"
                   aria-label={englishOnly ? NUMBER_WORDS_EN[value] : NUMBER_WORDS_HE[value]}
                   aria-pressed={selected || matched}

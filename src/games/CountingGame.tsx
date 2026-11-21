@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { getCountingQuantityPhrase, type CountingConceptId } from '../content/countingQuantity';
 import { gameMeta } from '../content/games';
 import { buildCountingMissModel, getCountingLayout } from '../domain/countingFeedback';
@@ -26,7 +27,6 @@ import { useMicEffort } from './useMicEffort';
 import { useRetryFeedback } from './useRetryFeedback';
 import { useGenerationToken } from './useGenerationToken';
 
-const WIGGLE_MS = 520;
 const SPEECH_SCOPE = 'game:counting';
 
 function numberWords(value: number): { he: string; en: string } {
@@ -44,7 +44,6 @@ export function CountingGame({
   const [attempts, setAttempts] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
   const [wiggleValue, setWiggleValue] = useState<number | null>(null);
-  const [hintedValue, setHintedValue] = useState<number | null>(null);
   const [voiceOn, setVoiceOn] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
   const lifecycle = useAppLifecycle();
@@ -75,7 +74,7 @@ export function CountingGame({
       stepId: 'retry',
     },
   }), [mediaScope, sessionId]);
-  const { retryBusy, runRetry } = useRetryFeedback({
+  const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({
     scope: SPEECH_SCOPE,
     roundKey,
     settings,
@@ -91,13 +90,16 @@ export function CountingGame({
   const { start: startMic, stop: stopMic, supported: micSupported } = mic;
   const activePromptRef = useRef<Promise<InteractionMediaOutcome> | null>(null);
   const voiceRequestRef = useRef(0);
+  const micRetryTimer = useRef<number | undefined>(undefined);
   const closeVoiceCapture = useCallback((): void => {
     voiceRequestRef.current += 1;
+    window.clearTimeout(micRetryTimer.current);
     stopMic();
     setVoiceOn(false);
     setVoiceLevel(0);
   }, [stopMic]);
   const toggleVoice = useCallback(() => {
+    window.clearTimeout(micRetryTimer.current);
     const requestId = voiceRequestRef.current + 1;
     voiceRequestRef.current = requestId;
     if (voiceOn) {
@@ -107,47 +109,24 @@ export function CountingGame({
       return;
     }
     const token = generation.token;
-    interactionMediaCoordinator.notifyInteraction(mediaScope, 'touch');
-    void (async () => {
-      await activePromptRef.current;
-      if (
-        requestId !== voiceRequestRef.current
-        || !generation.isCurrent(token)
-      ) {
+    beginInteraction();
+    const isCurrent = () => requestId === voiceRequestRef.current && generation.isCurrent(token);
+    const openMic = async (allowRetry: boolean): Promise<void> => {
+      if (!isCurrent()) return;
+      const outcome = await startMic();
+      if (!isCurrent()) return;
+      if (allowRetry && outcome.status === 'playback-guarded') {
+        micRetryTimer.current = window.setTimeout(() => void openMic(false), DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS);
         return;
-      }
-      let outcome = await startMic();
-      if (
-        requestId !== voiceRequestRef.current
-        || !generation.isCurrent(token)
-      ) {
-        return;
-      }
-      if (outcome.status === 'playback-guarded') {
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, DEFAULT_MICROPHONE_PLAYBACK_GUARD_MS);
-        });
-        if (
-          requestId !== voiceRequestRef.current
-          || !generation.isCurrent(token)
-        ) {
-          return;
-        }
-        outcome = await startMic();
-        if (
-          requestId !== voiceRequestRef.current
-          || !generation.isCurrent(token)
-        ) {
-          return;
-        }
       }
       const started = outcome.status === 'started';
       setVoiceOn(started);
       if (!started) {
         setVoiceLevel(0);
       }
-    })();
-  }, [generation, mediaScope, startMic, stopMic, voiceOn]);
+    };
+    void Promise.resolve(activePromptRef.current).then(() => openMic(true));
+  }, [beginInteraction, generation, startMic, stopMic, voiceOn]);
 
   useEffect(() => {
     if (lifecycle === 'background') {
@@ -182,7 +161,6 @@ export function CountingGame({
     setAttempts(0);
     setCelebration(null);
     setWiggleValue(null);
-    setHintedValue(null);
     closeVoiceCapture();
     if (mediaReady) {
       void speakPromptRef.current();
@@ -207,17 +185,18 @@ export function CountingGame({
   useEffect(() => () => {
     const cleanup = cleanupRef.current;
     voiceRequestRef.current += 1;
+    window.clearTimeout(micRetryTimer.current);
     cleanup.stopMic();
     interactionMediaCoordinator.notifyInteraction(cleanup.mediaScope, 'exit');
   }, []);
 
   const handlePick = (value: number) => {
-    if (celebration || retryBusy) {
+    if (celebration || (retryVisible && wiggleValue === value)) {
       return;
     }
 
     closeVoiceCapture();
-    interactionMediaCoordinator.notifyInteraction(mediaScope, 'touch');
+    beginInteraction();
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
 
@@ -243,16 +222,12 @@ export function CountingGame({
     }
 
     setWiggleValue(value);
-    window.setTimeout(() => setWiggleValue((current) => (current === value ? null : current)), WIGGLE_MS);
     const model = buildCountingMissModel(countingConceptId, round.targetCount, nextAttempts);
-    if (model.variant === 'subsequent-miss' && visualOnlyFeedback) {
-      setHintedValue(round.targetCount);
-    }
-    void runRetry({
+    runRetry({
       missCount: nextAttempts,
       seed: `${roundKey}:${nextAttempts}`,
       modelLines: model.lines,
-    }).finally(() => setHintedValue(null));
+    });
   };
 
   return (
@@ -272,7 +247,7 @@ export function CountingGame({
       restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
-      retryActive={retryBusy}
+      retryActive={retryVisible}
       successOverlay={
         celebration ? (
           <RoundSuccessOverlay
@@ -299,7 +274,7 @@ export function CountingGame({
         {Array.from({ length: round.targetCount }, (_, index) => (
           <span
             key={index}
-            className={`counting-cloud__item ${speechStatus.activeCue === `count-item:${index}` ? 'is-counting' : ''} ${visualOnlyFeedback && retryBusy ? 'is-counting-fallback' : ''}`}
+            className={`counting-cloud__item ${speechStatus.activeCue === `count-item:${index}` ? 'is-counting' : ''} ${visualOnlyFeedback && retryVisible ? 'is-counting-fallback' : ''}`}
             style={{ '--count-index': index } as CSSProperties}
           >
             <ConceptArt conceptId={round.countingConceptId} className="counting-cloud__art" />
@@ -318,8 +293,9 @@ export function CountingGame({
           return (
             <button
               key={value}
-              className={`choice-button choice-button--number ${wiggleValue === value ? 'is-wiggling' : ''} ${hintedValue === value || speechStatus.activeCue === `count-answer:${value}` ? 'is-teaching-hint' : ''}`}
-              disabled={retryBusy}
+              {...cardPressFeedback}
+              className={`choice-button choice-button--number ${retryVisible && wiggleValue === value ? 'is-wiggling' : ''} ${(retryVisible && visualOnlyFeedback && attempts > 1 && value === round.targetCount) || speechStatus.activeCue === `count-answer:${value}` ? 'is-teaching-hint' : ''}`}
+              disabled={!!celebration}
               onClick={() => handlePick(value)}
               type="button"
               aria-label={englishOnly ? words.en : words.he}

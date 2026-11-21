@@ -997,8 +997,15 @@ body[data-reduced-motion='true'] .garden-bonus__leaves { animation: none; }
   -webkit-touch-callout: none;
 }
 
-.choice-button:active {
-  transform: scale(0.95);
+/* Give the finger feedback without shrinking the hit target away from its edge. */
+:is(.choice-button, .memory-card, .number-pair-tile, .sort-zone, .puzzle-slot, .puzzle-photo-choice,
+  .draggable-chip, .puzzle-piece, .silly-alien-figure-tap, .silly-alien-fallback__button):is(:active, [data-card-press]):not(:disabled) {
+  filter: brightness(.89);
+}
+
+:is(.choice-button, .memory-card, .number-pair-tile, .sort-zone, .draggable-chip,
+  .puzzle-piece, .puzzle-photo-choice, .puzzle-slot, .silly-alien-figure-tap) > * {
+  pointer-events: none;
 }
 
 .choice-button:focus-visible {
@@ -1763,10 +1770,6 @@ body[data-reduced-motion='true'] .garden-bonus__leaves { animation: none; }
   font-size: min(79cqi, 78cqb, 6rem);
 }
 
-.number-pair-tile:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
 .number-pair-tile.is-selected {
   border-color: var(--color-plum-strong);
   background: color-mix(in oklch, var(--color-plum-soft) 72%, white);
@@ -1898,6 +1901,24 @@ body[data-reduced-motion='true'] .garden-bonus__leaves { animation: none; }
   gap: var(--space-3);
   text-align: center;
   overflow: hidden;
+}
+
+.success-overlay__continue {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.success-overlay__continue:focus-visible ~ .success-card {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.success-overlay__continue:is(:active, [data-card-press]) ~ .success-card {
+  filter: brightness(.89);
 }
 
 .success-card__celebration {
@@ -2547,8 +2568,7 @@ input[type='text'] {
   outline-offset: 6px;
 }
 
-.silly-alien-figure-tap--presenting,
-.silly-alien-figure-tap--success {
+.silly-alien-figure-tap--presenting {
   cursor: default;
 }
 

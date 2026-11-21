@@ -33,11 +33,10 @@ export function SortingGame({
   const [items, setItems] = useState<Record<string, DragItemState>>({});
   const surfaceRef = useRef<HTMLDivElement>(null);
   const zoneGridRef = useRef<HTMLDivElement>(null);
-  const lastSpokenSelection = useRef<string | null>(null);
   const size = useMeasuredSize(surfaceRef);
 
   const { round, roundKey, startNextRound } = useAdaptiveRound('sorting', domainProgress, generateSortingRound);
-  const { retryBusy, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
+  const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({ scope: SPEECH_SCOPE, roundKey, settings });
   const englishOnly = settings.languageMode === 'en';
   const prompt = englishOnly ? round.promptEn : round.promptHe;
   const zoneRefs = useMemo(
@@ -90,7 +89,6 @@ export function SortingGame({
     setMisses(0);
     setCelebration(null);
     setHintZoneId(null);
-    lastSpokenSelection.current = null;
     if (mediaReady) {
       void speakPromptRef.current();
     }
@@ -114,12 +112,24 @@ export function SortingGame({
     items,
     setItems,
     zones: zoneRefs,
-    disabled: retryBusy,
+    roundKey,
+    disabled: !!celebration,
+    onSelect: (itemId) => {
+      beginInteraction();
+      const item = round.items.find((candidate) => candidate.id === itemId);
+      if (item && mediaReady) {
+        void speechService.speakSegments(
+          buildPhraseSegments(item.he, item.en, settings.languageMode, settings.englishVoiceLocale),
+          settings,
+          { scope: SPEECH_SCOPE, key: 'selection-label', priority: 'label' },
+        );
+      }
+    },
     onDrop: (itemId, zoneId) => {
-      if (retryBusy) {
+      if (celebration || placements[itemId]) {
         return false;
       }
-      speechService.supersedeRetry(SPEECH_SCOPE);
+      beginInteraction();
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       const definition = round.items.find((item) => item.id === itemId);
@@ -139,11 +149,11 @@ export function SortingGame({
             targetBin.labelEn,
             `sort-zone:${targetBin.id}`,
           );
-          void runRetry({
+          runRetry({
             missCount: nextMisses,
             seed: `${roundKey}:${nextMisses}:${itemId}`,
             modelLines: [modelLine],
-          }).finally(() => setHintZoneId(null));
+          });
         }
         return false;
       }
@@ -186,22 +196,6 @@ export function SortingGame({
     },
   });
 
-  // Labeling tap: naming the object as soon as it is selected/picked up.
-  useEffect(() => {
-    if (!selectedId || selectedId === lastSpokenSelection.current || !mediaReady) {
-      return;
-    }
-    lastSpokenSelection.current = selectedId;
-    const definition = round.items.find((item) => item.id === selectedId);
-    if (definition) {
-      void speechService.speakSegments(
-        buildPhraseSegments(definition.he, definition.en, settings.languageMode, settings.englishVoiceLocale),
-        settings,
-        { scope: SPEECH_SCOPE, key: 'selection-label', priority: 'label' },
-      );
-    }
-  }, [selectedId, round.items, settings, mediaReady]);
-
   return (
     <GameShell
       ariaLabel={gameMeta.sorting.title}
@@ -216,7 +210,7 @@ export function SortingGame({
       restartLabel={englishOnly ? 'New game' : 'משחק חדש'}
       homeLabel={englishOnly ? 'Back home' : 'חזרה לבית'}
       liveStatus={prompt}
-      retryActive={retryBusy}
+      retryActive={retryVisible}
       successOverlay={
         celebration ? (
           <RoundSuccessOverlay
@@ -235,7 +229,7 @@ export function SortingGame({
             <button
               key={bin.id}
               ref={zoneRefs[bin.id]}
-              className={`sort-zone ${hoverZoneId === bin.id ? 'is-zone-hover' : ''} ${hintZoneId === bin.id || speechStatus.activeCue === `sort-zone:${bin.id}` ? 'is-teaching-hint' : ''}`}
+              className={`sort-zone ${hoverZoneId === bin.id ? 'is-zone-hover' : ''} ${(retryVisible && hintZoneId === bin.id) || speechStatus.activeCue === `sort-zone:${bin.id}` ? 'is-teaching-hint' : ''}`}
               type="button"
               {...bindZone(bin.id)}
               aria-label={englishOnly ? `${bin.labelEn} basket` : `סל ${bin.labelHe}`}
