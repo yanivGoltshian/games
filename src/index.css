@@ -38,7 +38,16 @@ body,
 
 html {
   -webkit-text-size-adjust: 100%;
-  touch-action: manipulation;
+  overscroll-behavior-x: none;
+}
+
+/* Touch panning is negotiated at the nearest scroller, not just the viewport. */
+html,
+.caregiver-page,
+.lock-page,
+.puzzle-photo-selection,
+.pair-playfield {
+  touch-action: pan-y pinch-zoom;
 }
 
 body {

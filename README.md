@@ -21,6 +21,13 @@ PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs \
   node scripts/check-pair-layout.mjs http://127.0.0.1:4173 /tmp/pair-layout
 ```
 
+לבדיקת יציבות המסך, מחליקים באצבע מדומה לשני הצדדים בבית ובכל משחק, גוררים חלק פאזל ופריט מיון וגוללים באזור המבוגרים. הבדיקה רצה בכרום במידות טלפון ואייפד לאורך ולרוחב. היא בודקת את תוכן האפליקציה, לא מחוות ניווט של מערכת ההפעלה בקצה המסך.
+
+```bash
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs \
+  node scripts/check-viewport-touch.mjs http://127.0.0.1:4173
+```
+
 ## התקנה על אייפד (הערה למבוגרים בלבד)
 
 ### Safari
