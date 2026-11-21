@@ -85,7 +85,7 @@ class SoundService {
     context: AudioContext,
     destination: GainNode,
     options: { frequency: number; type: OscillatorType; peak: number; start: number; end: number },
-  ): void {
+  ): OscillatorNode {
     const { frequency, type, peak, start, end } = options;
     const safePeak = Math.max(MIN_GAIN * 6, peak);
     const attackEnd = start + Math.min(0.014, (end - start) * 0.35);
@@ -107,6 +107,7 @@ class SoundService {
     gainNode.connect(destination);
     oscillator.start(start);
     oscillator.stop(tailEnd);
+    return oscillator;
   }
 
   private playSequence(settings: ToddlerSettings, sequence: ToneStep[]): void {
@@ -150,6 +151,24 @@ class SoundService {
   playTap(settings: ToddlerSettings): void {
     // A soft, crisp click — low shimmer keeps it a tap rather than a bell.
     this.playSequence(settings, [{ frequency: 420, duration: 0.08, gain: 0.08, shimmer: 0.12 }]);
+  }
+
+  /** A breathy two-note whistle and a low wheel beat, never queued for a later audio unlock. */
+  playGardenTrain(settings: ToddlerSettings): (() => void) | undefined {
+    const context = this.context;
+    if (!context || context.state !== 'running' || settings.quietMode || settings.soundLevel <= 0) return;
+    const master = this.ensureMaster(context);
+    const start = context.currentTime + 0.01;
+    const notes = [
+      { frequency: 660, type: 'sine', peak: .048, start, end: start + .22 },
+      { frequency: 830, type: 'sine', peak: .022, start: start + .045, end: start + .24 },
+      { frequency: 145, type: 'triangle', peak: .042, start: start + .28, end: start + .34 },
+      { frequency: 112, type: 'triangle', peak: .032, start: start + .38, end: start + .44 },
+    ] as const;
+    const voices = notes.map((note) => this.scheduleVoice(context, master, {
+      ...note, peak: note.peak * settings.soundLevel,
+    }));
+    return () => { for (const voice of voices) voice.stop(); };
   }
 
   playSuccess(settings: ToddlerSettings): void {

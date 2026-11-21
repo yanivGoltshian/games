@@ -50,7 +50,7 @@ describe('recorded speech asset coverage', () => {
   it('pre-caches the manifest and three speech sprites for installed offline use', () => {
     const serviceWorker = readFileSync(resolve('public/sw.js'), 'utf8');
 
-    expect(serviceWorker).toContain("sean-learning-adventure-v31");
+    expect(serviceWorker).toContain("sean-learning-adventure-v32");
     expect(serviceWorker).toContain("'/speech/manifest.json'");
     expect(serviceWorker).toContain("'/speech/he-IL.mp3'");
     expect(serviceWorker).toContain("'/speech/en-US.mp3'");
@@ -62,6 +62,9 @@ describe('recorded speech asset coverage', () => {
     const avatar = readFileSync(resolve(`public${GARDEN_DEFAULT_AVATAR}`));
     expect(avatar.toString('ascii', 0, 4)).toBe('RIFF');
     expect(avatar.toString('ascii', 8, 16)).toBe('WEBPVP8L');
+    // VP8L stores the alpha-used bit immediately after the two 14-bit dimensions.
+    expect(avatar.readUInt32LE(21) >>> 28 & 1).toBe(1);
+    expect(appShell).toContain("'/assets/garden/station.webp'");
     expect(serviceWorker).toContain('RETIRED_ASSET_PATHS');
     expect(serviceWorker).toContain('cache.delete(path)');
     expect(serviceWorker).toContain("status: 404");
