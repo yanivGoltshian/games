@@ -9,6 +9,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from 'react';
+import { cardPressFeedback } from '../cardPressFeedback';
 
 export interface DragItemState {
   x: number;
@@ -185,6 +186,7 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, onS
   const bindItem = (itemId: string) => {
     const unavailable = disabled || Boolean(items[itemId]?.locked);
     return {
+      ...cardPressFeedback,
       onPointerDown: (event: PointerEvent<HTMLElement>) => {
         const surfaceRect = surfaceRef.current?.getBoundingClientRect();
         const item = itemsRef.current[itemId];
@@ -268,6 +270,7 @@ export function useToddlerDrag({ surfaceRef, items, setItems, zones, onDrop, onS
   };
 
   const bindZone = (zoneId: string) => ({
+    ...cardPressFeedback,
     onClick: () => {
       if (!disabled && selectedId) {
         attemptDrop(selectedId, zoneId);

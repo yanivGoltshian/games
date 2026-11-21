@@ -999,7 +999,7 @@ body[data-reduced-motion='true'] .garden-bonus__leaves { animation: none; }
 
 /* Give the finger feedback without shrinking the hit target away from its edge. */
 :is(.choice-button, .memory-card, .number-pair-tile, .sort-zone, .puzzle-slot, .puzzle-photo-choice,
-  .draggable-chip, .puzzle-piece, .silly-alien-figure-tap, .silly-alien-fallback__button):active:not(:disabled) {
+  .draggable-chip, .puzzle-piece, .silly-alien-figure-tap, .silly-alien-fallback__button):is(:active, [data-card-press]):not(:disabled) {
   filter: brightness(.89);
 }
 
@@ -1917,7 +1917,7 @@ body[data-reduced-motion='true'] .garden-bonus__leaves { animation: none; }
   outline-offset: 2px;
 }
 
-.success-overlay__continue:active ~ .success-card {
+.success-overlay__continue:is(:active, [data-card-press]) ~ .success-card {
   filter: brightness(.89);
 }
 

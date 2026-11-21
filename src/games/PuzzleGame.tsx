@@ -1,6 +1,7 @@
 import { createRef, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { sceneImageHref } from '../art/puzzleScenes';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { PuzzlePieceArt } from '../components/puzzle/PuzzlePieceArt';
 import { useFamilyPhotoPreviews } from '../components/useFamilyPhotoPreviews';
 import { useMeasuredSize } from '../components/useMeasuredSize';
@@ -274,6 +275,7 @@ export function PuzzleGame({
             </button>
             <button
               className="puzzle-photo-choice puzzle-photo-choice--built-in"
+              {...cardPressFeedback}
               onClick={chooseBuiltInPuzzle}
               type="button"
               aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
@@ -291,6 +293,7 @@ export function PuzzleGame({
           <button
             className="puzzle-photo-choice puzzle-photo-choice--built-in"
             data-puzzle-source="built-in"
+            {...cardPressFeedback}
             onClick={chooseBuiltInPuzzle}
             type="button"
             aria-label={englishOnly ? 'Play with built-in pictures' : 'פאזל עם התמונות המובנות'}
@@ -301,6 +304,7 @@ export function PuzzleGame({
             <button
               className="puzzle-photo-choice"
               data-family-photo-choice={photo.id}
+              {...cardPressFeedback}
               key={photo.id}
               onClick={() => setExperience({ kind: 'family', photoId: photo.id })}
               type="button"

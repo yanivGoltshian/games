@@ -24,6 +24,7 @@ import {
   type SpeechSegment,
 } from '../services/speech';
 import { scheduleSuccessAdvance } from './successTiming';
+import { cardPressFeedback } from './cardPressFeedback';
 
 export interface SuccessOverlayProps {
   settings: ToddlerSettings;
@@ -249,6 +250,7 @@ export function SuccessOverlay({
     <div className="success-overlay">
       <button
         className="success-overlay__continue"
+        {...cardPressFeedback}
         type="button"
         autoFocus
         aria-label={settings.languageMode === 'en' ? 'Continue' : 'המשך'}

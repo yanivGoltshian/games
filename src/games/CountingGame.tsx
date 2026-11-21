@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { getCountingQuantityPhrase, type CountingConceptId } from '../content/countingQuantity';
 import { gameMeta } from '../content/games';
 import { buildCountingMissModel, getCountingLayout } from '../domain/countingFeedback';
@@ -292,6 +293,7 @@ export function CountingGame({
           return (
             <button
               key={value}
+              {...cardPressFeedback}
               className={`choice-button choice-button--number ${retryVisible && wiggleValue === value ? 'is-wiggling' : ''} ${(retryVisible && visualOnlyFeedback && attempts > 1 && value === round.targetCount) || speechStatus.activeCue === `count-answer:${value}` ? 'is-teaching-hint' : ''}`}
               disabled={!!celebration}
               onClick={() => handlePick(value)}

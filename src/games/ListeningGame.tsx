@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { learningConcepts } from '../content/concepts';
 import { gameMeta } from '../content/games';
 import { generateListeningRound, getListeningRoundSignature } from '../domain/rounds';
@@ -117,6 +118,7 @@ export function ListeningGame({
           return (
             <button
               key={optionId}
+              {...cardPressFeedback}
               className={`choice-button ${retryVisible && wiggleId === optionId ? 'is-wiggling' : ''}`}
               disabled={!!celebration}
               onClick={() => handleChoice(optionId)}

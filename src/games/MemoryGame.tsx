@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type TransitionEvent } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { getMemoryConcept, MEMORY_GARDEN_ART } from '../content/memoryGarden';
 import { gameMeta } from '../content/games';
 import { generateMemoryRound, getMemoryRoundSignature } from '../domain/rounds';
@@ -272,6 +273,7 @@ export function MemoryGame({
             return (
               <button
                 key={card.id}
+                {...cardPressFeedback}
                 className={`memory-card ${flipped ? 'memory-card--flipped' : ''} ${celebrated ? 'memory-card--celebrated' : ''}`}
                 disabled={mismatch !== null || matched}
                 onClick={() => handleCardClick(card.id)}

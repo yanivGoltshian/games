@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { ConceptArt } from '../art/objects';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { gameMeta } from '../content/games';
 import {
   SILLY_ALIEN_LISTENING,
@@ -716,6 +717,7 @@ export function SillyAlienGame({
           <button
             type="button"
             className={`silly-alien-figure-tap silly-alien-figure-tap--${state.phase}`}
+            {...cardPressFeedback}
             onClick={handleAlienTap}
             aria-label={alienTapLabel}
           >
@@ -778,6 +780,7 @@ export function SillyAlienGame({
               <button
                 type="button"
                 className="silly-alien-fallback__button"
+                {...cardPressFeedback}
                 onClick={handleAlienTap}
               >
                 {englishOnly ? 'Help the alien' : 'עוזרים לחייזר'}

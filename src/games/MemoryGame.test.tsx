@@ -273,6 +273,24 @@ describe('MemoryGame celebrations', () => {
     expect(doubles.speakSegments.mock.calls.at(-1)?.[0]).toEqual([{ text: label, locale: 'he-IL' }]);
   });
 
+  it('shows contact without flipping and clears a cancelled touch without scoring', async () => {
+    const complete = vi.fn(completeSummary);
+    await renderGame(complete);
+    const card = container.querySelector<HTMLButtonElement>('.memory-card')!;
+    const touch = (type: string, id: number) => new PointerEvent(type, {
+      bubbles: true, pointerType: 'touch', pointerId: id, isPrimary: true, button: 0,
+    });
+    await act(async () => { card.dispatchEvent(touch('pointerdown', 7)); });
+    expect(card.hasAttribute('data-card-press')).toBe(true);
+    expect(card.getAttribute('aria-pressed')).toBe('false');
+    await act(async () => { card.dispatchEvent(touch('pointerup', 8)); });
+    expect(card.hasAttribute('data-card-press')).toBe(true);
+    await act(async () => { card.dispatchEvent(touch('pointercancel', 7)); });
+    expect(card.hasAttribute('data-card-press')).toBe(false);
+    expect(card.getAttribute('aria-pressed')).toBe('false');
+    expect(complete).not.toHaveBeenCalled();
+  });
+
   it('does not play delayed pair feedback after the game exits', async () => {
     const firstLabel = deferredSpeech();
     const secondLabel = deferredSpeech();

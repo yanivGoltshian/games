@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { GameShell } from '../components/GameShell';
+import { cardPressFeedback } from '../components/cardPressFeedback';
 import { gameMeta } from '../content/games';
 import { MORE_NUMBERS_SPEECH } from '../content/levelUpSpeech';
 import {
@@ -199,6 +200,7 @@ export function NumberPairsGame({
               return (
                 <button
                   key={`top-${index}-${value}`}
+                  {...cardPressFeedback}
                   className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
                   disabled={matched}
                   onClick={() => chooseTile('top', index)}
@@ -225,6 +227,7 @@ export function NumberPairsGame({
               return (
                 <button
                   key={`bottom-${index}-${value}`}
+                  {...cardPressFeedback}
                   className={`number-pair-tile ${selected ? 'is-selected' : ''} ${matched ? 'is-matched' : ''} ${wrong ? 'is-wrong is-wiggling' : ''}`}
                   disabled={matched}
                   onClick={() => chooseTile('bottom', index)}
