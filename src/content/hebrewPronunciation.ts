@@ -41,6 +41,8 @@ export function getHebrewPronunciationSkeleton(source: string): string {
   const replacements: Array<[string, string]> = [
     ['היי', 'הי'] as [string, string],
     ['ביי', 'בי'] as [string, string],
+    // The garden model uses עַכְשָׁו; the existing number-pairs line uses עַכְשָׁיו.
+    ['עכשיו שון שותל', 'עכשו שון שותל'] as [string, string],
     ...learningConcepts.flatMap((concept) => {
       const pairs = [[concept.he, stripNiqqud(concept.spokenHe)]] as Array<[string, string]>;
       if (concept.quantity) {

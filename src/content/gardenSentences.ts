@@ -1,97 +1,69 @@
-import { GARDEN_BANANA_WORDS, type GardenLine } from './wordGarden';
+import { createSeededRandom } from '../domain/rng';
+import { GARDEN_STORIES } from './gardenStories';
+export { GARDEN_NEXT_SENTENCE, GARDEN_SENTENCE_QUESTION, GARDEN_SENTENCE_SPEECH_LINES } from './gardenStories';
 
-const line = (he: string, spokenHe: string, en: string): GardenLine => ({ he, spokenHe, en });
-
-const CHILD = GARDEN_BANANA_WORDS[0]!;
-const SEAN = line('שון', 'שׁוֹן', 'Sean');
 export const GARDEN_DEFAULT_AVATAR = '/assets/garden/sean-avatar.webp';
-export const GARDEN_PART_QUESTIONS = [
-  line('מי בתמונה?', 'מִי בַּתְּמוּנָה?', 'Who is in the picture?'),
-  line('מה הוא עושה?', 'מָה הוּא עוֹשֶׂה?', 'What is he doing?'),
-  line('מה זה?', 'מָה זֶה?', 'What is it?'),
-] as const;
-export const GARDEN_SENTENCE_QUESTION = line('אפשר להגיד את כל המשפט?', 'אֶפְשָׁר לְהַגִּיד אֶת כָּל הַמִּשְׁפָּט?', 'Can you say the whole sentence?');
-export const GARDEN_NEXT_SENTENCE = line('עוד משפט', 'עוֹד מִשְׁפָּט', 'Another sentence');
-
-type GardenMotion = 'eat' | 'handoff' | 'germinate' | 'bury' | 'water' | 'grow';
-interface SentencePictures {
-  motion: GardenMotion;
-  image: string;
+export const GARDEN_DRAWINGS = '/assets/garden/story-art.svg';
+const garden = (name: string) => `/assets/garden/${name}.webp`;
+const fruit = (name: string) => `/assets/vocabulary/${name}.webp`;
+type Beat = (typeof GARDEN_STORIES)[number]['beats'][number];
+interface Pictures {
+  subject?: string;
+  object: string;
+  image?: string;
   aftermath?: string;
   setting?: string;
+  motion?: 'eat' | 'bury' | 'water' | 'grow';
+}
+const pictures: Record<Beat['id'], Pictures> = {
+  banana: { object: garden('banana'), image: garden('banana'), aftermath: garden('banana-bitten'), motion: 'eat' },
+  'banana-peel': { subject: '#peel', object: '#hand' },
+  'banana-bucket': { object: '#bucket-peel' },
+  'banana-compost': { subject: '#peel', object: '#compost' },
+  dates: { object: garden('dates'), image: garden('dates'), motion: 'eat' },
+  'date-plant': { object: garden('date-pit-planted'), motion: 'bury' },
+  'date-sprout': { subject: garden('date-palm-seedling'), object: '#soil' },
+  'date-palm': { subject: garden('date-palm-seedling'), object: garden('date-palm-tree'), image: garden('date-palm-tree'), setting: garden('date-palm-seedling'), motion: 'grow' },
+  'avocado-water': { object: '#pit-water' },
+  'avocado-root': { subject: '#rooted-pit', object: '#water' },
+  'avocado-shoot': { subject: '#shoot', object: '#pit' },
+  'avocado-soil': { object: '#potted-shoot' },
+  'berry-water': { object: '#berry-plant', setting: garden('watering-can'), motion: 'water' },
+  'berry-flower': { subject: '#flower', object: '#sun' },
+  'berry-bee': { subject: '#bee', object: '#flower' },
+  'berry-red': { subject: fruit('strawberry'), object: '#berry-plant' },
+  'carrot-sow': { object: '#seeds' },
+  'carrot-rain': { subject: '#rain', object: '#soil' },
+  'carrot-leaves': { subject: '#tops', object: '#soil' },
+  'carrot-pull': { object: fruit('carrot') },
+  'apple-pick': { object: fruit('apple') },
+  'apple-wash': { object: fruit('apple') },
+  'apple-drops': { subject: '#drops', object: fruit('apple') },
+  'apple-bite': { object: fruit('apple'), image: fruit('apple'), motion: 'eat' },
+};
+export type GardenSentence = Beat & { story: string; art: Pictures } & Pick<Pictures, 'motion' | 'image' | 'setting' | 'aftermath'>;
+const stories = GARDEN_STORIES.map(({ id, beats }) => ({
+  id, sentences: beats.map((b): GardenSentence => ({ ...b, story: id, art: pictures[b.id], ...pictures[b.id] })),
+}));
+export const GARDEN_SENTENCES = stories.flatMap(s => s.sentences);
+
+export function makeGardenVisit(previousFirst?: string, seed = Math.floor(Math.random() * 0x100000000)) {
+  const rng = createSeededRandom(seed);
+  const order = rng.shuffle(stories);
+  if (order[0]?.id === previousFirst && order.length > 1) {
+    const other = rng.int(1, order.length - 1);
+    [order[0], order[other]] = [order[other]!, order[0]!];
+  }
+  return order.flatMap(s => s.sentences);
 }
 
-function sentence<const Id extends string>(
-  id: Id, action: GardenLine, object: GardenLine, graphics: SentencePictures, objectQuestion = GARDEN_PART_QUESTIONS[2],
-) {
-  const phrase = (subject: GardenLine) => line(
-    `${subject.he} ${action.he} ${object.he}`,
-    `${subject.spokenHe} ${action.spokenHe} ${object.spokenHe}`,
-    `${subject.en} ${action.en} ${object.en}`,
-  );
-  return { id, action, object, ...graphics, model: phrase(CHILD), seanModel: phrase(SEAN), objectQuestion };
-}
-
-const EATS = GARDEN_BANANA_WORDS[1]!;
-const EATING_QUESTION = line('מה הוא אוכל?', 'מָה הוּא אוֹכֵל?', 'What is he eating?');
-const SEED = line('גרעין', 'גַּרְעִין', 'a seed');
-const SOIL = line('את האדמה', 'אֶת הָאֲדָמָה', 'the soil');
-const GROWTH = '/assets/garden';
-
-export const GARDEN_SENTENCES = [
-  sentence('banana', EATS, GARDEN_BANANA_WORDS[2]!, {
-    motion: 'eat',
-    image: '/assets/garden/banana.webp',
-    aftermath: '/assets/garden/banana-bitten.webp',
-  }, EATING_QUESTION),
-  sentence('dates', EATS, line('תמרים', 'תְּמָרִים', 'dates'), {
-    motion: 'eat',
-    image: '/assets/garden/dates.webp',
-  }, EATING_QUESTION),
-  sentence('germinate', line('מנביט', 'מַנְבִּיט', 'sprouts'), SEED, {
-    motion: 'germinate',
-    image: `${GROWTH}/date-pit-germinating.webp`,
-  }),
-  sentence('bury', line('טומן', 'טוֹמֵן', 'plants'), SEED, {
-    motion: 'bury',
-    image: `${GROWTH}/date-pit-germinating.webp`,
-    setting: `${GROWTH}/date-pit-planted.webp`,
-  }),
-  sentence('water', line('משקה', 'מַשְׁקֶה', 'waters'), SOIL, {
-    motion: 'water',
-    image: `${GROWTH}/date-pit-planted.webp`,
-    setting: `${GROWTH}/watering-can.webp`,
-  }),
-  sentence('palm', line('רואה', 'רוֹאֶה', 'sees'), line('דקל תמר', 'דֶּקֶל תָּמָר', 'a date palm'), {
-    motion: 'grow',
-    image: `${GROWTH}/date-palm-tree.webp`,
-    setting: `${GROWTH}/date-palm-seedling.webp`,
-  }),
-  sentence('token', line('נותן', 'נוֹתֵן', 'gives'), line('אסימון', 'אֲסִימוֹן', 'a token'), {
-    motion: 'handoff',
-    image: '/assets/garden/token.webp',
-  }, line('מה הוא נותן?', 'מָה הוּא נוֹתֵן?', 'What is he giving?')),
-  sentence('persimmon', EATS, line('אפרסמון', 'אֲפַרְסְמוֹן', 'a persimmon'), {
-    motion: 'eat',
-    image: '/assets/garden/persimmon.webp',
-  }, EATING_QUESTION),
-] as const;
-
-export type GardenSentence = (typeof GARDEN_SENTENCES)[number];
 export type GardenVoiceLanguage = 'he' | 'en';
-
-export function getGardenVoiceKey(sentence: GardenSentence, language: GardenVoiceLanguage): string {
-  return `${sentence.id}:sean:${language}`;
+const originalModels: Record<string, Record<GardenVoiceLanguage, string>> = {
+  banana: { he: 'שון אוכל בננה', en: 'Sean eats a banana' },
+  dates: { he: 'שון אוכל תמרים', en: 'Sean eats dates' },
+};
+export function getGardenVoiceKey(sentence: GardenSentence, language: GardenVoiceLanguage) {
+  const text = sentence.model[language];
+  return originalModels[sentence.id]?.[language] === text ? `${sentence.id}:sean:${language}`
+    : `story:${sentence.id}:${language}:${text}`;
 }
-
-export function getGardenSentenceLines(sentence: GardenSentence) {
-  return {
-    words: [SEAN, sentence.action, sentence.object] as const,
-    model: sentence.seanModel,
-  };
-}
-
-export const GARDEN_SENTENCE_SPEECH_LINES = [
-  ...GARDEN_PART_QUESTIONS, GARDEN_SENTENCE_QUESTION, GARDEN_NEXT_SENTENCE, CHILD, SEAN,
-  ...GARDEN_SENTENCES.flatMap((item) => [item.action, item.object, item.objectQuestion, item.model, item.seanModel]),
-];

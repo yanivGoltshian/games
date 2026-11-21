@@ -94,7 +94,9 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
     private readonly unlockContext: () => Promise<void> = unlockAudioContext,
     private readonly fetcher: typeof fetch = (...args) => fetch(...args),
     private readonly enabled: () => boolean = shouldUseRecordedSpeech,
-    private readonly manifestPath = '/speech/manifest.json',
+    // v32's cache-first worker may still control a tab loading the new app.
+    // A distinct lookup URL cannot hit its pre-correction manifest.
+    private readonly manifestPath = '/speech/manifest.json?rev=garden-stories-v1',
     private readonly validateManifest: RecordedSpeechManifestValidator = (manifest) => manifest,
   ) {}
 
@@ -174,7 +176,7 @@ export class RecordedSpeechPlayer implements RecordedSpeechBackend {
   }
 
   private loadManifest(): Promise<RecordedSpeechManifest> {
-    this.manifestPromise ??= this.fetcher(this.manifestPath, { cache: 'force-cache' })
+    this.manifestPromise ??= this.fetcher(this.manifestPath, { cache: 'no-cache' })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Recorded speech manifest failed with HTTP ${response.status}.`);

@@ -7,6 +7,7 @@ import { createInitialProgress } from '../domain/progression';
 import type { CelebrationInfo, ToddlerGameProps } from './types';
 import type { SpeechResult } from '../services/speech';
 import type * as SpeechModule from '../services/speech';
+import type * as AdaptiveRoundModule from './useAdaptiveRound';
 import {
   MEMORY_MISMATCH_HOLD_MS,
   MEMORY_REVEAL_FALLBACK_MS,
@@ -20,6 +21,7 @@ const doubles = vi.hoisted(() => ({
   speakRetrySequence: vi.fn(),
   speakSegments: vi.fn(),
   startNextRound: vi.fn(),
+  useActualRound: false,
   roundOverride: null as null | { cards: { id: string; pairId: string; conceptId: string }[]; pairConceptIds: string[]; promptHe: string; promptEn: string },
   lastCelebration: null as CelebrationInfo | null,
 }));
@@ -48,29 +50,36 @@ vi.mock('../services/speech', async (importOriginal) => ({
   },
 }));
 
-vi.mock('./useAdaptiveRound', () => ({
-  useAdaptiveRound: () => ({
-    round: doubles.roundOverride ?? {
-      cards: [
-        { id: 'happy-a', pairId: 'emotion-happy', conceptId: 'emotion-happy' },
-        { id: 'happy-b', pairId: 'emotion-happy', conceptId: 'emotion-happy' },
-        { id: 'tree-a', pairId: 'tree', conceptId: 'tree' },
-        { id: 'tree-b', pairId: 'tree', conceptId: 'tree' },
-      ],
-      pairConceptIds: ['emotion-happy', 'tree'],
-      promptHe: 'מוצאים זוגות',
-      promptEn: 'Find the pairs',
+vi.mock('./useAdaptiveRound', async (importOriginal) => {
+  const { useAdaptiveRound } = await importOriginal<typeof AdaptiveRoundModule>();
+  return {
+    useAdaptiveRound: (...args: Parameters<typeof useAdaptiveRound>) => {
+      const actual = useAdaptiveRound(...args);
+      return doubles.useActualRound ? actual : {
+        round: doubles.roundOverride ?? {
+          cards: [
+            { id: 'happy-a', pairId: 'emotion-happy', conceptId: 'emotion-happy' },
+            { id: 'happy-b', pairId: 'emotion-happy', conceptId: 'emotion-happy' },
+            { id: 'tree-a', pairId: 'tree', conceptId: 'tree' },
+            { id: 'tree-b', pairId: 'tree', conceptId: 'tree' },
+          ],
+          pairConceptIds: ['emotion-happy', 'tree'],
+          promptHe: 'מוצאים זוגות',
+          promptEn: 'Find the pairs',
+        },
+        roundKey: 'memory-round-1',
+        startNextRound: doubles.startNextRound,
+      };
     },
-    roundKey: 'memory-round-1',
-    startNextRound: doubles.startNextRound,
-  }),
-}));
+  };
+});
 
 vi.mock('./RoundSuccessOverlay', () => ({
-  RoundSuccessOverlay: ({ celebration }: { celebration: CelebrationInfo }) => {
+  RoundSuccessOverlay: ({ celebration, startNextRound }: { celebration: CelebrationInfo; startNextRound: () => void }) => {
     doubles.lastCelebration = celebration;
     return (
-      <div
+      <button
+        onClick={() => startNextRound()}
         data-testid="memory-success"
         data-variant={celebration.celebrationVariant}
         data-sound={celebration.soundVariant}
@@ -128,6 +137,7 @@ describe('MemoryGame celebrations', () => {
     doubles.speakSegments.mockReset();
     doubles.startNextRound.mockReset();
     doubles.lastCelebration = null;
+    doubles.useActualRound = false;
     doubles.roundOverride = null;
     doubles.speakSegments.mockResolvedValue({ requestId: 1, status: 'completed' });
     container = document.createElement('div');
@@ -143,8 +153,9 @@ describe('MemoryGame celebrations', () => {
     vi.useRealTimers();
   });
 
-  async function renderGame(onCompleteRound = vi.fn(completeSummary)): Promise<void> {
+  async function renderGame(onCompleteRound = vi.fn(completeSummary), experienced = false): Promise<void> {
     const progress = createInitialProgress(false, 1);
+    if (experienced) Object.assign(progress.domains.memory, { level: 7, highestLevel: 7, completedRounds: 40 });
     await act(async () => {
       root!.render(
         <MemoryGame
@@ -165,6 +176,25 @@ describe('MemoryGame celebrations', () => {
       );
     });
   }
+
+  it.each(['fresh', 'returning'])('starts a %s visit at four cards and adds one pair after an imperfect win', async (profile) => {
+    vi.useFakeTimers();
+    doubles.useActualRound = true;
+    const complete = vi.fn(completeSummary);
+    await renderGame(complete, profile === 'returning');
+    const cards = [...container.querySelectorAll<HTMLButtonElement>('.memory-card')];
+    expect(cards).toHaveLength(4);
+    const art = (card: HTMLButtonElement) => card.querySelector('.memory-face--front')!.innerHTML;
+    const same = cards.filter((card) => art(card) === art(cards[0]!));
+    const other = cards.filter((card) => art(card) !== art(cards[0]!));
+    for (const card of [same[0]!, other[0]!]) await act(async () => card.click());
+    await act(async () => { await vi.advanceTimersByTimeAsync(MEMORY_MISMATCH_HOLD_MS); });
+    for (const card of [...same, ...other]) await act(async () => card.click());
+    expect(complete).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ attempts: 3, requiredActions: 2 }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(MEMORY_REVEAL_FALLBACK_MS); });
+    await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="memory-success"]')!.click());
+    expect(container.querySelectorAll('.memory-card')).toHaveLength(6);
+  });
 
   it('reinforces each non-final pair once and waits for the final-card reveal', async () => {
     vi.useFakeTimers();

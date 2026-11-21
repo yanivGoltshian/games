@@ -3,6 +3,7 @@ import { GameShell } from '../components/GameShell';
 import { cardPressFeedback } from '../components/cardPressFeedback';
 import { gameMeta } from '../content/games';
 import { MORE_NUMBERS_SPEECH } from '../content/levelUpSpeech';
+import { NUMBER_PAIRS_MAX_VALUE } from '../domain/progression';
 import {
   NUMBER_WORDS_EN,
   NUMBER_WORDS_HE,
@@ -41,10 +42,11 @@ export function NumberPairsGame({
 }: ToddlerGameProps) {
   const [state, setState] = useState<NumberPairsState>(INITIAL_NUMBER_PAIRS_STATE);
   const [celebration, setCelebration] = useState<CelebrationInfo | null>(null);
+  const [visitPairCount, setVisitPairCount] = useState(2);
   const { round, roundKey, startNextRound } = useAdaptiveRound(
     'numberPairs',
     domainProgress,
-    generateNumberPairsRound,
+    (_progress, seed, history) => generateNumberPairsRound(visitPairCount, seed, history),
     { getSignature: getNumberPairsRoundSignature, limit: 8 },
   );
   const { retryVisible, beginInteraction, runRetry } = useRetryFeedback({
@@ -133,6 +135,7 @@ export function NumberPairsGame({
       return;
     }
 
+    setVisitPairCount(Math.min(NUMBER_PAIRS_MAX_VALUE, round.selectedValues.length + 1));
     const summary = onCompleteRound({
       attempts: nextState.attempts,
       requiredActions: round.selectedValues.length,

@@ -219,9 +219,9 @@ describe('round generation', () => {
   it('features persimmon, dates and watering can in the first four wins while keeping decks varied', () => {
     let progress = createInitialProgress(false, 0);
     const history: string[] = [];
-    for (let win = 0; win < 4; win += 1) {
-      const domain = progress.domains.memory;
-      const round = generateMemoryRound(domain, `memory-${domain.attempts}-${domain.successes}-${domain.level}-${win}`, history);
+    for (const level of [1, 2, 3, 4] as const) {
+      const domain = { ...progress.domains.memory, level };
+      const round = generateMemoryRound(domain, `memory-${domain.attempts}-${domain.successes}-${level}-${level - 1}`, history);
       history.push(getMemoryRoundSignature(round));
       progress = applyRoundResult(progress, 'memory', {
         attempts: round.pairConceptIds.length + 2,
@@ -230,7 +230,7 @@ describe('round generation', () => {
       }).progress;
     }
     expect(history[0]?.split(',')).toContain('persimmon');
-    expect(history.slice(2).flatMap((signature) => signature.split(','))).toEqual(expect.arrayContaining(['dates', 'watering-can']));
+    expect(history.slice(1).flatMap((signature) => signature.split(','))).toEqual(expect.arrayContaining(['dates', 'watering-can']));
     expect(new Set(history).size).toBe(4);
   });
 
@@ -435,20 +435,10 @@ describe('round generation', () => {
 
   describe('number pairs', () => {
     it.each([
-      [3, 3, 1],
-      [4, 6, 2],
-      [5, 10, 3],
-      [6, 10, 4],
-      [7, 10, 5],
-      [8, 10, 6],
-      [9, 10, 7],
-      [10, 10, 8],
-    ] as const)('uses exactly %i values within 1..%i at level %i', (count, max, level) => {
-      const domain = createInitialDomainProgress();
-      domain.level = level;
-
+      [2, 2], [3, 3], [4, 6], [5, 10], [6, 10], [7, 10], [8, 10], [9, 10], [10, 10],
+    ] as const)('uses exactly %i different values within 1..%i in both rows', (count, max) => {
       for (let index = 0; index < 40; index += 1) {
-        const round = generateNumberPairsRound(domain, `number-pairs-${level}-${index}`);
+        const round = generateNumberPairsRound(count, `number-pairs-${count}-${index}`);
         const sortedSelection = [...round.selectedValues].sort((left, right) => left - right);
 
         expect(round.selectedValues).toHaveLength(count);
@@ -463,21 +453,18 @@ describe('round generation', () => {
       }
     });
 
-    it('always selects one, two, and three at level one', () => {
-      const domain = createInitialDomainProgress();
-
+    it('always offers one and two first, then introduces three', () => {
       for (let index = 0; index < 20; index += 1) {
-        expect(generateNumberPairsRound(domain, index).selectedValues).toEqual([1, 2, 3]);
+        expect(generateNumberPairsRound(2, index).selectedValues).toEqual([1, 2]);
+        expect(generateNumberPairsRound(3, index).selectedValues).toEqual([1, 2, 3]);
       }
     });
 
     it('is deterministic for the same seed and signature history', () => {
-      const domain = createInitialDomainProgress();
-      domain.level = 3;
       const history = ['unrelated-signature'];
 
-      expect(generateNumberPairsRound(domain, 'stable-board', history)).toEqual(
-        generateNumberPairsRound(domain, 'stable-board', history),
+      expect(generateNumberPairsRound(5, 'stable-board', history)).toEqual(
+        generateNumberPairsRound(5, 'stable-board', history),
       );
     });
 
@@ -503,36 +490,33 @@ describe('round generation', () => {
     });
 
     it('avoids immediate and local board repeats deterministically', () => {
-      const domain = createInitialDomainProgress();
-      domain.level = 2;
       const signatures: string[] = [];
 
       for (let index = 0; index < 20; index += 1) {
-        const round = generateNumberPairsRound(domain, 'repeat-safe-board', signatures);
+        const round = generateNumberPairsRound(4, 'repeat-safe-board', signatures);
         expect(signatures).not.toContain(round.signature);
         signatures.push(round.signature);
       }
 
       expect(new Set(signatures).size).toBe(signatures.length);
-      expect(generateNumberPairsRound(domain, 'repeat-safe-board', signatures)).toEqual(
-        generateNumberPairsRound(domain, 'repeat-safe-board', signatures),
+      expect(generateNumberPairsRound(4, 'repeat-safe-board', signatures)).toEqual(
+        generateNumberPairsRound(4, 'repeat-safe-board', signatures),
       );
     });
 
-    it('terminates with a deterministic fallback when every level-one board is in history', () => {
-      const domain = createInitialDomainProgress();
-      const rows = permutations([1, 2, 3]);
+    it('terminates with a deterministic fallback when every two-pair board is in history', () => {
+      const rows = permutations([1, 2]);
       const exhaustiveHistory = rows.flatMap((topRow) => rows
         .filter((bottomRow) => bottomRow.some((value, index) => value !== topRow[index]))
         .map((bottomRow) => getNumberPairsRoundSignature({
-          selectedValues: [1, 2, 3],
+          selectedValues: [1, 2],
           topRow,
           bottomRow,
         })));
 
       expect(NUMBER_PAIRS_GENERATION_ATTEMPTS).toBeGreaterThan(0);
-      const first = generateNumberPairsRound(domain, 'bounded-fallback', exhaustiveHistory);
-      const second = generateNumberPairsRound(domain, 'bounded-fallback', exhaustiveHistory);
+      const first = generateNumberPairsRound(2, 'bounded-fallback', exhaustiveHistory);
+      const second = generateNumberPairsRound(2, 'bounded-fallback', exhaustiveHistory);
 
       expect(first).toEqual(second);
       expect(exhaustiveHistory).toContain(first.signature);

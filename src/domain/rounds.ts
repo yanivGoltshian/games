@@ -13,7 +13,7 @@ import {
   SILLY_ALIEN_WORDS,
   requireSillyAlienWord,
 } from '../content/sillyAlien';
-import { buildPracticeWeights, createInitialConceptStat, MEMORY_MAX_LEVEL, NUMBER_PAIRS_MAX_VALUE, NUMBER_PAIRS_START_COUNT } from './progression';
+import { buildPracticeWeights, createInitialConceptStat, MEMORY_MAX_LEVEL, NUMBER_PAIRS_MAX_VALUE } from './progression';
 import { createSeededRandom, pickWeightedUnique } from './rng';
 import type {
   ColorId,
@@ -393,14 +393,13 @@ export function getNumberPairsRoundSignature(
   return `${selectedValues.join(',')}|${round.topRow.join(',')}|${round.bottomRow.join(',')}`;
 }
 
-function createNumberPairsCandidate(domain: DomainProgress, seed: string): NumberPairsRound {
+function createNumberPairsCandidate(pairCount: number, seed: string): NumberPairsRound {
   const random = createSeededRandom(seed);
-  const rangeMax = domain.level === 1 ? NUMBER_PAIRS_START_COUNT : domain.level === 2 ? 6 : NUMBER_PAIRS_MAX_VALUE;
-  const valueCount = Math.min(NUMBER_PAIRS_MAX_VALUE, NUMBER_PAIRS_START_COUNT + domain.level - 1);
+  const rangeMax = pairCount <= 3 ? pairCount : pairCount === 4 ? 6 : NUMBER_PAIRS_MAX_VALUE;
   const availableValues = Array.from({ length: rangeMax }, (_, index) => index + 1);
-  const selectedValues = domain.level === 1
+  const selectedValues = pairCount <= 3
     ? availableValues
-    : random.shuffle(availableValues).slice(0, valueCount).sort((left, right) => left - right);
+    : random.shuffle(availableValues).slice(0, pairCount).sort((left, right) => left - right);
   const topRow = random.shuffle(selectedValues);
   let bottomRow = random.shuffle(selectedValues);
 
@@ -424,7 +423,7 @@ function createNumberPairsCandidate(domain: DomainProgress, seed: string): Numbe
 }
 
 export function generateNumberPairsRound(
-  domain: DomainProgress,
+  pairCount: number,
   seed: string | number,
   recentSignatures: readonly string[] = [],
 ): NumberPairsRound {
@@ -432,7 +431,7 @@ export function generateNumberPairsRound(
   let fallback: NumberPairsRound | null = null;
 
   for (let attempt = 0; attempt < NUMBER_PAIRS_GENERATION_ATTEMPTS; attempt += 1) {
-    const candidate = createNumberPairsCandidate(domain, `${String(seed)}:number-pairs:${attempt}`);
+    const candidate = createNumberPairsCandidate(pairCount, `${String(seed)}:number-pairs:${attempt}`);
     fallback ??= candidate;
     if (!history.has(candidate.signature)) {
       return candidate;

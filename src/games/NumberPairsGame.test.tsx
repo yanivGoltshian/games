@@ -198,13 +198,17 @@ describe('NumberPairsGame speech progression', () => {
     expect(doubles.startNextRound).toHaveBeenCalledTimes(1);
   });
 
-  it('adds one number to both rendered rows only after a full board win, not on restart or a mismatch', async () => {
+  it.each(['fresh', 'returning'])('starts a %s visit with 1 and 2, then adds a pair only on a full win', async (profile) => {
     doubles.useActualRound = true;
     let finishOldRetry!: () => void;
     doubles.speakRetrySequence.mockReturnValue(new Promise<void>((resolve) => { finishOldRetry = resolve; }));
     const record = vi.fn(applyRoundResult);
     function GameHarness() {
-      const [progress, setProgress] = useState(() => createInitialProgress(true, 0));
+      const [progress, setProgress] = useState(() => {
+        const saved = createInitialProgress(true, 0);
+        if (profile === 'returning') Object.assign(saved.domains.numberPairs, { level: 8, highestLevel: 8, completedRounds: 40 });
+        return saved;
+      });
       return (
         <NumberPairsGame
           domainProgress={progress.domains.numberPairs}
@@ -227,9 +231,11 @@ describe('NumberPairsGame speech progression', () => {
     const bottom = () => [...container.querySelectorAll<HTMLButtonElement>('.number-pairs-row--bottom button')];
     const click = async (button: HTMLButtonElement) => { await act(async () => { button.click(); }); };
     const restart = container.querySelector<HTMLButtonElement>('.rail-button--restart')!;
+    expect(top().map((tile) => tile.textContent).sort()).toEqual(['1', '2']);
+    expect(bottom().map((tile) => tile.textContent).sort()).toEqual(['1', '2']);
     await click(top()[0]!);
     await click(restart);
-    expect(top()).toHaveLength(3);
+    expect(top()).toHaveLength(2);
     expect(top().every((tile) => tile.getAttribute('aria-pressed') === 'false')).toBe(true);
 
     await click(top()[0]!);
@@ -240,17 +246,17 @@ describe('NumberPairsGame speech progression', () => {
     for (const [index, topTile] of top().entries()) {
       await click(topTile);
       await click(bottom().find((tile) => tile.textContent === topTile.textContent)!);
-      expect(record).toHaveBeenCalledTimes(index === 2 ? 1 : 0);
+      expect(record).toHaveBeenCalledTimes(index === 1 ? 1 : 0);
     }
-    expect(record).toHaveBeenCalledWith(expect.anything(), 'numberPairs', expect.objectContaining({ attempts: 4, requiredActions: 3 }));
+    expect(record).toHaveBeenCalledWith(expect.anything(), 'numberPairs', expect.objectContaining({ attempts: 3, requiredActions: 2 }));
     expect(container.querySelector('.success-overlay')).not.toBeNull();
     await act(async () => { await vi.advanceTimersByTimeAsync(1_800); });
-    expect(top()).toHaveLength(4);
+    expect(top()).toHaveLength(3);
     await click(bottom()[0]!);
     await act(async () => finishOldRetry());
     expect(bottom()[0]!.getAttribute('aria-pressed')).toBe('true');
     expect(record).toHaveBeenCalledTimes(1);
-    expect(bottom()).toHaveLength(4);
-    expect(new Set(top().map((tile) => tile.textContent)).size).toBe(4);
+    expect(bottom()).toHaveLength(3);
+    expect(new Set(top().map((tile) => tile.textContent)).size).toBe(3);
   });
 });
