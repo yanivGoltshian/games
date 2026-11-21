@@ -19,6 +19,9 @@ const fixtures = [
 const results = [];
 const errors = [];
 const check = (condition, name) => { if (!condition) errors.push(name); };
+const waitForPaint = (page, symbol) => page.waitForFunction((id) =>
+  document.querySelector(`.sentence-train__theater use[href$="#${id}"]`)?.getBBox().width > 0,
+symbol, { timeout: 1_000 });
 // Deliberately mechanical stand-in at the same grasp anchor. No personal media in test screenshots.
 const synthetic = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 456 936">
   <rect x="89" y="129" width="237" height="232" rx="30" fill="#9499bc"/>
@@ -128,7 +131,7 @@ try {
         await target.tap(); await target.tap();
         const plant = board.locator('.sentence-train__theater');
         assert.equal(await plant.locator('.sentence-train__actor').count(), 0);
-        assert(await plant.locator('use[href$="#peel"]').evaluate(el => el.getBBox().width > 0));
+        await waitForPaint(page, 'peel');
         await page.waitForTimeout(550);
         await page.screenshot({ path: join(output, `${name}-peel-synthetic.png`) });
         await plant.waitFor({ state: 'detached' });
@@ -209,7 +212,7 @@ try {
         if (id === 'avocado-root') {
           const preview = page.locator('.sentence-train__theater');
           assert.equal(await preview.locator('foreignObject').count(), 0);
-          assert(await preview.locator('use[href$="#root"]').evaluate(el => el.getBBox().width > 0));
+          await waitForPaint(page, 'root');
           await page.waitForTimeout(760);
           await page.screenshot({ path: join(output, `${name}-offline-root.png`) });
         }
