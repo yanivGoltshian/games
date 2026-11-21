@@ -8912,59 +8912,14 @@
       "duration": 1.88
     },
     "he-IL\u0000אפשר להגיד את כל המשפט?": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 118.525625,
-      "duration": 3.382083
+      "src": "/speech/garden-question-he-IL-v1.mp3",
+      "offset": 0,
+      "duration": 3.354917
     },
     "he-IL\u0000את האדמה": {
       "src": "/speech/he-IL.mp3",
       "offset": 155.494583,
       "duration": 1.879958
-    },
-    "he-IL\u0000גרעין": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 232.990665,
-      "duration": 1.879958
-    },
-    "he-IL\u0000דקל תמר": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 240.214331,
-      "duration": 1.879958
-    },
-    "he-IL\u0000הילד אוכל אפרסמון": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 303.274706,
-      "duration": 2.117417
-    },
-    "he-IL\u0000הילד אוכל תמרים": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 307.512123,
-      "duration": 1.928458
-    },
-    "he-IL\u0000הילד טומן גרעין": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 309.560581,
-      "duration": 1.939917
-    },
-    "he-IL\u0000הילד מנביט גרעין": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 311.620498,
-      "duration": 1.984583
-    },
-    "he-IL\u0000הילד משקה את האדמה": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 313.725081,
-      "duration": 2.102958
-    },
-    "he-IL\u0000הילד נותן אסימון": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 315.948039,
-      "duration": 1.983292
-    },
-    "he-IL\u0000הילד רואה דקל תמר": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 318.051331,
-      "duration": 2.240875
     },
     "he-IL\u0000טומן": {
       "src": "/speech/he-IL.mp3",
@@ -8976,39 +8931,19 @@
       "offset": 1061.651365,
       "duration": 2.458167
     },
-    "he-IL\u0000מה הוא נותן?": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1064.229532,
-      "duration": 2.363083
-    },
     "he-IL\u0000מה הוא עושה?": {
       "src": "/speech/he-IL.mp3",
       "offset": 1066.712615,
       "duration": 2.281542
-    },
-    "he-IL\u0000מה זה?": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1069.114157,
-      "duration": 2.120583
     },
     "he-IL\u0000מי בתמונה?": {
       "src": "/speech/he-IL.mp3",
       "offset": 1083.886907,
       "duration": 2.365167
     },
-    "he-IL\u0000מנביט": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1088.518407,
-      "duration": 1.879958
-    },
     "he-IL\u0000משקה": {
       "src": "/speech/he-IL.mp3",
       "offset": 1103.690656,
-      "duration": 1.879958
-    },
-    "he-IL\u0000נותן": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1131.011447,
       "duration": 1.879958
     },
     "he-IL\u0000עוד משפט": {
@@ -9016,20 +8951,10 @@
       "offset": 1160.187031,
       "duration": 1.88
     },
-    "he-IL\u0000רואה": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1214.942988,
-      "duration": 1.88
-    },
     "he-IL\u0000שון": {
       "src": "/speech/he-IL.mp3",
       "offset": 1255.051405,
       "duration": 1.879958
-    },
-    "he-IL\u0000שון אוכל אפרסמון": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1257.051363,
-      "duration": 1.980667
     },
     "he-IL\u0000שון אוכל בננה": {
       "src": "/speech/he-IL.mp3",
@@ -9041,46 +8966,6 @@
       "offset": 1261.15203,
       "duration": 1.88
     },
-    "he-IL\u0000שון טומן גרעין": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1276.206447,
-      "duration": 1.88
-    },
-    "he-IL\u0000שון מנביט גרעין": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1296.867738,
-      "duration": 1.88
-    },
-    "he-IL\u0000שון משקה את האדמה": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1301.73428,
-      "duration": 1.899167
-    },
-    "he-IL\u0000שון רואה דקל תמר": {
-      "src": "/speech/he-IL.mp3",
-      "offset": 1312.90778,
-      "duration": 2.077167
-    },
-    "en-US\u0000a date palm": {
-      "src": "/speech/en-US.mp3",
-      "offset": 1.999958,
-      "duration": 1.88
-    },
-    "en-US\u0000a persimmon": {
-      "src": "/speech/en-US.mp3",
-      "offset": 6.875125,
-      "duration": 1.88
-    },
-    "en-US\u0000a seed": {
-      "src": "/speech/en-US.mp3",
-      "offset": 8.875125,
-      "duration": 1.88
-    },
-    "en-US\u0000a token": {
-      "src": "/speech/en-US.mp3",
-      "offset": 13.261625,
-      "duration": 1.88
-    },
     "en-US\u0000Another sentence": {
       "src": "/speech/en-US.mp3",
       "offset": 32.877125,
@@ -9090,11 +8975,6 @@
       "src": "/speech/en-US.mp3",
       "offset": 58.515417,
       "duration": 3.287
-    },
-    "en-US\u0000gives": {
-      "src": "/speech/en-US.mp3",
-      "offset": 166.382624,
-      "duration": 0.81175
     },
     "en-US\u0000plants": {
       "src": "/speech/en-US.mp3",
@@ -9111,80 +8991,10 @@
       "offset": 494.669044,
       "duration": 1.88
     },
-    "en-US\u0000Sean eats a persimmon": {
-      "src": "/speech/en-US.mp3",
-      "offset": 496.669044,
-      "duration": 1.88
-    },
     "en-US\u0000Sean eats dates": {
       "src": "/speech/en-US.mp3",
       "offset": 498.669044,
       "duration": 1.88
-    },
-    "en-US\u0000Sean plants a seed": {
-      "src": "/speech/en-US.mp3",
-      "offset": 505.403585,
-      "duration": 1.88
-    },
-    "en-US\u0000Sean sees a date palm": {
-      "src": "/speech/en-US.mp3",
-      "offset": 510.523293,
-      "duration": 2.062583
-    },
-    "en-US\u0000Sean sprouts a seed": {
-      "src": "/speech/en-US.mp3",
-      "offset": 512.705876,
-      "duration": 1.88
-    },
-    "en-US\u0000Sean waters the soil": {
-      "src": "/speech/en-US.mp3",
-      "offset": 524.398168,
-      "duration": 1.895083
-    },
-    "en-US\u0000sees": {
-      "src": "/speech/en-US.mp3",
-      "offset": 574.694209,
-      "duration": 0.843958
-    },
-    "en-US\u0000sprouts": {
-      "src": "/speech/en-US.mp3",
-      "offset": 635.09075,
-      "duration": 1.879958
-    },
-    "en-US\u0000The child eats a persimmon": {
-      "src": "/speech/en-US.mp3",
-      "offset": 675.728084,
-      "duration": 1.9405
-    },
-    "en-US\u0000The child eats dates": {
-      "src": "/speech/en-US.mp3",
-      "offset": 677.788584,
-      "duration": 1.88
-    },
-    "en-US\u0000The child gives a token": {
-      "src": "/speech/en-US.mp3",
-      "offset": 679.788584,
-      "duration": 1.95425
-    },
-    "en-US\u0000The child plants a seed": {
-      "src": "/speech/en-US.mp3",
-      "offset": 681.862834,
-      "duration": 2.008042
-    },
-    "en-US\u0000The child sees a date palm": {
-      "src": "/speech/en-US.mp3",
-      "offset": 683.990876,
-      "duration": 2.22525
-    },
-    "en-US\u0000The child sprouts a seed": {
-      "src": "/speech/en-US.mp3",
-      "offset": 686.336126,
-      "duration": 2.090917
-    },
-    "en-US\u0000The child waters the soil": {
-      "src": "/speech/en-US.mp3",
-      "offset": 688.547043,
-      "duration": 2.116583
     },
     "en-US\u0000the soil": {
       "src": "/speech/en-US.mp3",
@@ -9206,40 +9016,10 @@
       "offset": 1416.93655,
       "duration": 2.566875
     },
-    "en-US\u0000What is he giving?": {
-      "src": "/speech/en-US.mp3",
-      "offset": 1419.623425,
-      "duration": 2.512542
-    },
-    "en-US\u0000What is it?": {
-      "src": "/speech/en-US.mp3",
-      "offset": 1422.255967,
-      "duration": 2.172833
-    },
     "en-US\u0000Who is in the picture?": {
       "src": "/speech/en-US.mp3",
       "offset": 1497.381884,
       "duration": 2.729917
-    },
-    "en-GB\u0000a date palm": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 2,
-      "duration": 1.88
-    },
-    "en-GB\u0000a persimmon": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 6.618667,
-      "duration": 1.88
-    },
-    "en-GB\u0000a seed": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 8.618667,
-      "duration": 0.842417
-    },
-    "en-GB\u0000a token": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 11.884334,
-      "duration": 1.879958
     },
     "en-GB\u0000Another sentence": {
       "src": "/speech/en-GB.mp3",
@@ -9250,11 +9030,6 @@
       "src": "/speech/en-GB.mp3",
       "offset": 54.56696,
       "duration": 3.314167
-    },
-    "en-GB\u0000gives": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 153.198881,
-      "duration": 0.765792
     },
     "en-GB\u0000plants": {
       "src": "/speech/en-GB.mp3",
@@ -9271,80 +9046,10 @@
       "offset": 461.33971,
       "duration": 1.88
     },
-    "en-GB\u0000Sean eats a persimmon": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 463.33971,
-      "duration": 1.88
-    },
     "en-GB\u0000Sean eats dates": {
       "src": "/speech/en-GB.mp3",
       "offset": 465.33971,
       "duration": 1.88
-    },
-    "en-GB\u0000Sean plants a seed": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 471.914127,
-      "duration": 1.88
-    },
-    "en-GB\u0000Sean sees a date palm": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 476.81646,
-      "duration": 1.91325
-    },
-    "en-GB\u0000Sean sprouts a seed": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 478.84971,
-      "duration": 1.879958
-    },
-    "en-GB\u0000Sean waters the soil": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 490.032876,
-      "duration": 1.88
-    },
-    "en-GB\u0000sees": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 537.931126,
-      "duration": 0.7945
-    },
-    "en-GB\u0000sprouts": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 592.107586,
-      "duration": 1.879958
-    },
-    "en-GB\u0000The child eats a persimmon": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 630.446754,
-      "duration": 1.879958
-    },
-    "en-GB\u0000The child eats dates": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 632.446712,
-      "duration": 1.88
-    },
-    "en-GB\u0000The child gives a token": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 634.446712,
-      "duration": 1.902875
-    },
-    "en-GB\u0000The child plants a seed": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 636.469587,
-      "duration": 1.912792
-    },
-    "en-GB\u0000The child sees a date palm": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 638.502379,
-      "duration": 2.130667
-    },
-    "en-GB\u0000The child sprouts a seed": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 640.753046,
-      "duration": 1.994458
-    },
-    "en-GB\u0000The child waters the soil": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 642.867504,
-      "duration": 2.021417
     },
     "en-GB\u0000the soil": {
       "src": "/speech/en-GB.mp3",
@@ -9366,20 +9071,1505 @@
       "offset": 1318.454211,
       "duration": 2.5805
     },
-    "en-GB\u0000What is he giving?": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 1321.154711,
-      "duration": 2.498958
-    },
-    "en-GB\u0000What is it?": {
-      "src": "/speech/en-GB.mp3",
-      "offset": 1323.773669,
-      "duration": 2.15925
-    },
     "en-GB\u0000Who is in the picture?": {
       "src": "/speech/en-GB.mp3",
       "offset": 1396.220127,
       "duration": 2.582625
+    },
+    "he-IL\u0000אחר כך שון טומן גרעין באדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 0,
+      "duration": 2.673625
+    },
+    "he-IL\u0000אחר כך שון שוטף את התפוח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 2.793625,
+      "duration": 2.596083
+    },
+    "he-IL\u0000אחר כך תות קטן מאדים על השתיל": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 5.509708,
+      "duration": 2.708917
+    },
+    "he-IL\u0000איפה?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 8.338625,
+      "duration": 2.145708
+    },
+    "he-IL\u0000את הנבט באדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 10.604333,
+      "duration": 1.879958
+    },
+    "he-IL\u0000את הקליפה בדלי": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 12.604291,
+      "duration": 1.879958
+    },
+    "he-IL\u0000את התפוח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 14.604249,
+      "duration": 1.88
+    },
+    "he-IL\u0000את שתיל התות": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 16.604249,
+      "duration": 1.88
+    },
+    "he-IL\u0000ביד של שון": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 18.604249,
+      "duration": 1.88
+    },
+    "he-IL\u0000במה הוא נוגס?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 20.604249,
+      "duration": 2.621208
+    },
+    "he-IL\u0000בקומפוסט": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 23.345457,
+      "duration": 1.88
+    },
+    "he-IL\u0000בשמש": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 25.345457,
+      "duration": 1.88
+    },
+    "he-IL\u0000בתפוח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 27.345457,
+      "duration": 1.88
+    },
+    "he-IL\u0000גדל": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 29.345457,
+      "duration": 1.879958
+    },
+    "he-IL\u0000גזר מהאדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 31.345415,
+      "duration": 1.88
+    },
+    "he-IL\u0000גרעין אבוקדו במים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 33.345415,
+      "duration": 2.252458
+    },
+    "he-IL\u0000גרעין באדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 35.717873,
+      "duration": 1.88
+    },
+    "he-IL\u0000דבורה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 37.717873,
+      "duration": 1.88
+    },
+    "he-IL\u0000דבורה נוחתת על הפרח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 39.717873,
+      "duration": 2.219292
+    },
+    "he-IL\u0000הגשם": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 42.057165,
+      "duration": 1.88
+    },
+    "he-IL\u0000הגשם מרטיב את האדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 44.057165,
+      "duration": 2.213833
+    },
+    "he-IL\u0000הנבט": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 46.390998,
+      "duration": 1.879958
+    },
+    "he-IL\u0000הקליפה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 48.390956,
+      "duration": 1.88
+    },
+    "he-IL\u0000הקליפה נשארת ביד של שון": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 50.390956,
+      "duration": 2.610375
+    },
+    "he-IL\u0000ואז נבט קטן מציץ מהגרעין": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 53.121331,
+      "duration": 2.760542
+    },
+    "he-IL\u0000ואז עלים ירוקים מבצבצים מהאדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 56.001873,
+      "duration": 3.15175
+    },
+    "he-IL\u0000ואז פרח לבן נפתח בשמש": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 59.273623,
+      "duration": 2.716167
+    },
+    "he-IL\u0000ואז שון שם את הקליפה בדלי": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 62.10979,
+      "duration": 2.423208
+    },
+    "he-IL\u0000והופך לדקל": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 64.652998,
+      "duration": 1.88
+    },
+    "he-IL\u0000זורע": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 66.652998,
+      "duration": 1.88
+    },
+    "he-IL\u0000זרעי גזר": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 68.652998,
+      "duration": 1.88
+    },
+    "he-IL\u0000טיפות מים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 70.652998,
+      "duration": 1.88
+    },
+    "he-IL\u0000טיפות מים נופלות מהתפוח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 72.652998,
+      "duration": 2.510542
+    },
+    "he-IL\u0000יוצא": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 75.28354,
+      "duration": 1.879958
+    },
+    "he-IL\u0000לאן?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 77.283498,
+      "duration": 2.104917
+    },
+    "he-IL\u0000לבסוף שון מושך גזר מהאדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 79.508415,
+      "duration": 2.8095
+    },
+    "he-IL\u0000לבסוף שון נוגס בתפוח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 82.437915,
+      "duration": 2.510583
+    },
+    "he-IL\u0000למה הופך הנבט?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 85.068498,
+      "duration": 2.702708
+    },
+    "he-IL\u0000לתוך המים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 87.891206,
+      "duration": 1.879958
+    },
+    "he-IL\u0000מאדים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 89.891164,
+      "duration": 1.879958
+    },
+    "he-IL\u0000מאיפה יוצא הנבט?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 91.891122,
+      "duration": 2.865792
+    },
+    "he-IL\u0000מאיפה מבצבצים העלים?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 94.876914,
+      "duration": 3.123917
+    },
+    "he-IL\u0000מאיפה מציץ הנבט?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 98.120831,
+      "duration": 2.92225
+    },
+    "he-IL\u0000מאיפה נופלות הטיפות?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 101.163081,
+      "duration": 3.015208
+    },
+    "he-IL\u0000מבצבצים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 104.298289,
+      "duration": 1.88
+    },
+    "he-IL\u0000מה בתמונה?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 106.298289,
+      "duration": 2.376667
+    },
+    "he-IL\u0000מה הוא זורע?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 108.794956,
+      "duration": 2.390292
+    },
+    "he-IL\u0000מה הוא טומן?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 111.305248,
+      "duration": 2.363042
+    },
+    "he-IL\u0000מה הוא מושך?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 113.78829,
+      "duration": 2.376625
+    },
+    "he-IL\u0000מה הוא משקה?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 116.284915,
+      "duration": 2.295125
+    },
+    "he-IL\u0000מה הוא קוטף?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 118.70004,
+      "duration": 2.430958
+    },
+    "he-IL\u0000מה הוא שוטף?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 121.250998,
+      "duration": 2.444542
+    },
+    "he-IL\u0000מה הוא שותל?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 123.81554,
+      "duration": 2.376625
+    },
+    "he-IL\u0000מה הוא שם בדלי?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 126.312165,
+      "duration": 2.512542
+    },
+    "he-IL\u0000מה הוא שם במים?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 128.944707,
+      "duration": 2.62125
+    },
+    "he-IL\u0000מה נרטב?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 131.685957,
+      "duration": 2.390208
+    },
+    "he-IL\u0000מה עושה הגשם?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 134.196165,
+      "duration": 2.716292
+    },
+    "he-IL\u0000מה עושה הדבורה?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 137.032457,
+      "duration": 2.594042
+    },
+    "he-IL\u0000מה עושה הנבט?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 139.746499,
+      "duration": 2.526083
+    },
+    "he-IL\u0000מה עושה השורש?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 142.392582,
+      "duration": 2.621208
+    },
+    "he-IL\u0000מה עושות הטיפות?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 145.13379,
+      "duration": 2.689125
+    },
+    "he-IL\u0000מה עושים העלים?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 147.942915,
+      "duration": 2.582583
+    },
+    "he-IL\u0000מה קורה לנבט?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 150.645498,
+      "duration": 2.661958
+    },
+    "he-IL\u0000מה קורה לפרח?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 153.427456,
+      "duration": 2.623333
+    },
+    "he-IL\u0000מה קורה לקליפה?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 156.170789,
+      "duration": 2.607625
+    },
+    "he-IL\u0000מה קורה לתות?": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 158.898414,
+      "duration": 2.607625
+    },
+    "he-IL\u0000מהאדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 161.626039,
+      "duration": 1.88
+    },
+    "he-IL\u0000מהגרעין": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 163.626039,
+      "duration": 1.88
+    },
+    "he-IL\u0000מהתפוח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 165.626039,
+      "duration": 1.88
+    },
+    "he-IL\u0000מושך": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 167.626039,
+      "duration": 1.879958
+    },
+    "he-IL\u0000מציץ": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 169.625997,
+      "duration": 1.879958
+    },
+    "he-IL\u0000מרטיב": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 171.625955,
+      "duration": 1.879958
+    },
+    "he-IL\u0000מתפרקת": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 173.625913,
+      "duration": 1.88
+    },
+    "he-IL\u0000נבט ירוק": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 175.625913,
+      "duration": 1.88
+    },
+    "he-IL\u0000נבט ירוק יוצא מהאדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 177.625913,
+      "duration": 2.293458
+    },
+    "he-IL\u0000נבט קטן": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 180.039371,
+      "duration": 1.88
+    },
+    "he-IL\u0000נוגס": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 182.039371,
+      "duration": 1.879958
+    },
+    "he-IL\u0000נוחתת": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 184.039329,
+      "duration": 1.88
+    },
+    "he-IL\u0000נופלות": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 186.039329,
+      "duration": 1.88
+    },
+    "he-IL\u0000נפתח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 188.039329,
+      "duration": 1.879958
+    },
+    "he-IL\u0000נשארת": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 190.039287,
+      "duration": 1.879958
+    },
+    "he-IL\u0000עכשיו שון שותל את הנבט באדמה": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 192.039245,
+      "duration": 2.596583
+    },
+    "he-IL\u0000על הפרח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 194.755828,
+      "duration": 1.879958
+    },
+    "he-IL\u0000על השתיל": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 196.755786,
+      "duration": 1.88
+    },
+    "he-IL\u0000עלים ירוקים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 198.755786,
+      "duration": 1.88
+    },
+    "he-IL\u0000עם הזמן הקליפה מתפרקת בקומפוסט": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 200.755786,
+      "duration": 3.157375
+    },
+    "he-IL\u0000עם השנים הנבט גדל והופך לדקל": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 204.033161,
+      "duration": 3.420917
+    },
+    "he-IL\u0000פרח לבן": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 207.574078,
+      "duration": 1.879958
+    },
+    "he-IL\u0000צומח": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 209.574036,
+      "duration": 1.879958
+    },
+    "he-IL\u0000קוטף": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 211.573994,
+      "duration": 1.88
+    },
+    "he-IL\u0000שוטף": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 213.573994,
+      "duration": 1.88
+    },
+    "he-IL\u0000שון זורע זרעי גזר": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 215.573994,
+      "duration": 2.309458
+    },
+    "he-IL\u0000שון משקה את שתיל התות": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 218.003452,
+      "duration": 2.233167
+    },
+    "he-IL\u0000שון קוטף תפוח מהעץ": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 220.356619,
+      "duration": 2.436292
+    },
+    "he-IL\u0000שון שם גרעין אבוקדו במים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 222.912911,
+      "duration": 2.770333
+    },
+    "he-IL\u0000שורש לבן": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 225.803244,
+      "duration": 1.88
+    },
+    "he-IL\u0000שורש לבן צומח לתוך המים": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 227.803244,
+      "duration": 2.633083
+    },
+    "he-IL\u0000שותל": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 230.556327,
+      "duration": 1.88
+    },
+    "he-IL\u0000שם": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 232.556327,
+      "duration": 1.88
+    },
+    "he-IL\u0000תות קטן": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 234.556327,
+      "duration": 1.88
+    },
+    "he-IL\u0000תפוח מהעץ": {
+      "src": "/speech/garden-stories-he-IL-v1.mp3",
+      "offset": 236.556327,
+      "duration": 1.88
+    },
+    "en-US\u0000A bee": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 0,
+      "duration": 0.771417
+    },
+    "en-US\u0000A bee lands on the flower": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 0.891417,
+      "duration": 2.044
+    },
+    "en-US\u0000a carrot from the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 3.055417,
+      "duration": 1.88
+    },
+    "en-US\u0000a date seed in the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 5.055417,
+      "duration": 1.9495
+    },
+    "en-US\u0000A green sprout": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 7.124917,
+      "duration": 1.88
+    },
+    "en-US\u0000A green sprout comes up from the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 9.124917,
+      "duration": 2.904625
+    },
+    "en-US\u0000A little shoot": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 12.149542,
+      "duration": 1.88
+    },
+    "en-US\u0000A little strawberry": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 14.149542,
+      "duration": 1.88
+    },
+    "en-US\u0000A white flower": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 16.149542,
+      "duration": 1.88
+    },
+    "en-US\u0000A white root": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 18.149542,
+      "duration": 1.88
+    },
+    "en-US\u0000A white root grows down into the water": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 20.149542,
+      "duration": 2.928833
+    },
+    "en-US\u0000After that a little strawberry turns red on the plant": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 23.198375,
+      "duration": 3.787833
+    },
+    "en-US\u0000After that Sean plants a date seed in the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 27.106208,
+      "duration": 3.516667
+    },
+    "en-US\u0000After that Sean washes the apple": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 30.742875,
+      "duration": 2.627042
+    },
+    "en-US\u0000an apple from the tree": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 33.489917,
+      "duration": 1.879958
+    },
+    "en-US\u0000an avocado pit in water": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 35.489875,
+      "duration": 2.333542
+    },
+    "en-US\u0000breaks down": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 37.943417,
+      "duration": 1.88
+    },
+    "en-US\u0000carrot seeds": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 39.943417,
+      "duration": 1.88
+    },
+    "en-US\u0000comes up": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 41.943417,
+      "duration": 1.88
+    },
+    "en-US\u0000down into the water": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 43.943417,
+      "duration": 1.879958
+    },
+    "en-US\u0000fall": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 45.943375,
+      "duration": 0.737917
+    },
+    "en-US\u0000Finally Sean pulls a carrot from the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 46.801292,
+      "duration": 3.19375
+    },
+    "en-US\u0000Finally Sean takes a bite of the apple": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 50.115042,
+      "duration": 2.889833
+    },
+    "en-US\u0000from the apple": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 53.124875,
+      "duration": 1.88
+    },
+    "en-US\u0000from the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 55.124875,
+      "duration": 1.88
+    },
+    "en-US\u0000Green leaves": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 57.124875,
+      "duration": 1.879958
+    },
+    "en-US\u0000grows": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 59.124833,
+      "duration": 1.88
+    },
+    "en-US\u0000in Sean’s hand": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 61.124833,
+      "duration": 1.88
+    },
+    "en-US\u0000in the compost": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 63.124833,
+      "duration": 1.88
+    },
+    "en-US\u0000in the sunshine": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 65.124833,
+      "duration": 1.88
+    },
+    "en-US\u0000into a palm tree": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 67.124833,
+      "duration": 1.879958
+    },
+    "en-US\u0000lands": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 69.124791,
+      "duration": 1.879958
+    },
+    "en-US\u0000Now Sean plants the sprout in the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 71.124749,
+      "duration": 2.924542
+    },
+    "en-US\u0000of the apple": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 74.169291,
+      "duration": 1.88
+    },
+    "en-US\u0000of the pit": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 76.169291,
+      "duration": 1.88
+    },
+    "en-US\u0000of the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 78.169291,
+      "duration": 1.88
+    },
+    "en-US\u0000on the flower": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 80.169291,
+      "duration": 1.879958
+    },
+    "en-US\u0000on the plant": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 82.169249,
+      "duration": 1.879958
+    },
+    "en-US\u0000opens": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 84.169207,
+      "duration": 1.879958
+    },
+    "en-US\u0000Over the years the sprout grows into a palm tree": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 86.169165,
+      "duration": 3.653958
+    },
+    "en-US\u0000Over time the peel breaks down in the compost": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 89.943123,
+      "duration": 3.462042
+    },
+    "en-US\u0000peek out": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 93.525165,
+      "duration": 1.88
+    },
+    "en-US\u0000peeks out": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 95.525165,
+      "duration": 1.879958
+    },
+    "en-US\u0000picks": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 97.525123,
+      "duration": 0.8215
+    },
+    "en-US\u0000pulls": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 98.466623,
+      "duration": 0.843917
+    },
+    "en-US\u0000puts": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 99.43054,
+      "duration": 0.804875
+    },
+    "en-US\u0000Sean picks an apple from the tree": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 100.355415,
+      "duration": 2.5405
+    },
+    "en-US\u0000Sean puts an avocado pit in water": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 103.015915,
+      "duration": 3.100292
+    },
+    "en-US\u0000Sean sows carrot seeds": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 106.236207,
+      "duration": 2.346875
+    },
+    "en-US\u0000Sean waters the strawberry plant": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 108.703082,
+      "duration": 2.696083
+    },
+    "en-US\u0000sows": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 111.519165,
+      "duration": 0.85425
+    },
+    "en-US\u0000stays": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 112.493415,
+      "duration": 1.88
+    },
+    "en-US\u0000takes a bite": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 114.493415,
+      "duration": 1.879958
+    },
+    "en-US\u0000the apple": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 116.493373,
+      "duration": 1.88
+    },
+    "en-US\u0000The peel": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 118.493373,
+      "duration": 1.879958
+    },
+    "en-US\u0000the peel in the bucket": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 120.493331,
+      "duration": 1.88
+    },
+    "en-US\u0000The peel stays in Sean’s hand": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 122.493331,
+      "duration": 2.580958
+    },
+    "en-US\u0000The rain": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 125.194289,
+      "duration": 1.879958
+    },
+    "en-US\u0000The rain wets the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 127.194247,
+      "duration": 1.902792
+    },
+    "en-US\u0000The sprout": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 129.217039,
+      "duration": 1.88
+    },
+    "en-US\u0000the sprout in the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 131.217039,
+      "duration": 1.879958
+    },
+    "en-US\u0000the strawberry plant": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 133.216997,
+      "duration": 1.88
+    },
+    "en-US\u0000Then a little shoot peeks out of the pit": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 135.216997,
+      "duration": 2.651042
+    },
+    "en-US\u0000Then a white flower opens in the sunshine": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 137.988039,
+      "duration": 3.192958
+    },
+    "en-US\u0000Then green leaves peek out of the soil": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 141.300997,
+      "duration": 2.855542
+    },
+    "en-US\u0000Then Sean puts the peel in the bucket": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 144.276539,
+      "duration": 2.776292
+    },
+    "en-US\u0000turns red": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 147.172831,
+      "duration": 1.88
+    },
+    "en-US\u0000washes": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 149.172831,
+      "duration": 1.88
+    },
+    "en-US\u0000Water drops": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 151.172831,
+      "duration": 1.88
+    },
+    "en-US\u0000Water drops fall from the apple": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 153.172831,
+      "duration": 2.504292
+    },
+    "en-US\u0000wets": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 155.797123,
+      "duration": 1.88
+    },
+    "en-US\u0000What do the drops do?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 157.797123,
+      "duration": 2.770667
+    },
+    "en-US\u0000What do the leaves do?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 160.68779,
+      "duration": 2.770667
+    },
+    "en-US\u0000What does he bite into?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 163.578457,
+      "duration": 2.933708
+    },
+    "en-US\u0000What does he pick?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 166.632165,
+      "duration": 2.498958
+    },
+    "en-US\u0000What does he plant?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 169.251123,
+      "duration": 2.634833
+    },
+    "en-US\u0000What does he pull?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 172.005956,
+      "duration": 2.485375
+    },
+    "en-US\u0000What does he put in the bucket?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 174.611331,
+      "duration": 3.056
+    },
+    "en-US\u0000What does he put in the water?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 177.787331,
+      "duration": 3.083208
+    },
+    "en-US\u0000What does he sow?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 180.990539,
+      "duration": 2.47175
+    },
+    "en-US\u0000What does he wash?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 183.582289,
+      "duration": 2.621208
+    },
+    "en-US\u0000What does he water?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 186.323497,
+      "duration": 2.594042
+    },
+    "en-US\u0000What does the bee do?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 189.037539,
+      "duration": 2.634833
+    },
+    "en-US\u0000What does the rain do?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 191.792372,
+      "duration": 2.770667
+    },
+    "en-US\u0000What does the root do?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 194.683039,
+      "duration": 2.70275
+    },
+    "en-US\u0000What does the sprout do?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 197.505789,
+      "duration": 2.854333
+    },
+    "en-US\u0000What does the sprout grow into?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 200.480122,
+      "duration": 3.382125
+    },
+    "en-US\u0000What gets wet?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 203.982247,
+      "duration": 2.363083
+    },
+    "en-US\u0000What happens to the flower?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 206.46533,
+      "duration": 3.096792
+    },
+    "en-US\u0000What happens to the peel?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 209.682122,
+      "duration": 2.947292
+    },
+    "en-US\u0000What happens to the sprout?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 212.749414,
+      "duration": 3.056
+    },
+    "en-US\u0000What happens to the strawberry?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 215.925414,
+      "duration": 3.300583
+    },
+    "en-US\u0000What is in the picture?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 219.345997,
+      "duration": 2.7435
+    },
+    "en-US\u0000Where do the drops fall from?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 222.209497,
+      "duration": 3.24625
+    },
+    "en-US\u0000Where do the leaves peek out from?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 225.575747,
+      "duration": 3.450042
+    },
+    "en-US\u0000Where does the shoot peek out from?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 229.145789,
+      "duration": 3.354917
+    },
+    "en-US\u0000Where does the sprout come from?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 232.620706,
+      "duration": 3.205458
+    },
+    "en-US\u0000Where to?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 235.946164,
+      "duration": 2.036958
+    },
+    "en-US\u0000Where?": {
+      "src": "/speech/garden-stories-en-US-v1.mp3",
+      "offset": 238.103122,
+      "duration": 1.88
+    },
+    "en-GB\u0000A bee": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 0,
+      "duration": 0.836042
+    },
+    "en-GB\u0000A bee lands on the flower": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 0.956042,
+      "duration": 1.879958
+    },
+    "en-GB\u0000a carrot from the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 2.956,
+      "duration": 1.88
+    },
+    "en-GB\u0000a date seed in the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 4.956,
+      "duration": 1.913375
+    },
+    "en-GB\u0000A green sprout": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 6.989375,
+      "duration": 1.88
+    },
+    "en-GB\u0000A green sprout comes up from the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 8.989375,
+      "duration": 2.68675
+    },
+    "en-GB\u0000A little shoot": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 11.796125,
+      "duration": 1.88
+    },
+    "en-GB\u0000A little strawberry": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 13.796125,
+      "duration": 1.88
+    },
+    "en-GB\u0000A white flower": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 15.796125,
+      "duration": 1.88
+    },
+    "en-GB\u0000A white root": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 17.796125,
+      "duration": 1.88
+    },
+    "en-GB\u0000A white root grows down into the water": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 19.796125,
+      "duration": 2.699583
+    },
+    "en-GB\u0000After that a little strawberry turns red on the plant": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 22.615708,
+      "duration": 3.569667
+    },
+    "en-GB\u0000After that Sean plants a date seed in the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 26.305375,
+      "duration": 3.31225
+    },
+    "en-GB\u0000After that Sean washes the apple": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 29.737625,
+      "duration": 2.279667
+    },
+    "en-GB\u0000an apple from the tree": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 32.137292,
+      "duration": 1.879958
+    },
+    "en-GB\u0000an avocado pit in water": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 34.13725,
+      "duration": 2.105833
+    },
+    "en-GB\u0000breaks down": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 36.363083,
+      "duration": 1.88
+    },
+    "en-GB\u0000carrot seeds": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 38.363083,
+      "duration": 1.879958
+    },
+    "en-GB\u0000comes up": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 40.363041,
+      "duration": 1.879958
+    },
+    "en-GB\u0000down into the water": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 42.362999,
+      "duration": 1.88
+    },
+    "en-GB\u0000fall": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 44.362999,
+      "duration": 0.720125
+    },
+    "en-GB\u0000Finally Sean pulls a carrot from the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 45.203124,
+      "duration": 3.071167
+    },
+    "en-GB\u0000Finally Sean takes a bite of the apple": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 48.394291,
+      "duration": 2.769083
+    },
+    "en-GB\u0000from the apple": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 51.283374,
+      "duration": 1.88
+    },
+    "en-GB\u0000from the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 53.283374,
+      "duration": 1.88
+    },
+    "en-GB\u0000Green leaves": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 55.283374,
+      "duration": 1.88
+    },
+    "en-GB\u0000grows": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 57.283374,
+      "duration": 0.763208
+    },
+    "en-GB\u0000in Sean’s hand": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 58.166582,
+      "duration": 1.879958
+    },
+    "en-GB\u0000in the compost": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 60.16654,
+      "duration": 1.88
+    },
+    "en-GB\u0000in the sunshine": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 62.16654,
+      "duration": 1.88
+    },
+    "en-GB\u0000into a palm tree": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 64.16654,
+      "duration": 1.879958
+    },
+    "en-GB\u0000lands": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 66.166498,
+      "duration": 1.88
+    },
+    "en-GB\u0000Now Sean plants the sprout in the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 68.166498,
+      "duration": 2.823083
+    },
+    "en-GB\u0000of the apple": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 71.109581,
+      "duration": 1.88
+    },
+    "en-GB\u0000of the pit": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 73.109581,
+      "duration": 1.88
+    },
+    "en-GB\u0000of the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 75.109581,
+      "duration": 1.88
+    },
+    "en-GB\u0000on the flower": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 77.109581,
+      "duration": 1.88
+    },
+    "en-GB\u0000on the plant": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 79.109581,
+      "duration": 1.88
+    },
+    "en-GB\u0000opens": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 81.109581,
+      "duration": 1.88
+    },
+    "en-GB\u0000Over the years the sprout grows into a palm tree": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 83.109581,
+      "duration": 3.325917
+    },
+    "en-GB\u0000Over time the peel breaks down in the compost": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 86.555498,
+      "duration": 3.087167
+    },
+    "en-GB\u0000peek out": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 89.762665,
+      "duration": 1.88
+    },
+    "en-GB\u0000peeks out": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 91.762665,
+      "duration": 1.88
+    },
+    "en-GB\u0000picks": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 93.762665,
+      "duration": 0.770958
+    },
+    "en-GB\u0000pulls": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 94.653623,
+      "duration": 0.724208
+    },
+    "en-GB\u0000puts": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 95.497831,
+      "duration": 0.737833
+    },
+    "en-GB\u0000Sean picks an apple from the tree": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 96.355664,
+      "duration": 2.33225
+    },
+    "en-GB\u0000Sean puts an avocado pit in water": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 98.807914,
+      "duration": 2.774708
+    },
+    "en-GB\u0000Sean sows carrot seeds": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 101.702622,
+      "duration": 2.088708
+    },
+    "en-GB\u0000Sean waters the strawberry plant": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 103.91133,
+      "duration": 2.510167
+    },
+    "en-GB\u0000sows": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 106.541497,
+      "duration": 0.798625
+    },
+    "en-GB\u0000stays": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 107.460122,
+      "duration": 0.839375
+    },
+    "en-GB\u0000takes a bite": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 108.419497,
+      "duration": 1.879958
+    },
+    "en-GB\u0000the apple": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 110.419455,
+      "duration": 1.879958
+    },
+    "en-GB\u0000The peel": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 112.419413,
+      "duration": 0.826583
+    },
+    "en-GB\u0000the peel in the bucket": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 113.365996,
+      "duration": 1.88
+    },
+    "en-GB\u0000The peel stays in Sean’s hand": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 115.365996,
+      "duration": 2.306792
+    },
+    "en-GB\u0000The rain": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 117.792788,
+      "duration": 1.88
+    },
+    "en-GB\u0000The rain wets the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 119.792788,
+      "duration": 1.88
+    },
+    "en-GB\u0000The sprout": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 121.792788,
+      "duration": 1.88
+    },
+    "en-GB\u0000the sprout in the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 123.792788,
+      "duration": 1.879958
+    },
+    "en-GB\u0000the strawberry plant": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 125.792746,
+      "duration": 1.88
+    },
+    "en-GB\u0000Then a little shoot peeks out of the pit": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 127.792746,
+      "duration": 2.585833
+    },
+    "en-GB\u0000Then a white flower opens in the sunshine": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 130.498579,
+      "duration": 2.782458
+    },
+    "en-GB\u0000Then green leaves peek out of the soil": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 133.401037,
+      "duration": 2.642417
+    },
+    "en-GB\u0000Then Sean puts the peel in the bucket": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 136.163454,
+      "duration": 2.4705
+    },
+    "en-GB\u0000turns red": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 138.753954,
+      "duration": 1.88
+    },
+    "en-GB\u0000washes": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 140.753954,
+      "duration": 1.88
+    },
+    "en-GB\u0000Water drops": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 142.753954,
+      "duration": 1.88
+    },
+    "en-GB\u0000Water drops fall from the apple": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 144.753954,
+      "duration": 2.252417
+    },
+    "en-GB\u0000wets": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 147.126371,
+      "duration": 0.799792
+    },
+    "en-GB\u0000What do the drops do?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 148.046163,
+      "duration": 2.838625
+    },
+    "en-GB\u0000What do the leaves do?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 151.004788,
+      "duration": 2.893
+    },
+    "en-GB\u0000What does he bite into?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 154.017788,
+      "duration": 2.811417
+    },
+    "en-GB\u0000What does he pick?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 156.949205,
+      "duration": 2.485375
+    },
+    "en-GB\u0000What does he plant?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 159.55458,
+      "duration": 2.607583
+    },
+    "en-GB\u0000What does he pull?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 162.282163,
+      "duration": 2.444625
+    },
+    "en-GB\u0000What does he put in the bucket?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 164.846788,
+      "duration": 3.044542
+    },
+    "en-GB\u0000What does he put in the water?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 168.01133,
+      "duration": 2.988042
+    },
+    "en-GB\u0000What does he sow?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 171.119372,
+      "duration": 2.498917
+    },
+    "en-GB\u0000What does he wash?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 173.738289,
+      "duration": 2.528208
+    },
+    "en-GB\u0000What does he water?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 176.386497,
+      "duration": 2.539708
+    },
+    "en-GB\u0000What does the bee do?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 179.046205,
+      "duration": 2.729917
+    },
+    "en-GB\u0000What does the rain do?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 181.896122,
+      "duration": 2.838625
+    },
+    "en-GB\u0000What does the root do?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 184.854747,
+      "duration": 2.7435
+    },
+    "en-GB\u0000What does the sprout do?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 187.718247,
+      "duration": 2.852167
+    },
+    "en-GB\u0000What does the sprout grow into?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 190.690414,
+      "duration": 3.341375
+    },
+    "en-GB\u0000What gets wet?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 194.151789,
+      "duration": 2.458167
+    },
+    "en-GB\u0000What happens to the flower?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 196.729956,
+      "duration": 2.9745
+    },
+    "en-GB\u0000What happens to the peel?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 199.824456,
+      "duration": 2.933708
+    },
+    "en-GB\u0000What happens to the sprout?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 202.878164,
+      "duration": 3.028792
+    },
+    "en-GB\u0000What happens to the strawberry?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 206.026956,
+      "duration": 3.164667
+    },
+    "en-GB\u0000What is in the picture?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 209.311623,
+      "duration": 2.648417
+    },
+    "en-GB\u0000Where do the drops fall from?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 212.08004,
+      "duration": 3.191917
+    },
+    "en-GB\u0000Where do the leaves peek out from?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 215.391957,
+      "duration": 3.341375
+    },
+    "en-GB\u0000Where does the shoot peek out from?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 218.853332,
+      "duration": 3.289083
+    },
+    "en-GB\u0000Where does the sprout come from?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 222.262415,
+      "duration": 3.207583
+    },
+    "en-GB\u0000Where to?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 225.589998,
+      "duration": 1.982625
+    },
+    "en-GB\u0000Where?": {
+      "src": "/speech/garden-stories-en-GB-v1.mp3",
+      "offset": 227.692623,
+      "duration": 1.879958
     }
   }
 }

@@ -1,5 +1,6 @@
 import type { SpeechLocale } from '../src/domain/types.js';
 import { NARRATION_VOICE_PROFILES } from '../src/domain/narrationVoice.js';
+import { GARDEN_SENTENCE_QUESTION } from '../src/content/gardenSentences.js';
 
 export interface SpeechEnvironment {
   resourceId: string;
@@ -76,6 +77,13 @@ function addNaturalPauses(text: string): string {
 }
 
 function addTargetedHebrewPronunciation(text: string): string {
+  if (text === GARDEN_SENTENCE_QUESTION.spokenHe.normalize('NFC')) {
+    const word = 'לְהַגִּיד'.normalize('NFC');
+    const kol = 'כָּל'.normalize('NFC');
+    return addNaturalPauses(text)
+      .replace(word, `<phoneme alphabet="ipa" ph="lehaˈgid">${word}</phoneme>`)
+      .replace(kol, `<phoneme alphabet="ipa" ph="kol">${kol}</phoneme>`);
+  }
   if (text === HEBREW_LEVEL_UP_SPOKEN) {
     return [
       addNaturalPauses('אֵיזֶה כֵּיף, שׁוֹן'),
